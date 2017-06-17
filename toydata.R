@@ -1,5 +1,6 @@
 # Make simple dataset for building & testing models
 
+## EVENT DATA
 ## Data for 1 tree at one site with constant temperatures and yes/no phenology data
 n = 5 # How many days
 
