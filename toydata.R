@@ -2,12 +2,15 @@
 
 ## EVENT DATA
 ## Data for 1 tree at one site with constant temperatures and yes/no phenology data
-n = 5 # How many days
 
-dat <- data.frame(
-    day = seq(1:n),
-    temp = rep(5, n),
+phen <- data.frame(
     tree = 1,
-    pct_budburst = c(0,0,0,1,1),
-    accumulated_temp = NA)
+    pct_flowering = c(0.2, 0.8),
+    date = as.Date(c("2017-06-01", "2017-06-02"))
+)
+
+clim <- data.frame(
+    date = seq.Date(as.Date("2017-01-01"), by = "day", length.out = 365),
+    temp = 5
+)
 
