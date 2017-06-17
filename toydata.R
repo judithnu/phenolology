@@ -21,6 +21,6 @@ phene <- data.frame(
 phens <- data.frame(
     tree = 1,
     date = seq.Date(as.Date("2017-06-01"), as.Date("2017-06-07"), length.out = 4),
-    phase = c("below", "between", "below", "above")
+    phase = c("below", "between", "between", "above")
 )
 
