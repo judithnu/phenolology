@@ -39,11 +39,22 @@ temp_crit_ind <- rnorm(n = 10, mean = temp_crit, sd = temp_crit/4) #critical tem
 
 cdat <- data.frame(cone = c(1:10), temp_crit_ind = temp_crit_ind)
 
-#######drafty not yet working
-day_crit <- sapply(cdat$temp_crit_ind, get_closest_bigger_number, vector = tdat$atemp)
-
-get_closest_bigger_number <- function(value, vector) {
-    diffs <- abs(value - vector)
-    bigs <- which(vector > value)
-    which.min(diffs[bigs])
+get_closest_bigger_number <- function(value, vector) { #gets index of number in a vector that's closest to the value while also being larger than the value
+    diffs <- value - vector
+    position <- which.min(diffs > 0)
+    return(position)
 }
+
+day_crit_pos <- sapply(cdat$temp_crit_ind, get_closest_bigger_number, vector = tdat$atemp)
+cdat$day_crit <- tdat$day[day_crit_pos] #day tree "flowers"
+
+library(dplyr)
+
+begin_dat <- left_join(tdat, cdat, by = c("day" ="day_crit"))
+table(begin_dat$day, begin_dat$cone)
+
+
+
+library(ggplot2)
+ggplot(begin_dat, aes(x = day, group=cone)) +
+    geom_bar(na.rm = TRUE)
