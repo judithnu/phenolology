@@ -27,7 +27,7 @@ curve(predict(logit, data.frame(atemp = x), type = "resp"), add = TRUE)
 ##
 
 ## tree level toy
-### Tree has 10 cones. Over a 10 day period, cones become active for some amount of time, then finish. Cones become active at DD = 20 with some error.
+### Tree has 10 cones. Over a 10 day period, cones become active for some amount of time, then finish. Cones become active at heatsum = 20 with some error and require 10 additional heatsum to finish.
 
 temp = 5
 temp_crit = 20
@@ -35,9 +35,11 @@ temp_crit = 20
 tdat <- data.frame(day = c(1:10), temp = 5)
 tdat$atemp <- cumsum(tdat$temp)
 
-temp_crit_ind <- rnorm(n = 10, mean = temp_crit, sd = temp_crit/4) #critical temperatures for individual cones
+temp_crit_ind <- rnorm(n = 10, mean = temp_crit, sd = temp_crit/4) #critical temperatures for individual cones to begin flowering
+temp_cess <- rnorm(n = 10, mean = temp_crit/2, sd = temp_crit/8)
+temp_cess_ind <- temp_crit_ind + temp_cess
 
-cdat <- data.frame(cone = c(1:10), temp_crit_ind = temp_crit_ind)
+cdat <- data.frame(cone = c(1:10), temp_crit_ind, temp_cess_ind)
 
 get_closest_bigger_number <- function(value, vector) { #gets index of number in a vector that's closest to the value while also being larger than the value
     diffs <- value - vector
@@ -50,11 +52,16 @@ cdat$day_crit <- tdat$day[day_crit_pos] #day tree "flowers"
 
 library(dplyr)
 
-begin_dat <- left_join(tdat, cdat, by = c("day" ="day_crit"))
-table(begin_dat$day, begin_dat$cone)
-
+# count up events daily and cumulatively
+eventcounts <- as.data.frame(table(cdat$day_crit, dnn = "day"), responseName = "begin_count")
+eventcounts$day <- as.numeric(levels(eventcounts$day))
+eventcounts$begin_cum <- cumsum(eventcounts$begin_count)
 
 
 library(ggplot2)
-ggplot(begin_dat, aes(x = day, group=cone)) +
-    geom_bar(na.rm = TRUE)
+ggplot(eventcounts, aes(x = day, y = begin_count)) +
+    geom_bar(stat="identity") +
+    xlim(1,10) +
+    geom_line(aes(x = day, y = begin_cum)) +
+    ylab("count") +
+    ggtitle("Daily and cumulative counts of cones beginning to flower")
