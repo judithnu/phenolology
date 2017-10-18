@@ -4,7 +4,7 @@
 transition <- function(state1 = 0, state2 = 1, covariate = heatsum) { #simulate the transition between two states and record the states.
     ptrans <- 0 #initial probability of transition
     x <- c(state1)
-    y <- c(ptrans)
+    y <- c()
     i <- 1
     while (ptrans < 1) {
         x <- append(x, state1) #record state1
@@ -21,7 +21,8 @@ transition <- function(state1 = 0, state2 = 1, covariate = heatsum) { #simulate 
 seriesbuilder <- function(covariate) {
     firsttrans <- transition(covariate, state1 = 0, state2 = 1)
     secondtrans <- transition(covariate, state1 = 1, state2 = 2)
-    series <- c(firsttrans, secondtrans)
+    series <- rbind(firsttrans, secondtrans)
+    return(series)
 }
 
 #simulate temperature data
@@ -33,5 +34,13 @@ for (i in c(1:10)) {
     print(c("length", length(x[[1]])))
     print(x)
 }
+
+for (i in c(1:10)) {
+    x <- seriesbuilder(heatsum)
+    y <- c(1:10)
+    print(c("length", length(x[[1]])))
+    print(x)
+}
+
 
 
