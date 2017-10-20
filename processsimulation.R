@@ -19,6 +19,13 @@ transition <- function(state1 = 0, state2 = 1, covariate = heatsum) { #simulate 
     return(list(states = x, probabilities = y))
 }
 
+b <- -3
+c <- -1
+
+ptry <- 1/(1 + exp(b * (temp - c)))
+ptrycum <- cumsum(ptry)
+#Scrit <- 242
+
 seriesbuilder <- function(covariate) {
     firsttrans <- transition(covariate, state1 = 0, state2 = 1)
     secondtrans <- transition(covariate, state1 = 1, state2 = 2)
