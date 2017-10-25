@@ -3,11 +3,11 @@
 # Assume fixed probability of transition, bernoulli
 transition <- function(state1 = 0, state2 = 1, covariate = heatsum) { #simulate the transition between two states and record the states.
     x <- c(state1) # initial state
-    pt <- c() # initialize transition probability
+    transition <- 0 # initialize transition y/n
     #initialize while loop
-    transition <- 0 #transition y/n
+    pt <- c() #intialize pt vec
     i <- 1
-    while (ptrans < 1) {
+    while (transition < 1) {
         x <- append(x, state1) #record state1
         p <- 0.01 * covariate[i] #assume threshold heatsum is 100. this is likely to be a slow step and can be calculated outside the loop or function eventually
         pt <- append(pt, p) #record prob
@@ -15,8 +15,9 @@ transition <- function(state1 = 0, state2 = 1, covariate = heatsum) { #simulate 
         i <- i + 1
     }
     x <- append(x, state2) # record transition to state2 #this could be a real slow step
+    pt <- c(NA, pt, 1)
 
-    return(list(states = x, probabilities = y))
+    return(data.frame(states = x, probabilities = pt, heatsum = covariate[1:length(x)]))
 }
 
 b <- -3
@@ -29,7 +30,7 @@ ptrycum <- cumsum(ptry)
 seriesbuilder <- function(covariate) {
     firsttrans <- transition(covariate, state1 = 0, state2 = 1)
     secondtrans <- transition(covariate, state1 = 1, state2 = 2)
-    series <- c(firsttrans, secondtrans)
+    series <- rbind(firsttrans, secondtrans)
     return(series)
 }
 
