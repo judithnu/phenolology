@@ -45,5 +45,13 @@ for (i in c(1:100)) {
     phenofakes <- rbind(phenofakes, indset)
 }
 
+library(ggplot2)
 
+ggplot(phenofakes, aes(x = probabilities, y = states, color = as.factor(ind))) +
+    geom_point() +
+    geom_jitter()
+
+ggplot(phenofakes[which(phenofakes$states < 2),], aes(x = heatsum, y = probabilities)) +
+    geom_jitter() +
+    stat_function(fun=function(x) 1/(1 + exp(-0.1 * (x - 50))))
 
