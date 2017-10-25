@@ -4,12 +4,14 @@
 transition <- function(state1 = 0, state2 = 1, covariate = heatsum) { #simulate the transition between two states and record the states.
     x <- c(state1) # initial state
     transition <- 0 # initialize transition y/n
+    b <- -0.1 # heatsum function parameter
+    c <- 50 # heatsum function parameter
     #initialize while loop
     pt <- c() #intialize pt vec
     i <- 1
     while (transition < 1) {
         x <- append(x, state1) #record state1
-        p <- 0.01 * covariate[i] #assume threshold heatsum is 100. this is likely to be a slow step and can be calculated outside the loop or function eventually
+        p <- 1/(1 + exp(b * (covariate[i] - c))) #function from Chuine's universal
         pt <- append(pt, p) #record prob
         transition <- rbinom(1, size = 1, prob = p) # sample for new transition probability
         i <- i + 1
@@ -20,12 +22,11 @@ transition <- function(state1 = 0, state2 = 1, covariate = heatsum) { #simulate 
     return(data.frame(states = x, probabilities = pt, heatsum = covariate[1:length(x)]))
 }
 
-b <- -3
-c <- -1
+#simulate temperature data
+temp = rep(5, 50) #constant daily temperature of 5 degrees
+heatsum <- cumsum(temp)
 
-ptry <- 1/(1 + exp(b * (temp - c)))
-ptrycum <- cumsum(ptry)
-#Scrit <- 242
+
 
 seriesbuilder <- function(covariate) {
     firsttrans <- transition(covariate, state1 = 0, state2 = 1)
@@ -34,21 +35,14 @@ seriesbuilder <- function(covariate) {
     return(series)
 }
 
-#simulate temperature data
-temp = rep(5, 50) #constant daily temperature of 5 degrees
-heatsum <- cumsum(temp)
 
-for (i in c(1:10)) {
-    x <- seriesbuilder(heatsum)
-    print(c("length", length(x[[1]])))
-    print(x)
-}
 
-for (i in c(1:10)) {
+phenofakes <- data.frame(ind = c(), states = c(), probabilities = c(), heatsum = c())
+for (i in c(1:100)) {
     x <- seriesbuilder(heatsum)
-    y <- c(1:10)
-    print(c("length", length(x[[1]])))
-    print(x)
+    #print(c("length", length(x[[1]])))
+    indset <- cbind(ind = i, x)
+    phenofakes <- rbind(phenofakes, indset)
 }
 
 
