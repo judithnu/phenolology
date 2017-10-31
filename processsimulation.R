@@ -1,25 +1,38 @@
 # Simulate phenology process
 
+# Phenology transition function
+## Logistic function with asymptote at 1, steepness of curve determined by k and midpoint determined by h.
+calc_probability <- function(x, k = steepness, h = midpoint) {
+    1/(1 + exp(-k * (x - h)))
+}
+
 # Assume fixed probability of transition, bernoulli
-transition <- function(state1 = 0, state2 = 1, covariate = heatsum) { #simulate the transition between two states and record the states.
+transition <- function(state1 = 0, state2 = 1, p) { #simulate the transition between two states and record the states. p is the probability of transition. Can be a vector
     x <- c(state1) # initial state
-    transition <- 0 # initialize transition y/n
-    b <- -0.1 # heatsum function parameter
-    c <- 50 # heatsum function parameter
+    do_trans <- 0 # initialize transition y/n
     #initialize while loop
-    pt <- c() #intialize pt vec
     i <- 1
-    while (transition < 1) {
+    while (do_trans < 1) {
         x <- append(x, state1) #record state1
-        p <- 1/(1 + exp(b * (covariate[i] - c))) #function from Chuine's universal
-        pt <- append(pt, p) #record prob
-        transition <- rbinom(1, size = 1, prob = p) # sample for new transition probability
+        do_trans <- rbinom(1, size = 1, prob = p[i]) # sample for new transition probability based on p at timestep i
         i <- i + 1
     }
     x <- append(x, state2) # record transition to state2 #this could be a real slow step
-    pt <- c(NA, pt, 1)
 
-    return(data.frame(states = x, probabilities = pt, heatsum = covariate[1:length(x)]))
+    return(x)
+}
+
+build_series <- function(p1, p2) { #p1 is a vector of transition probabilities for transitioning from 0 to 1, p2 is a vector of transition probabilities for transitioning from 1 to 2
+    state0 <- transition(state1 = 0, state2 = 1, p = p1)
+    state1 <- transition(state1 = 1, state2 = 2, p = p2)
+    len0 <- length(state0)
+    len1 <- length(state1)
+    step = c(1:(len0+len1))
+    firsttrans <- data.frame(trans_prob = p1[1:length(state0)], state = state0)
+    secondtrans <- data.frame(trans_prob = p2[1:length(state1)], state = state1)
+    series <- rbind(firsttrans, secondtrans)
+    series <- cbind(step, series)
+    return(series)
 }
 
 #simulate temperature data
@@ -27,19 +40,12 @@ temp = rep(5, 50) #constant daily temperature of 5 degrees
 heatsum <- cumsum(temp)
 
 
+probs1 <- calc_probability(heatsum, k = 0.1, h = 60)
+probs2 <- calc_probability(heatsum, k = 0.1, h = 120)
 
-seriesbuilder <- function(covariate) {
-    firsttrans <- transition(covariate, state1 = 0, state2 = 1)
-    secondtrans <- transition(covariate, state1 = 1, state2 = 2)
-    series <- rbind(firsttrans, secondtrans)
-    return(series)
-}
-
-
-
-phenofakes <- data.frame(ind = c(), states = c(), probabilities = c(), heatsum = c())
+phenofakes <- data.frame()
 for (i in c(1:100)) {
-    x <- seriesbuilder(heatsum)
+    x <- build_series(probs1, probs2)
     #print(c("length", length(x[[1]])))
     indset <- cbind(ind = i, x)
     phenofakes <- rbind(phenofakes, indset)
@@ -47,11 +53,16 @@ for (i in c(1:100)) {
 
 library(ggplot2)
 
-ggplot(phenofakes, aes(x = probabilities, y = states, color = as.factor(ind))) +
-    geom_point() +
-    geom_jitter()
+# ggplot(phenofakes, aes(x = trans_prob, fill = as.factor(state))) +
+#     geom_histogram(position = "dodge")
 
-ggplot(phenofakes[which(phenofakes$states < 2),], aes(x = heatsum, y = probabilities)) +
-    geom_jitter() +
-    stat_function(fun=function(x) 1/(1 + exp(-0.1 * (x - 50))))
 
+ggplot(phenofakes[which(phenofakes$state < 2),], aes(x = heatsum, y = trans_prob)) +
+    geom_jitter() #+
+   # stat_function(fun=function(x) 1/(1 + exp(-0.1 * (x - 50))))
+
+ggplot(phenofakes, aes(x = heatsum[step], y = state)) +
+    geom_count() +
+    stat_function(fun=function(x) 1/(1 + exp(-0.1 * (x - 60)))) +
+    stat_function(fun=function(x) 1+(1/(1 + exp(-0.1 * (x - 120))))) +
+    ggtitle("Simulation of 100 individuals transitioning between phenological states 0, 1, and 2")
