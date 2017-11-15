@@ -65,4 +65,7 @@ ggplot(phenofakes, aes(x = heatsum[step], y = state)) +
     geom_count() +
     stat_function(fun=function(x) 1/(1 + exp(-0.1 * (x - 60)))) +
     stat_function(fun=function(x) 1+(1/(1 + exp(-0.1 * (x - 120))))) +
-    ggtitle("Simulation of 100 individuals transitioning between phenological states 0, 1, and 2")
+    ggtitle("Simulation of 100 individuals transitioning between phenological states 0, 1, and 2") +
+    ylab("Phenological State") +
+    xlab("Heat Sum (arbitrary units)")+
+    theme_set(theme_gray(base_size = 25))
