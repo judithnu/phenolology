@@ -51,6 +51,9 @@ for (i in c(1:100)) {
     phenofakes <- rbind(phenofakes, indset)
 }
 
+phenofakes$heatsum <- heatsum[phenofakes$step]
+
+
 library(ggplot2)
 
 # ggplot(phenofakes, aes(x = trans_prob, fill = as.factor(state))) +
