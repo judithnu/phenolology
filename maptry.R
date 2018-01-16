@@ -38,6 +38,35 @@ for (i in 1:length(post)) {
     dens(post[[i]])
 }
 
+## logit style
+
+flist <- alist(
+    state ~ dbinom(1,  prob = p),
+    logit(p) <- k * (heatsum - (h + h_ind[ind])),
+    h_ind[ind] ~ dnorm(0, sigma_ind),
+    k ~ dunif(min = .01, max = 0.5),
+    h ~ dnorm(mean = 55, sd = 10),
+    sigma_ind ~ dcauchy(0,1)
+)
+
+m_bin <- map2stan(flist,
+                 data = pf,
+                 iter = 4000,
+                 chains = 2
+)
+
+post <- extract.samples(m_bin)
+total_h_ind <- sapply(1:100, function(ind) post$h + post$h_ind[ , ind])
+round(apply(total_h_ind, 2, mean), 2)
+
+dens(post$k)
+dens(post$h)
+dens(unlist(total_h_ind), show.HPDI = .80)
+
+for (i in 1:length(post)) {
+    dens(post[[i]])
+}
+
 ## slightly more complex version of the model that "sees" individuals
 
 
