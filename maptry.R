@@ -3,6 +3,7 @@
 library(rethinking)
 
 pf <- phenofakes[phenofakes$state < 2, ]
+pf_ic2 <- pf[pf$step %% 2 != 0, ] # interval censoring - every 2 days
 
 ## toy
 
@@ -38,21 +39,21 @@ for (i in 1:length(post)) {
     dens(post[[i]])
 }
 
-## logit style
+## logit style with individual effects
 
 flist <- alist(
     state ~ dbinom(1,  prob = p),
     logit(p) <- k * (heatsum - (h + h_ind[ind])),
     h_ind[ind] ~ dnorm(0, sigma_ind),
-    k ~ dunif(min = .01, max = 0.5),
+    k ~ dnorm(mean = 0.09, sd = 0.1),
     h ~ dnorm(mean = 55, sd = 10),
-    sigma_ind ~ dcauchy(0,1)
+    sigma_ind ~ dnorm(0,5)
 )
 
 m_bin <- map2stan(flist,
-                 data = pf,
-                 iter = 4000,
-                 chains = 2
+                 data = pf_ic2,
+                 iter = 10000,
+                 chains = 5
 )
 
 post <- extract.samples(m_bin)
