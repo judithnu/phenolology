@@ -3,7 +3,7 @@
 library(rethinking)
 
 pf <- phenofakes[phenofakes$state < 2, ]
-pf_ic2 <- pf[pf$step %% 2 != 0, ] # interval censoring - every 2 days
+pf_ic3 <- pf[pf$step %% 3 == 0, ] # interval censoring - every 3 days
 
 ## toy
 
@@ -45,15 +45,15 @@ flist <- alist(
     state ~ dbinom(1,  prob = p),
     logit(p) <- k * (heatsum - (h + h_ind[ind])),
     h_ind[ind] ~ dnorm(0, sigma_ind),
-    k ~ dnorm(mean = 0.09, sd = 0.1),
+    k ~ dnorm(mean = -.21, sd = 0.1),
     h ~ dnorm(mean = 55, sd = 10),
     sigma_ind ~ dnorm(0,5)
 )
 
 m_bin <- map2stan(flist,
-                 data = pf_ic2,
-                 iter = 10000,
-                 chains = 5
+                 data = pf,
+                 iter = 5000,
+                 chains = 4
 )
 
 post <- extract.samples(m_bin)
@@ -64,13 +64,65 @@ dens(post$k)
 dens(post$h)
 dens(unlist(total_h_ind), show.HPDI = .80)
 
-for (i in 1:length(post)) {
-    dens(post[[i]])
+probs <- logistic(.45 * (clim$Heatsum - 60))
+plot(clim$Heatsum, probs, xlim = c(30,100))
+
+## logit style with individual effects for both h and k
+
+flist <- alist(
+    state ~ dbinom(1,  prob = p),
+    logit(p) <- (k + k_ind[ind]) * (heatsum - (h + h_ind[ind])),
+    h_ind[ind] ~ dnorm(0, sigma_ind),
+    k_ind[ind] ~ dnorm(0, sigmak_ind),
+    k ~ dnorm(mean = 0.1, sd = 0.1),
+    h ~ dnorm(mean = 55, sd = 10),
+    sigma_ind ~ dnorm(0,5),
+    sigmak_ind ~ dnorm(0, .1)
+)
+
+m_bin <- map2stan(flist,
+                  data = pf_ic3,
+                  iter = 4000,
+                  chains = 3
+)
+
+post <- extract.samples(m_bin)
+total_h_ind <- sapply(1:100, function(ind) post$h + post$h_ind[ , ind])
+total_k_ind <- sapply(1:100, function(ind) post$k + post$k_ind[ , ind])
+h_sum <- round(apply(total_h_ind, 2, mean), 2)
+k_sum <- round(apply(total_k_ind, 2, mean), 2)
+
+dens(post$k)
+dens(post$h)
+dens(unlist(total_h_ind), show.HPDI = .80)
+title("Posterior for h with 80% HDPI")
+abline(v = 60, col = "red")
+dens(unlist(total_k_ind), show.HPDI = .80)
+title("Posterior for k with 80% HDPI")
+abline(v = .1, col = "red")
+
+HPDI(post$k, prob = .8)
+HPDI(post$h)
+probs <- sapply(unique(pf$heatsum), function(x) logistic(k_sum * (x - h_sum)))
+pframe <- data.frame(probs)
+colnames(pframe) <- unique(pf$heatsum)
+pframe$ind <- c(1:100)
+
+library(tidyr)
+ppframe <- gather(pframe, key = heatsum, value = prob, -ind)
+#probs <- logistic(.45 * (clim$Heatsum - 60))
+#plot(clim$Heatsum, probs, xlim = c(30,100))
+
+curve(1/(1 + exp(-0.1 * (x - 60))), from = 0, to = 120, ylab = "p", xlab = "x", col = "red")
+for (i in 1:100) {
+    curve(1/(1 + exp(-k_sum[i] * (x - h_sum[i]))), add = TRUE, lty = 3)
 }
 
-## slightly more complex version of the model that "sees" individuals
+ggplot(ppframe, aes(x = heatsum, y = prob, color = ind)) +
+    geom_point() +
+    stat_function(fun=function(x) 1/(1 + exp(-k_sum * (x - h_sum))))
 
-
+plot(unique(pf$heatsum), pframe[,1], xlim = c(0, 120))
 
 # #attempt to represent model as logit
 # flist <- alist(

@@ -72,3 +72,7 @@ ggplot(phenofakes, aes(x = heatsum[step], y = state)) +
     ylab("Phenological State") +
     xlab("Heat Sum (arbitrary units)")+
     theme_set(theme_gray(base_size = 25))
+
+curve(1/(1 + exp(-0.1 * (x - 60))), from = 0, to = 120, ylab = "p", xlab = "x")
+curve(1/(1 + exp(-0.5 * (x - 60))), from = 0, to = 120, add = TRUE)
+abline(v = 60, lty = 2)
