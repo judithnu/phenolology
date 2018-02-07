@@ -1,6 +1,14 @@
 #map experiment
 
 library(rethinking)
+library(dplyr)
+
+#data variants
+pf <- phenofakes[phenofakes$state < 2 & phenofakes$heatsum < 120, ]
+pf_freq <- pf %>%
+    group_by(heatsum) %>%
+    summarize(flower_freq = rnorm(n = 1, mean = sum(state)/100, sd = 0.05)) %>%
+    filter(flower_freq > 0, flower_freq < 1)
 
 pf <- phenofakes[phenofakes$state < 2, ]
 pf_ic3 <- pf[pf$step %% 3 == 0, ] # interval censoring - every 3 days
