@@ -1,5 +1,3 @@
-#map experiment
-
 library(rethinking)
 library(dplyr)
 
@@ -10,8 +8,18 @@ pf_freq <- pf %>%
     summarize(flower_freq = rnorm(n = 1, mean = sum(state)/100, sd = 0.05)) %>%
     filter(flower_freq > 0, flower_freq < 1)
 
-pf <- phenofakes[phenofakes$state < 2, ]
 pf_ic3 <- pf[pf$step %% 3 == 0, ] # interval censoring - every 3 days
+
+# get pre and post transition only
+
+#basic logit
+logit <- glm(flower_freq ~ k * (heatsum - h), family = gaussian(link = "logit"), data = pf_freq)
+
+#map experiment
+
+
+
+
 
 ## toy
 
