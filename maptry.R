@@ -12,8 +12,22 @@ pf_ic3 <- pf[pf$step %% 3 == 0, ] # interval censoring - every 3 days
 
 # get pre and post transition only
 
+pf_temp <- pf %>%
+    group_by(ind, state) %>%
+    mutate(max_index = max(step)) %>%
+    mutate(min_index = min(step))
+
+pre <- pf_temp %>%
+    filter(state == 0, step == max_index)
+
+active <- pf_temp %>%
+    filter(state ==1, step == min_index)
+
+pf_trans <- rbind(pre, active) %>%
+    select(-max_index, - min_index)
+
 #basic logit
-logit <- glm(flower_freq ~ k * (heatsum - h), family = gaussian(link = "logit"), data = pf_freq)
+logit <- glm(flower_freq ~ heatsum, family = gaussian(link = "logit"), data = pf_freq)
 
 #map experiment
 
