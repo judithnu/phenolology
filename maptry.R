@@ -128,6 +128,7 @@ for (i in 1:length(post)) {
     dens(post[[i]])
 }
 
+
 ## logit style with individual effects
 
 flist <- alist(
