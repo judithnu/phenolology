@@ -1,5 +1,8 @@
 library(rethinking)
 library(dplyr)
+library(lme4)
+library(scales)
+library(nlme)
 
 #data variants
 pf <- phenofakes[phenofakes$state < 2 & phenofakes$heatsum < 120, ]
@@ -26,8 +29,50 @@ active <- pf_temp %>%
 pf_trans <- rbind(pre, active) %>%
     select(-max_index, - min_index)
 
-#basic logit
-logit <- glm(flower_freq ~ heatsum, family = gaussian(link = "logit"), data = pf_freq)
+#basic logit model
+
+pred_plotter <- function(modeldat, model) { #function to plot data and model predictions from logit
+    newdat <- data.frame(heatsum = seq(min(modeldat$heatsum)-100, max(modeldat$heatsum)+100), len = 200)
+    newdat$state <- predict(model, newdata = newdat, type = "response")
+    plot(state~heatsum, data = modeldat, col = "red4")
+    lines(state~heatsum, data = newdat, col = "red", lwd = 2)
+    curve(1/(1 + exp(-.1 * (x - 60))), add = TRUE, col = "green")
+    curve(1/(1 + exp(-.15*x + 8.5)), add = TRUE)
+    #lines(arm::invlogit(state)~heatsum, data = newdat)
+    title("basic logit model \n red = model curve, green = source curve")
+}
+
+logit <- glm(state ~ heatsum, family = binomial(link = 'logit'), data = pf)
+pred_plotter(pf, logit)
+
+# mixed model with random individual effects
+
+pf$indfac <- as.factor(pf$ind)
+pf$heatsum_scaled <- pf$heatsum/100
+
+
+scaled <- scale_params(par = c(.1, 60)) #scaled params
+
+logit2 <- glmer(state ~ heatsum_scaled + (1|indfac), family = binomial, data = pf) #mixed effect model with random individual effect
+indcoefs <- fitted(logit2, pf, type = 'response')
+
+
+pred_plotter2 <- function(modeldat, model, individualeffects) { #function to plot data and model predictions for glmer model
+    #newdat <- data.frame(heatsum_scaled = seq(min(modeldat$heatsum_scaled), max(modeldat$heatsum_scaled)), len = 100)
+    #newdat$state <- predict(model, newdata = newdat, type = "response")
+    plot(jitter(state, amount = 0.02) ~ heatsum_scaled, data = modeldat, col = "red4")
+    #lines(state~heatsum_scaled, data = newdat, col = "green", lwd = 2)
+    # for (i in 1:length(indcoefs)) {
+    #     curve(arm::invlogit(cbind(1,x) %*% fixef(model) + individualeffects[i]), add = TRUE, col = alpha("black", 0.1))
+    # }
+    curve(arm::invlogit(cbind(1,x) %*% fixef(model)), add = TRUE, col = "red")
+    curve(1/(1 + exp(-.1*100 * (x - 60/100))), add = TRUE, col = "green")
+    title("binomial mixed model")
+}
+
+pred_plotter2(pf, logit2, individualeffects = indcoefs)
+
+calc_probability2 <- function(x, k = steepness, h = midpoint) {
 
 #map experiment
 
