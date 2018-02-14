@@ -80,21 +80,37 @@ df <- intermed %>%
 rdf <- rintermed %>%
     filter(Phenophase_Simp < 2)
 
+## males logit
+logitm <- glm(Phenophase_Simp ~ Heatsum, family = binomial(link = 'logit'), data = df)
+
+pred_plotter <- function(modeldat, model) { #function to plot data and model predictions from logit
+    #newdat <- data.frame(Heatsum = seq(min(modeldat$Heatsum), max(modeldat$Heatsum)), len = 200)
+    #newdat$Phenophase_Simp <- predict(model, newdata = newdat, type = "response")
+    plot(Phenophase_Simp ~ Heatsum, data = modeldat, col = "red4")
+    #lines(Phenophase_Simp ~ Heatsum, data = newdat, col = "red", lwd = 2)
+    curve(1/(1 + exp(-(model$coefficients[2]*x + model$coefficients[1]))), add = TRUE, col = "green")
+    curve(1/(1 + exp(-0.0926 * (x - 187.174))), col = "red", add = TRUE)
+    #lines(arm::invlogit(state)~heatsum, data = newdat)
+    title("Prince George 1997 Males \n red = stan binomial, green = glm logit")
+}
+
+pred_plotter(df, logitm)
+
 #males
+
+# no individual effects
 flist <- alist(
     Phenophase_Simp ~ dbinom(1,  prob = p),
-    logit(p) <- k * (Heatsum - (h + h_ind[Tree])),
-    h_ind[Tree] ~ dnorm(0, sigma_ind),
-    k ~ dnorm(mean = 0, sd = 0.25),
-    h ~ dnorm(mean = 150, sd = 25),
-    sigma_ind ~ dnorm(0,10)
+    p <- 1/(1 + exp(-k * (Heatsum - h))),
+    k ~ dunif(min = 0, max = 1),
+    h ~ dnorm(mean = 150, sd = 50)
 )
 
 m_bin <- map2stan(flist,
                   data = df,
-                  iter = 1000,
-                  chains = 1,
-                  start = list(h = 150, k = -0.1, sigma_ind = 10)
+                  iter = 4000,
+                  chains = 4,
+                  start = list(h = 200, k = 0.1)
 )
 
 
@@ -104,6 +120,8 @@ round(apply(total_h_ind, 2, mean), 2)
 
 dens(post$k)
 dens(post$h)
+
+
 dens(unlist(total_h_ind), show.HPDI = .80)
 
 for (i in 1:length(post)) {
@@ -114,7 +132,8 @@ ggplot(df, aes(x = Heatsum, y = as.factor(Phenophase_Simp))) +
     geom_count() +
     xlab("Heatsum (Celsius)") +
     ylab("Shedding Pollen?") +
-    ggtitle("Pollen shed vs heatsum \n 1997 at Prince George")
+    ggtitle("Pollen shed vs heatsum \n 1997 at Prince George") +
+
 
 #females
 
