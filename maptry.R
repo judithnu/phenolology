@@ -44,15 +44,20 @@ pred_plotter(pf, logit)
 
 # mixed model with random individual effects
 
-pf$indfac <- as.factor(pf$ind)
-pf$heatsum_scaled <- pf$heatsum/100
+pf_scaled <- pf
+pf_scaled$indfac <- as.factor(pf$ind)
+pf_scaled$heatsum <- pf$heatsum/100
 
+logit2 <- glmer(state ~ heatsum + (1|indfac), family = binomial, data = pf_scaled) #mixed effect model with random individual effect
 
-scaled <- scale_params(par = c(.1, 60)) #scaled params
-
-logit2 <- glmer(state ~ heatsum_scaled + (1|indfac), family = binomial, data = pf) #mixed effect model with random individual effect
-indcoefs <- fitted(logit2, pf, type = 'response')
-
+#plopped her for example to help me work on pred_plotter2 or unify
+pred_plotter <- function(modeldat, model) { #function to plot data and model predictions from logit
+    plot(state~heatsum, data = modeldat)
+    points(modeldat$heatsum, fitted(model), col = "red", lwd = 2)
+    curve(calc_probability(x, h = 60, k = 0.1), add = TRUE, col = "green")
+    #lines(arm::invlogit(state)~heatsum, data = newdat)
+    title("basic logit model \n red = model curve, green = source curve")
+}
 
 pred_plotter2 <- function(modeldat, model, individualeffects) { #function to plot data and model predictions for glmer model
     #newdat <- data.frame(heatsum_scaled = seq(min(modeldat$heatsum_scaled), max(modeldat$heatsum_scaled)), len = 100)
@@ -68,6 +73,7 @@ pred_plotter2 <- function(modeldat, model, individualeffects) { #function to plo
 }
 
 pred_plotter2(pf, logit2, individualeffects = indcoefs)
+pred_plotter(pf, logit2, scale_param = 100)
 
 calc_probability2 <- function(x, k = steepness, h = midpoint) {
     1/(1 + exp(-k * (x - h + hi)))
