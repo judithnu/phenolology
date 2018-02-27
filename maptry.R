@@ -32,12 +32,9 @@ pf_trans <- rbind(pre, active) %>%
 #basic logit model
 
 pred_plotter <- function(modeldat, model) { #function to plot data and model predictions from logit
-    newdat <- data.frame(heatsum = seq(min(modeldat$heatsum)-100, max(modeldat$heatsum)+100), len = 200)
-    newdat$state <- predict(model, newdata = newdat, type = "response")
-    plot(state~heatsum, data = modeldat, col = "red4")
-    lines(state~heatsum, data = newdat, col = "red", lwd = 2)
-    curve(1/(1 + exp(-.1 * (x - 60))), add = TRUE, col = "green")
-    curve(1/(1 + exp(-.15*x + 8.5)), add = TRUE)
+    plot(state~heatsum, data = modeldat)
+    points(modeldat$heatsum, fitted(model), col = "red", lwd = 2)
+    curve(calc_probability(x, h = 60, k = 0.1), add = TRUE, col = "green")
     #lines(arm::invlogit(state)~heatsum, data = newdat)
     title("basic logit model \n red = model curve, green = source curve")
 }
