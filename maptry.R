@@ -1,8 +1,11 @@
+# Setup -------------------------------------------------------------------
 library(rethinking)
 library(dplyr)
 library(lme4)
 library(scales)
 library(nlme)
+
+# Simulated data variants -------------------------------------------------
 
 #data variants
 pf <- phenofakes[phenofakes$state < 2 & phenofakes$heatsum < 120, ]
@@ -28,6 +31,10 @@ active <- pf_temp %>%
 
 pf_trans <- rbind(pre, active) %>%
     select(-max_index, - min_index)
+
+
+# Model variants ----------------------------------------------------------
+
 
 #basic logit model
 
