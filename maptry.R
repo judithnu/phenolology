@@ -41,7 +41,7 @@ pf_trans <- rbind(pre, active) %>%
 pred_plotter <- function(modeldat, model) { #function to plot data and model predictions from logit
     plot(state~heatsum, data = modeldat)
     points(modeldat$heatsum, fitted(model), col = "red", lwd = 2)
-    curve(calc_probability(x, h = 60, k = 0.1), add = TRUE, col = "green")
+    curve(calc_probability(x, h = 60, k = 0.1, i = 0), add = TRUE, col = "green")
     #lines(arm::invlogit(state)~heatsum, data = newdat)
     title("basic logit model \n red = model curve, green = source curve")
 }
@@ -55,7 +55,10 @@ pf_scaled <- pf
 pf_scaled$indfac <- as.factor(pf$ind)
 pf_scaled$heatsum <- pf$heatsum/100
 
-logit2 <- glmer(state ~ heatsum + (1|indfac), family = binomial, data = pf_scaled) #mixed effect model with random individual effect
+pf_scaled_one <- filter(pf_scaled, year == 1)
+
+logit2 <- glmer(state ~ heatsum + (1|indfac) + (1|year), family = binomial, data = pf_scaled) #mixed effect model with random individual effect
+logit2_one <- glmer(state ~ heatsum + (1|indfac), family = binomial, data = pf_scaled_one)#mixed effect model with random individual effects but only one individual
 
 #plopped her for example to help me work on pred_plotter2 or unify
 pred_plotter <- function(modeldat, model) { #function to plot data and model predictions from logit
@@ -66,21 +69,24 @@ pred_plotter <- function(modeldat, model) { #function to plot data and model pre
     title("basic logit model \n red = model curve, green = source curve")
 }
 
-pred_plotter2 <- function(modeldat, model, individualeffects) { #function to plot data and model predictions for glmer model
+pred_plotter2 <- function(modeldat, model, model2, individual_effects) { #function to plot data and model predictions for glmer model
     #newdat <- data.frame(heatsum_scaled = seq(min(modeldat$heatsum_scaled), max(modeldat$heatsum_scaled)), len = 100)
     #newdat$state <- predict(model, newdata = newdat, type = "response")
-    plot(jitter(state, amount = 0.02) ~ heatsum_scaled, data = modeldat, col = "red4")
+    plot(jitter(state, amount = 0.02) ~ heatsum, data = modeldat, col = "red4")
     #lines(state~heatsum_scaled, data = newdat, col = "green", lwd = 2)
     # for (i in 1:length(indcoefs)) {
     #     curve(arm::invlogit(cbind(1,x) %*% fixef(model) + individualeffects[i]), add = TRUE, col = alpha("black", 0.1))
     # }
     curve(arm::invlogit(cbind(1,x) %*% fixef(model)), add = TRUE, col = "red")
-    curve(1/(1 + exp(-.1*100 * (x - 60/100))), add = TRUE, col = "green")
+    curve(arm::invlogit(cbind(1,x) %*% fixef(model2)), add = TRUE, col = "black")
+    for (i in 1:length(individual_effects)) {
+    curve(1/(1 + exp(-(.1+individual_effects[i])*100 * (x - 60/100))), add = TRUE, col = "green")
+    }
     title("binomial mixed model")
 }
 
-pred_plotter2(pf, logit2, individualeffects = indcoefs)
-pred_plotter(pf, logit2, scale_param = 100)
+pred_plotter2(pf_scaled, logit2, logit2_one, individual_effects = ind_effect)
+#pred_plotter(pf, logit2, scale_param = 100)
 
 calc_probability2 <- function(x, k = steepness, h = midpoint) {
     1/(1 + exp(-k * (x - h + hi)))
