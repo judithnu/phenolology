@@ -1,5 +1,5 @@
 # Simulate phenology process
-
+library(dplyr)
 # Phenology transition function
 ## Logistic function with asymptote at 1, steepness of curve determined by k and midpoint determined by h.
 calc_probability <- function(x, k = steepness, h = midpoint, i = individual_effect) { # a logistic function parameterized to estimate steepness and transition points with individual effects

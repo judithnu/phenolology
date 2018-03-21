@@ -36,7 +36,8 @@ pf_trans <- rbind(pre, active) %>%
 # Model variants ----------------------------------------------------------
 
 
-#basic logit model
+# Basic logit model -------------------------------------------------------
+
 
 pred_plotter <- function(modeldat, model) { #function to plot data and model predictions from logit
     plot(state~heatsum, data = modeldat)
@@ -49,7 +50,8 @@ pred_plotter <- function(modeldat, model) { #function to plot data and model pre
 logit <- glm(state ~ heatsum, family = binomial(link = 'logit'), data = pf)
 pred_plotter(pf, logit)
 
-# mixed model with random individual effects
+# Mixed model with individual and year effects ------------------------------
+
 
 pf_scaled <- pf
 pf_scaled$indfac <- as.factor(pf$ind)
@@ -87,26 +89,12 @@ pred_plotter2 <- function(modeldat, model, model2, individual_effects) { #functi
 
 pred_plotter2(pf_scaled, logit2, logit2_one, individual_effects = ind_effect)
 #pred_plotter(pf, logit2, scale_param = 100)
-
-calc_probability2 <- function(x, k = steepness, h = midpoint) {
-    1/(1 + exp(-k * (x - h + hi)))
-}
-
-pf_grouped <- groupedData(state ~ heatsum | ind, pf_trans)
-
-logit3 <- nlme(state ~ 1/(1 + exp(-k * (heatsum - h))),
-               data = pf_grouped,
-               fixed = h + k ~ 1,
-               random = k ~ 1,
-               start = c(k = .1, h = 60))
-
-                   nlme(lgcopy ~ logexp2(p1,b1,p2,b2,day),
-                        fixed = p1+b1+p2+b2 ~1,random = p1+b1+p2+b2 ~1,
-                        data =aids.dat,start=c(start))#multilevel
-
 #map experiment
 
 
+
+
+# Toy Hierarchical Bayes --------------------------------------------------
 
 
 
