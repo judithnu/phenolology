@@ -141,13 +141,13 @@ flist <- alist(
     h_ind[ind] ~ dnorm(0, sigma_ind),
     k ~ dnorm(mean = -.1, sd = 0.1),
     h ~ dnorm(mean = 55, sd = 20),
-    sigma_ind ~ dnorm(0,5),
+    sigma_ind ~ dnorm(0,5)
 )
 
 m_bin <- map2stan(flist,
                  data = pf,
-                 iter = 1500,
-                 chains = 1
+                 iter = 10000,
+                 chains = 5
 )
 
 post <- extract.samples(m_bin)
