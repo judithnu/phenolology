@@ -3,7 +3,7 @@ library(rethinking)
 library(dplyr)
 library(lme4)
 library(scales)
-library(nlme)
+#library(nlme)
 
 # Simulated data variants -------------------------------------------------
 
@@ -34,11 +34,6 @@ pf_trans <- rbind(pre, active) %>%
 
 
 # Model variants ----------------------------------------------------------
-
-
-# Basic logit model -------------------------------------------------------
-
-
 pred_plotter <- function(modeldat, model) { #function to plot data and model predictions from logit
     plot(state~heatsum, data = modeldat)
     points(modeldat$heatsum, fitted(model), col = "red", lwd = 2)
@@ -47,8 +42,15 @@ pred_plotter <- function(modeldat, model) { #function to plot data and model pre
     title("basic logit model \n red = model curve, green = source curve")
 }
 
+
+
+# Basic logit model -------------------------------------------------------
+
+
+
 logit <- glm(state ~ heatsum, family = binomial(link = 'logit'), data = pf)
 pred_plotter(pf, logit)
+
 
 # Mixed model with individual and year effects ------------------------------
 
@@ -94,6 +96,7 @@ pred_plotter2(pf_scaled, logit2, logit2_one, individual_effects = ind_effect)
 
 
 
+
 # Toy Hierarchical Bayes --------------------------------------------------
 
 
@@ -112,6 +115,8 @@ for (i in 1:length(post)) {
     dens(post[,i])
 }
 
+
+# Bayesian version of the model with no hierarchy --------------------------------------------------
 ## very simple version of the model. bad because it doesn't "see" individuals
 flist <- alist(
     state ~ dbinom(1,  prob = p),
