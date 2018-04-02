@@ -1,4 +1,7 @@
 # Setup -------------------------------------------------------------------
+Sys.setenv(MAKEFLAGS="-j40")
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 library(rethinking)
 library(dplyr)
 library(lme4)
@@ -155,7 +158,7 @@ m_bin <- map2stan(flist,
                   warmup = 2000,
                   chains = 5,
                   start = list(k = .2, h = 65),
-                  cores = 6
+                  cores = parallel::detectCores()
 )
 
 post <- extract.samples(m_bin)
