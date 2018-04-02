@@ -137,22 +137,25 @@ for (i in 1:length(post)) {
     dens(post[[i]])
 }
 
-
+# Bayesian version of the model with individual effects for k-----------------------------------
 ## logit style with individual effects
 
 flist <- alist(
     state ~ dbinom(1,  prob = p),
-    logit(p) <- k * (heatsum - (h + h_ind[ind])),
-    h_ind[ind] ~ dnorm(0, sigma_ind),
+    logit(p) <- (k + k_ind) * (heatsum - h),
+    k_ind[ind] ~ dnorm(0, sigma_ind),
     k ~ dnorm(mean = -.1, sd = 0.1),
     h ~ dnorm(mean = 55, sd = 20),
     sigma_ind ~ dnorm(0,5)
 )
 
 m_bin <- map2stan(flist,
-                 data = pf,
-                 iter = 10000,
-                 chains = 5
+                  data = pf,
+                  iter = 10000,
+                  warmup = 2000,
+                  chains = 5,
+                  start = list(k = .2, h = 65),
+                  cores = 6
 )
 
 post <- extract.samples(m_bin)
@@ -166,17 +169,18 @@ dens(unlist(total_h_ind), show.HPDI = .80)
 probs <- logistic(.45 * (clim$Heatsum - 60))
 plot(clim$Heatsum, probs, xlim = c(30,100))
 
+# Bayesian version of the model with individual effects for h and k-------------------------------
 ## logit style with individual effects for both h and k
 
 flist <- alist(
     state ~ dbinom(1,  prob = p),
     logit(p) <- (k + k_ind[ind]) * (heatsum - (h + h_ind[ind])),
-    h_ind[ind] ~ dnorm(0, sigma_ind),
+    h_ind[ind] ~ dnorm(0, sigmah_ind),
     k_ind[ind] ~ dnorm(0, sigmak_ind),
     k ~ dnorm(mean = 0.1, sd = 0.1),
     h ~ dnorm(mean = 55, sd = 10),
-    sigma_ind ~ dnorm(0,5),
-    sigmak_ind ~ dnorm(0, .1)
+    sigmah_ind ~ dunif(0,5),
+    sigmak_ind ~ dunif(0, .1)
 )
 
 m_bin <- map2stan(flist,
