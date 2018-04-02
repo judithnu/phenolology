@@ -187,9 +187,12 @@ flist <- alist(
 )
 
 m_bin <- map2stan(flist,
-                  data = pf_ic3,
-                  iter = 4000,
-                  chains = 3
+                  data = pf,
+                  iter = 1e4,
+                  warmup = 2e3,
+                  chains = 5,
+                  start = list(k = .12, h = 65),
+                  cores = parallel::detectCores()
 )
 
 post <- extract.samples(m_bin)

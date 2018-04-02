@@ -70,6 +70,7 @@ phenofakes <- do.call(rbind, phenofakes)
 
 
 library(ggplot2)
+library(dplyr)
 
 # ggplot(phenofakes, aes(x = trans_prob, fill = as.factor(state))) +
 #     geom_histogram(position = "dodge")
