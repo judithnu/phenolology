@@ -146,18 +146,18 @@ for (i in 1:length(post)) {
 flist <- alist(
     state ~ dbinom(1,  prob = p),
     logit(p) <- (k + k_ind) * (heatsum - h),
-    k_ind[ind] ~ dnorm(0, sigma_ind),
+    k_ind[ind] ~ dnorm(0, sigmak_ind),
     k ~ dnorm(mean = -.1, sd = 0.1),
-    h ~ dnorm(mean = 55, sd = 20),
-    sigma_ind ~ dnorm(0,5)
+    h ~ dnorm(mean = 55, sd = 10),
+    sigmak_ind ~ dunif(0, .1)
 )
 
 m_bin <- map2stan(flist,
                   data = pf,
-                  iter = 10000,
-                  warmup = 2000,
+                  iter = 1e4,
+                  warmup = 2e3,
                   chains = 5,
-                  start = list(k = .2, h = 65),
+                  start = list(k = .12, h = 65),
                   cores = parallel::detectCores()
 )
 
@@ -203,6 +203,10 @@ k_sum <- round(apply(total_k_ind, 2, mean), 2)
 
 dens(post$k)
 dens(post$h)
+dens(total_h_ind)
+dens(post$h_ind)
+dens(post$k_ind)
+
 dens(unlist(total_h_ind), show.HPDI = .80)
 title("Posterior for h with 80% HDPI")
 abline(v = 60, col = "red")
