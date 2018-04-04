@@ -133,8 +133,33 @@ ggplot(df, aes(x = Heatsum, y = as.factor(Phenophase_Simp))) +
     geom_count() +
     xlab("Heatsum (Celsius)") +
     ylab("Shedding Pollen?") +
-    ggtitle("Pollen shed vs heatsum \n 1997 at Prince George") +
+    ggtitle("Pollen shed vs heatsum \n 1997 at Prince George")
+#individual effects for h and k
 
+## calculate some priors
+
+priors <- filter(df, DayofYear %in% unique(First_Occurence)) %>%
+    summarise(mean(Heatsum), sd(Heatsum))
+
+flist <- alist(
+    state ~ dbinom(1,  prob = p),
+    logit(p) <- (k + k_ind[ind]) * (heatsum - (h + h_ind[ind])),
+    h_ind[ind] ~ dnorm(0, sigmah_ind),
+    k_ind[ind] ~ dnorm(0, sigmak_ind),
+    k ~ dnorm(mean = 0.1, sd = 0.3),
+    h ~ dnorm(mean = priors[1], sd = priors[2]),
+    sigmah_ind ~ dunif(0,50),
+    sigmak_ind ~ dunif(0,.1)
+)
+
+m_bin <- map2stan(flist,
+                  data = pf,
+                  iter = 1e4,
+                  warmup = 2e3,
+                  chains = 5,
+                  start = list(k = .12, h = priors[1]),
+                  cores = parallel::detectCores()
+)
 
 #females
 
