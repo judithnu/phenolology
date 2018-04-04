@@ -6,14 +6,14 @@ rclim <- read.csv('/home/sus/Documents/research_phd/data/Climate/formatted/Princ
 
 # phenology data: one year, male
 
-pdat <- subset(rawdat, Year == 1997 & Sex == "MALE")
+pdat <- subset(rawdat, Sex == "MALE")
 pdat$DayofYear <- lubridate::yday(pdat$Date)
 
 rdat <- subset(rdat, Year == 1997 & Sex == "FEMALE")
 rdat$DayofYear <- lubridate::yday(rdat$Date)
 
 # climate data
-clim <- subset(rclim, Year == 1997)
+clim <- subset(rclim, Year %in% unique(pdat$Year))
 
 #calculate amount of heat per day assume no heating below 5 degrees and linear heating starting at 5
 no_heat <- clim %>%
@@ -25,15 +25,16 @@ heat <- clim %>%
     mutate(Heat = MeanTempC - 5)
 
 clim <- rbind(no_heat, heat) %>%
-    arrange(DayofYear) %>%
+    arrange(Year, DayofYear) %>%
+    group_by(Year) %>%
     mutate(Heatsum = cumsum(Heat)) %>% # add heatsum
-    select(DayofYear, Heat, Heatsum)
+    select(Year, DayofYear, Heat, Heatsum)
 
 # combine climate and phenology data
 
 df <- merge(pdat, clim) %>%
-    select(DayofYear, Clone, Tree, Phenophase, Heat, Heatsum) %>%
-    arrange(Tree, DayofYear) %>%
+    select(Year, DayofYear, Clone, Tree, Phenophase, Heat, Heatsum) %>%
+    arrange(Year, Tree, DayofYear) %>%
     filter(!Phenophase==0)# drop unexplained 0s
 
 rdf <- merge(rdat, clim) %>%
@@ -43,7 +44,7 @@ rdf <- merge(rdat, clim) %>%
 # transform phenology data into 1 (not started), 2 (active), (finished)
 
 
-by_tree <- group_by(df, Tree)
+by_tree <- group_by(df, Tree, Year)
 rby_tree <- group_by(rdf, Tree)
 
 fo <- by_tree %>%
