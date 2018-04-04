@@ -1,8 +1,12 @@
 # try logit model with subset of real data
 library(dplyr)
 
-rawdat <- read.csv('/home/sus/Documents/research_phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
-rclim <- read.csv('/home/sus/Documents/research_phd/data/Climate/formatted/PrinceGeorgeSTP.csv', header = TRUE)
+
+# Data --------------------------------------------------------------------
+
+
+rawdat <- read.csv('~/phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
+rclim <- read.csv('~/phd/data/Climate/formatted/PrinceGeorgeSTP.csv', header = TRUE)
 
 # phenology data: one year, male
 
@@ -81,6 +85,10 @@ df <- intermed %>%
 rdf <- rintermed %>%
     filter(Phenophase_Simp < 2)
 
+
+# Logit model -------------------------------------------------------------
+
+
 ## males logit
 logitm <- glm(Phenophase_Simp ~ Heatsum, family = binomial(link = 'logit'), data = df)
 
@@ -96,6 +104,10 @@ pred_plotter <- function(modeldat, model) { #function to plot data and model pre
 }
 
 pred_plotter(df, logitm)
+
+
+# Bayesian models ---------------------------------------------------------
+
 
 #males
 
@@ -134,6 +146,11 @@ ggplot(df, aes(x = Heatsum, y = as.factor(Phenophase_Simp))) +
     xlab("Heatsum (Celsius)") +
     ylab("Shedding Pollen?") +
     ggtitle("Pollen shed vs heatsum \n 1997 at Prince George")
+
+
+# With individual effects for h and k -------------------------------------
+
+
 #individual effects for h and k
 
 ## calculate some priors
@@ -141,25 +158,40 @@ ggplot(df, aes(x = Heatsum, y = as.factor(Phenophase_Simp))) +
 priors <- filter(df, DayofYear %in% unique(First_Occurence)) %>%
     summarise(mean(Heatsum), sd(Heatsum))
 
+df$Clone <- as.factor(df$Clone)
 flist <- alist(
-    state ~ dbinom(1,  prob = p),
-    logit(p) <- (k + k_ind[ind]) * (heatsum - (h + h_ind[ind])),
-    h_ind[ind] ~ dnorm(0, sigmah_ind),
-    k_ind[ind] ~ dnorm(0, sigmak_ind),
+    Phenophase_Simp ~ dbinom(1,  prob = p),
+    logit(p) <- (k + k_ind[Clone]) * (Heatsum - (h + h_ind[Clone])),
+    h_ind[Clone] ~ dnorm(0, sigmah_ind),
+    k_ind[Clone] ~ dnorm(0, sigmak_ind),
     k ~ dnorm(mean = 0.1, sd = 0.3),
-    h ~ dnorm(mean = priors[1], sd = priors[2]),
+    h ~ dnorm(mean = 248, sd = 35),
     sigmah_ind ~ dunif(0,50),
     sigmak_ind ~ dunif(0,.1)
 )
 
 m_bin <- map2stan(flist,
-                  data = pf,
+                  data = df,
                   iter = 1e4,
                   warmup = 2e3,
                   chains = 5,
-                  start = list(k = .12, h = priors[1]),
+                  start = list(k = .12, h = 250),
                   cores = parallel::detectCores()
 )
+
+post <- extract.samples(m_bin)
+
+#investigate warnings
+pairs(m_bin)
+dens(post$k)
+dens(post$h)
+dens(post$h_ind)
+dens(post$k_ind)
+dens(post$sigmah_ind)
+dens(post$sigmak_ind)
+
+Females -----------------------------------------------------------------
+
 
 #females
 
