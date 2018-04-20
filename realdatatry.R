@@ -153,7 +153,7 @@ flist <- alist(
 )
 
 m_bin <- map2stan(flist,
-                  data = pf,
+                  data = df,
                   iter = 1e4,
                   warmup = 2e3,
                   chains = 5,
