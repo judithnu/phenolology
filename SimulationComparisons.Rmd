@@ -1,0 +1,36 @@
+---
+title: "Simulation comparisons"
+author: "Susannah Tysor"
+date: "April 19, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Purpose
+
+This document describes simulations of phenology data, models used to analyze that data, results of those models, and comparisons of the model results.
+
+## Simulations
+
+Data is simulated using according to an underlying logistic model where the probability of transition from one phenological state to the next is a function of heatsum. The model has parameters `k` and `h`. `k` controls the slope of the transition curve. `h` controls the location of the transition curve - h is the inflection point. At `h`, half of the trees will have transitioned. 
+
+
+
+```{r cars}
+calc_probability <- function(x, k = steepness, h = midpoint, hi = threshold_ind, ki = steepness_ind) { # a logistic function parameterized to estimate steepness and transition points with individual effects
+    1/(1 + exp(-(k + ki) * (x - (h + hi))))
+}
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
