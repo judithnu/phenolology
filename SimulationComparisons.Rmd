@@ -15,15 +15,24 @@ This document describes simulations of phenology data, models used to analyze th
 
 ## Simulations
 
-Data is simulated using according to an underlying logistic model where the probability of transition from one phenological state to the next is a function of heatsum. The model has parameters `k` and `h`. `k` controls the slope of the transition curve. `h` controls the location of the transition curve - h is the inflection point. At `h`, half of the trees will have transitioned. 
+Data is simulated according to an underlying logistic model where the probability `p` of transition from one phenological state to the next is a function of heat sum. The model has parameters `k` and `h`. `k` controls the slope of the transition curve and thus the heat sum range that transition occurs over. When `k` is large, transition occurs rapidly over a small range of heat sums. When `k` is small, transition occurs slowly over a larger range of heat sums. `h` is the inflection point of the transition curve. When heatsum equals `h`, half of the trees will have transitioned. 
+
+\begin{equation}p = \frac{1}{1 + e^{-k ( heatsum - h)}},
+\label{transition}
+\end{equation}
+
+Individuals may vary in either parameter.
+\begin{equation}p = \frac{1}{1 + e^{- (k+k_{i}) ( heatsum - (h+h_{i})}},
+\label{transition_individual}
+\end{equation}
 
 
-
-```{r cars}
+```{r transition-curve}
 calc_probability <- function(x, k = steepness, h = midpoint, hi = threshold_ind, ki = steepness_ind) { # a logistic function parameterized to estimate steepness and transition points with individual effects
     1/(1 + exp(-(k + ki) * (x - (h + hi))))
 }
 ```
+##
 
 ## Including Plots
 
