@@ -77,5 +77,19 @@ for (s in 1:1000) {
 head(post_m1)
 dens(post_m1, show.HPDI = TRUE)
 
-precis(m_hs, depth = 2)
-logistic(coef(m_hs))
+# Now simulate data from the fitted model (sample to simulate predictions)
+rordlogit(1e4, phi = phi(heatsums), a = a)
+
+for (i in 1:length(shortheat)) {
+    rordlogit(1e4,
+              phi = post_m1_samples$b * 40,
+              a = c(post_m1_samples$a1, post_m1_samples$a2))
+
+}
+
+a <- c(as.numeric(a), Inf)
+k <- 1:length(a)
+if (length(phi) == 1) {
+    p <- dordlogit(k, a = a, phi = phi, log = FALSE)
+    y <- sample(k, size = n, replace = TRUE, prob = p)
+}
