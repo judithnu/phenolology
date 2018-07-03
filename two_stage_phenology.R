@@ -43,16 +43,39 @@ ggplot(dp, aes(x = probability, y = s1, color = state)) +
     geom_point() +
     scale_color_viridis(discrete = TRUE)
 
+## Now fit a model to the simulated data
+
+m1 <- map(
     alist(
-        state ~ dordlogit(phi, cutpoints),
-        phi <- b*heatsum,
+        s1 ~ dordlogit(phi, c(a1, a2)),
+        phi <- b * heatsums,
         b ~ dnorm(0,10),
-        cutpoints ~ dnorm(0,10)
+        c(a1, a2) ~ dnorm(0,10)
     ),
-    data=phenofakes,
-    start=list(cutpoints=c(-1,0)),
-    chains = 2, cores = 2
-    )
+    data = d,
+    start= list(a1=1, a2=3, b = 2)
+)
+
+post_m1 <- extract.samples(m1)
+precis(m1)
+
+plot(200,1, type = "n", xlab='heatsum', ylab='probability', xlim = c(0,200), ylim = c(0, 1))
+
+shortheat <- seq(from = 0, to = 150, length.out = 100)
+s <- 1e4
+post_m1_samples <- post_m1[sample(1:s, s, replace = FALSE),]
+for (s in 1:1000) {
+    ak <- as.numeric(p[1:2])
+    phi <- post_m1_samples$b[s] * shortheat
+    pk <- pordlogit(1:2, a = ak, phi = phi)
+    for (i in 1:2) {
+        lines(shortheat, pk[,i], col = col.alpha(rangi2,0.1))
+        abline(v = h)
+    }
+}
+
+head(post_m1)
+dens(post_m1, show.HPDI = TRUE)
 
 precis(m_hs, depth = 2)
 logistic(coef(m_hs))
