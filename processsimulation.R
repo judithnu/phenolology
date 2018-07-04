@@ -7,7 +7,7 @@ calc_probability <- function(x, k = steepness, h = midpoint, i = individual_effe
 }
 
 # Assume fixed probability of transition, bernoulli
-transition <- function(state1 = 0, state2 = 1, p) { #simulate the transition between two states and record the states. p is the probability of transition. Can be a vector
+transition <- function(state1 = 1, state2 = 2, p) { #simulate the transition between two states and record the states. p is the probability of transition. Can be a vector
     x <- c(state1) # initial state
     do_trans <- 0 # initialize transition y/n
     #initialize while loop
@@ -22,9 +22,9 @@ transition <- function(state1 = 0, state2 = 1, p) { #simulate the transition bet
     return(x)
 }
 
-build_series <- function(p1, p2) { #This function returns a series of states based on transition probability vectors. p1 is a vector of transition probabilities for transitioning from 0 to 1, p2 is a vector of transition probabilities for transitioning from 1 to 2
-    state0 <- transition(state1 = 0, state2 = 1, p = p1)
-    state1 <- transition(state1 = 1, state2 = 2, p = p2)
+build_series <- function(p1, p2) { #This function returns a series of states based on transition probability vectors. p1 is a vector of transition probabilities for transitioning from 1 to 2, p2 is a vector of transition probabilities for transitioning from 2 to 3
+    state0 <- transition(state1 = 1, state2 = 2, p = p1)
+    state1 <- transition(state1 = 2, state2 = 3, p = p2)
     len0 <- length(state0)
     len1 <- length(state1)
     step = c(1:(len0+len1))
@@ -47,7 +47,7 @@ simulate_phenodata <- function(n_ind, ind_effect, year) {
 
     #calculate probabilities of transition at different heatsums
     probs1 <- lapply(ind_effect, calc_probability, x=heatsum, k = 0.1, h = 60)
-    probs2 <- lapply(ind_effect, calc_probability, x = heatsum, k = 0.1, h = 60)
+    probs2 <- lapply(ind_effect, calc_probability, x=heatsum, k = 0.1, h = 120) #IS THIS WRONG? WHY ISN'T IT 120
     #probs1 <- calc_probability(heatsum, k = 0.1, h = 60)
     #probs2 <- calc_probability(heatsum, k = 0.1, h = 120)
 
@@ -76,18 +76,18 @@ library(dplyr)
 #     geom_histogram(position = "dodge")
 
 
-ggplot(phenofakes[which(phenofakes$state < 2),], aes(x = heatsum, y = trans_prob)) +
+ggplot(phenofakes[which(phenofakes$state < 3),], aes(x = heatsum, y = trans_prob)) +
     geom_jitter() #+
    # stat_function(fun=function(x) 1/(1 + exp(-0.1 * (x - 50))))
 
-phenofakes %>%
-    filter(state < 2) %>%
-ggplot(aes(x = heatsum[step], y = state)) +
+# phenofakes %>%
+#     filter(state < 3) %>%
+ggplot(data= phenofakes, aes(x = heatsum[step], y = state)) +
     geom_count() +
-    stat_function(fun=function(x) 1/(1 + exp(-0.1 * (x - 60)))) +
-    facet_grid(year ~ .) +
-    #stat_function(fun=function(x) 1+(1/(1 + exp(-0.1 * (x - 120))))) +
-    ggtitle("Simulation of 100 individuals transitioning between phenological states 0, 1, and 2") +
+    stat_function(fun=function(x) 1+(1/(1 + exp(-0.1 * (x - 60))))) +
+   # facet_grid(year ~ .) +
+    stat_function(fun=function(x) 2+(1/(1 + exp(-0.1 * (x - 120))))) +
+    ggtitle("Simulation of 100 individuals transitioning between phenological states 1,2,and 3") +
     ylab("Phenological State") +
     xlab("Heat Sum (arbitrary units)")+
     theme_set(theme_gray(base_size = 25))
