@@ -1,5 +1,8 @@
 library(rethinking)
 library(dplyr)
+library(tidyr)
+library(viridis)
+
 # Simulate phenology data from an ordered logit model for phenology with 3 states, transitions at heatsums of 60 and 120 and a transition speed of 0.1 (in a model logstic model with the exponent parameterized k(x-h), h is at 60 and 120 and k is 0.1 info and equations used for earlier process simulation
 maxtemp = 150
 heatsums <- seq(from=1, to = maxtemp, length.out = 1000)
@@ -26,7 +29,7 @@ d$s1 <- as.factor(d$s1)
 
 dp <- d %>% gather('p1_s1','p1_s2', 'p1_s3', key='state', value='probability')
 
-library(viridis)
+
 ggplot(d, aes(x = heatsums, y = s1, color = s1)) +
     geom_point() +
     scale_color_viridis(discrete = TRUE)
@@ -82,24 +85,33 @@ dens(post_m1, show.HPDI = TRUE)
 ## get samples from post
 samples_m1 <- sample_n(post_m1, 1e3)
 
-apply(samples_m1[1:10,], 1, function(x) rordlogit(5, phi = x[3]*40, a=x[1:2])) # retunrs a matrix of simulated data where the number of rows is the size requested from rordlogit and the number of columns is the # of parameter sets tried. That is, it returns n simulated data values for each m parameter values provided at a SINGLE DATA POINT.
 
-apply(as.data.frame(shortheat), 1, function(y) rordlogit(5, phi = x[1,3]*y, a = x[1,1:2]))
+#for each set of parameter values, simulate 100 phenology time series
 
-rordlogit(10, phi = post_m1$b[1]*shortheat[40], a = post_m1[1, 1:2])
 
-rordlogit(1e4, phi = phi(heatsums), a = a)
-
-for (i in 1:length(shortheat)) {
-    rordlogit(1e4,
-              phi = post_m1_samples$b * 40,
-              a = c(post_m1_samples$a1, post_m1_samples$a2))
-
+s <- numeric(0)
+for (i in 1:length(samples_m1)) {
+    si <- apply(as.data.frame(shortheat), 1,
+          function(y) rordlogit(100, phi = samples_m1[i,3]*y, a = samples_m1[i,1:2]))# simulate data at all input values (shortheat) at a given parameter set
+    si <- cbind(as.numeric(rownames(samples_m1)[i]), si)
+    s <- rbind(s, si)
 }
 
-a <- c(as.numeric(a), Inf)
-k <- 1:length(a)
-if (length(phi) == 1) {
-    p <- dordlogit(k, a = a, phi = phi, log = FALSE)
-    y <- sample(k, size = n, replace = TRUE, prob = p)
-}
+s <- data.frame(s)
+colnames(s) <- c("param_set", shortheat)
+post_pred_m1 <- gather(s, key = heatsum, value = state, -param_set)
+post_pred_m1$heatsum <- as.numeric(post_pred_m1$heatsum)
+
+ggplot(post_pred_m1, aes(x = heatsum, y = state, color = as.factor(state))) +
+    geom_point() +
+    scale_color_viridis(discrete = TRUE)
+
+ggplot(post_pred_m1, aes(factor(state), y = heatsum, fill = as.factor(state))) +
+    geom_violin(trim=FALSE) +
+    scale_fill_viridis(discrete=TRUE) +
+    ggtitle("Data simulated from parameters from fitted model")
+
+ggplot(d, aes(factor(s1), y = heatsums, fill = as.factor(s1))) +
+    geom_violin(trim=FALSE) +
+    scale_fill_viridis(discrete=TRUE) +
+    ggtitle("Data simulated from model")
