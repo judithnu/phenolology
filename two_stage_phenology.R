@@ -1,5 +1,5 @@
 library(rethinking)
-
+library(dplyr)
 # Simulate phenology data from an ordered logit model for phenology with 3 states, transitions at heatsums of 60 and 120 and a transition speed of 0.1 (in a model logstic model with the exponent parameterized k(x-h), h is at 60 and 120 and k is 0.1 info and equations used for earlier process simulation
 maxtemp = 150
 heatsums <- seq(from=1, to = maxtemp, length.out = 1000)
@@ -78,6 +78,16 @@ head(post_m1)
 dens(post_m1, show.HPDI = TRUE)
 
 # Now simulate data from the fitted model (sample to simulate predictions)
+
+## get samples from post
+samples_m1 <- sample_n(post_m1, 1e3)
+
+apply(samples_m1[1:10,], 1, function(x) rordlogit(5, phi = x[3]*40, a=x[1:2])) # retunrs a matrix of simulated data where the number of rows is the size requested from rordlogit and the number of columns is the # of parameter sets tried. That is, it returns n simulated data values for each m parameter values provided at a SINGLE DATA POINT.
+
+apply(as.data.frame(shortheat), 1, function(y) rordlogit(5, phi = x[1,3]*y, a = x[1,1:2]))
+
+rordlogit(10, phi = post_m1$b[1]*shortheat[40], a = post_m1[1, 1:2])
+
 rordlogit(1e4, phi = phi(heatsums), a = a)
 
 for (i in 1:length(shortheat)) {
