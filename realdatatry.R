@@ -221,3 +221,48 @@ m_bin <- map2stan(flist,
                   start = list(h = 150, k = .4, sigma_ind = 10)
 )
 
+
+
+
+# Ordered Logit Model -----------------------------------------------------
+
+#visualize the data
+ggplot(df, aes(x = Phenophase_Simp, y=Heatsum)) +
+    geom_violin()
+
+# read in data for priors
+heatsum_priors_dat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/orchard_heatsums_WalshWebber2008.csv')
+# calculate priors
+
+simple_beta_prior = 0.5
+pre_pollination_summary <- heatsum_priors_dat %>%
+    filter(period == 'pre-pollination') %>%
+    summarise(mean=mean(Tsum_day, na.rm=TRUE), sd=sd(Tsum_day, na.rm=TRUE))
+pre_pollination_summary <- pre_pollination_summary*simple_beta_prior
+
+all_poll_summary <- heatsum_priors_dat %>%
+    group_by(year) %>%
+    summarise(Tsum_day = sum(Tsum_day)) %>%
+    summarise(mean=mean(Tsum_day, na.rm=TRUE), sd=sd(Tsum_day, na.rm=TRUE))
+all_poll_summary <- all_poll_summary*simple_beta_prior
+
+df$Phenophase_Simp <- as.factor(df$Phenophase_Simp)
+
+m1 <- map(
+    alist(
+        Phenophase_Simp ~ dordlogit(phi, c(a1, a2)),
+        phi <- b*Heatsum,
+        b ~ dbeta(2,5),
+        c(a1,a2) ~ dnorm(pre_pollination_summary$mean, pre_pollination_summary$sd)
+    ),
+    data = df,
+    start= list(a1=100*.2, a2=250*.2, b = 0.5)
+)
+
+post_m1 <- extract.samples(m1)
+precis(m1)
+
+post_m1 <-post_m1 %>%
+    mutate(k = b, h1 = a1/b, h2 = a2/b)
+
+dens(post_m1, show.HPDI=.5)
