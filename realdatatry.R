@@ -1,19 +1,20 @@
 # try logit model with subset of real data
 library(dplyr)
+library(lubridate)
 
 
 # Data --------------------------------------------------------------------
 
 
-rawdat <- read.csv('~/phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
-rclim <- read.csv('~/phd/data/Climate/formatted/PrinceGeorgeSTP.csv', header = TRUE)
+rawdat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
+rclim <- read.csv('~/Documents/research_phd/data/Climate/formatted/PrinceGeorgeSTP.csv', header = TRUE)
 
 # phenology data: one year, male
 
 pdat <- subset(rawdat, Sex == "MALE")
 pdat$DayofYear <- lubridate::yday(pdat$Date)
 
-rdat <- subset(rdat, Year == 1997 & Sex == "FEMALE")
+rdat <- subset(rawdat, Year == 1997 & Sex == "FEMALE")
 rdat$DayofYear <- lubridate::yday(rdat$Date)
 
 # climate data
@@ -45,7 +46,7 @@ rdf <- merge(rdat, clim) %>%
     select(DayofYear, Clone, Tree, Phenophase, Heat, Heatsum) %>%
     arrange(Tree, DayofYear)
 
-# transform phenology data into 1 (not started), 2 (active), (finished)
+# transform phenology data into 1 (not started), 2 (active), 3 (finished)
 
 
 by_tree <- group_by(df, Tree, Year)
@@ -68,22 +69,25 @@ rintermed <- merge(rdf, rfo) %>%# first occurance recorded
 
 intermed_ind <- which(intermed$DayofYear < intermed$First_Occurence) # not started
 intermed$Phenophase_Simp <- NA
-intermed$Phenophase_Simp[intermed_ind] <- 0
-intermed$Phenophase_Simp[is.na(intermed$Phenophase_Simp) == TRUE & intermed$Phenophase == '4'] <- 1
-intermed$Phenophase_Simp[is.na(intermed$Phenophase_Simp) == TRUE] <- 2
+intermed$Phenophase_Simp[intermed_ind] <- 1
+intermed$Phenophase_Simp[is.na(intermed$Phenophase_Simp) == TRUE & intermed$Phenophase == '4'] <- 2
+intermed$Phenophase_Simp[is.na(intermed$Phenophase_Simp) == TRUE] <- 3
 intermed
 
 rintermed_ind <- which(rintermed$DayofYear < rintermed$First_Occurence) # not started
 rintermed$Phenophase_Simp <- NA
-rintermed$Phenophase_Simp[rintermed_ind] <- 0
-rintermed$Phenophase_Simp[is.na(rintermed$Phenophase_Simp) == TRUE & rintermed$Phenophase == '4'] <- 1
-rintermed$Phenophase_Simp[is.na(rintermed$Phenophase_Simp) == TRUE] <- 2
+rintermed$Phenophase_Simp[rintermed_ind] <- 1
+rintermed$Phenophase_Simp[is.na(rintermed$Phenophase_Simp) == TRUE & rintermed$Phenophase == '4'] <- 2
+rintermed$Phenophase_Simp[is.na(rintermed$Phenophase_Simp) == TRUE] <- 3
 rintermed
 
-df <- intermed %>%
-    filter(Phenophase_Simp < 2)
-rdf <- rintermed %>%
-    filter(Phenophase_Simp < 2)
+df <- intermed
+rdf <- rintermed
+
+# df <- intermed %>%
+#     filter(Phenophase_Simp < 3)
+# rdf <- rintermed %>%
+#     filter(Phenophase_Simp < 3)
 
 
 # Logit model -------------------------------------------------------------
