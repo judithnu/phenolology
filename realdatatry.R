@@ -1,7 +1,9 @@
 # try logit model with subset of real data
 library(dplyr)
 library(lubridate)
-
+library(tidyr)
+library(viridis)
+library(ggplot2)
 
 # Data --------------------------------------------------------------------
 
@@ -38,12 +40,12 @@ clim <- rbind(no_heat, heat) %>%
 # combine climate and phenology data
 
 df <- merge(pdat, clim) %>%
-    select(Year, DayofYear, Clone, Tree, Phenophase, Heat, Heatsum) %>%
+    select(Year, DayofYear, Clone, Tree, Phenophase, Heat, Heatsum, Orchard) %>%
     arrange(Year, Tree, DayofYear) %>%
     filter(!Phenophase==0)# drop unexplained 0s
 
 rdf <- merge(rdat, clim) %>%
-    select(DayofYear, Clone, Tree, Phenophase, Heat, Heatsum) %>%
+    select(DayofYear, Clone, Tree, Phenophase, Heat, Heatsum, Orchard) %>%
     arrange(Tree, DayofYear)
 
 # transform phenology data into 1 (not started), 2 (active), 3 (finished)
@@ -224,11 +226,12 @@ m_bin <- map2stan(flist,
 
 
 
-# Ordered Logit Model -----------------------------------------------------
+# Ordered Logit Model (rethinking)-----------------------------------------------------
 
 #visualize the data
-ggplot(df, aes(x = Phenophase_Simp, y=Heatsum)) +
+ggplot(df, aes(x = Phenophase_Simp, y=Heatsum, color = as.factor(Phenophase_Simp))) +
     geom_violin()
+
 
 # read in data for priors
 heatsum_priors_dat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/orchard_heatsums_WalshWebber2008.csv')
@@ -246,8 +249,10 @@ all_poll_summary <- heatsum_priors_dat %>%
     summarise(mean=mean(Tsum_day, na.rm=TRUE), sd=sd(Tsum_day, na.rm=TRUE))
 all_poll_summary <- all_poll_summary*simple_beta_prior
 
+#fix Phenophase
 df$Phenophase_Simp <- as.factor(df$Phenophase_Simp)
 
+#fit model
 m1 <- map(
     alist(
         Phenophase_Simp ~ dordlogit(phi, c(a1, a2)),
@@ -256,9 +261,10 @@ m1 <- map(
         c(a1,a2) ~ dnorm(pre_pollination_summary$mean, pre_pollination_summary$sd)
     ),
     data = df,
-    start= list(a1=100*.2, a2=250*.2, b = 0.5)
+    start= list(a1=100*.2, a2=250*.2)
 )
 
+#view model
 post_m1 <- extract.samples(m1)
 precis(m1)
 
@@ -266,3 +272,56 @@ post_m1 <-post_m1 %>%
     mutate(k = b, h1 = a1/b, h2 = a2/b)
 
 dens(post_m1, show.HPDI=.5)
+
+# now predict data from the model
+shortheat <- seq(from=0, to = max(df$Heatsum), length.out=100)
+s <- numeric(0)
+for (i in 1:length(post_m1)) {
+    si <- apply(data.frame(shortheat = shortheat), 1,
+          function(y) rordlogit(100, phi = post_m1[i,3]*y, a = post_m1[i,1:2]))# simulate data at all input values (shortheat) at a given parameter set
+    si <- cbind(i, si)
+    s <- rbind(s, si)
+}
+
+s <- data.frame(s)
+colnames(s) <- c("param_set", shortheat)
+post_pred_m1 <- gather(s, key = heatsum, value = state, -param_set)
+post_pred_m1$heatsum <- as.numeric(post_pred_m1$heatsum)
+
+ggplot(post_pred_m1, aes(x = heatsum, y = state, color = as.factor(state))) +
+    geom_point() +
+    scale_color_viridis(discrete = TRUE) +
+    ggtitle('heatsum vs. state, data simulated from parameters from fitted model')
+
+ggplot(df, aes(x = Heatsum, y = Phenophase_Simp)) +
+    geom_point() +
+    ggtitle('heatsum vs. state, real data from Prince George')
+
+ggplot(post_pred_m1, aes(factor(state), y = heatsum, fill = as.factor(state))) +
+    geom_violin(trim=FALSE) +
+    scale_fill_viridis(discrete=TRUE) +
+    ggtitle("Data simulated from parameters from fitted model")
+
+ggplot(df, aes(factor(Phenophase_Simp), y = Heatsum, fill = as.factor(Phenophase_Simp))) +
+    geom_violin(trim=FALSE) +
+    scale_fill_viridis(discrete=TRUE) +
+    ggtitle("Real data from Prince George")
+
+# Ordered Logit Model with levels-----------------------------------------------------
+m2 <- map2stan(
+    alist(
+        #likelihood
+        Phenophase_Simp ~ dordlogit(phi, cutpoints),
+        #model
+        phi <- b*Heatsum + a_clone[Clone],
+        #priors
+        b ~ dbeta(2,5),
+        cutpoints ~ dnorm(pre_pollination_summary$mean, pre_pollination_summary$sd),
+        a_clone[Clone] ~ dnorm(0, sigma_clone),
+        #hyperpriors
+        sigma_clone ~ dcauchy(0,1)
+    ),
+    data = df,
+    start= list(a1=100*.2, a2=250*.2),
+    warmup = 10, inter=500, chains = 1, cores = 1
+)
