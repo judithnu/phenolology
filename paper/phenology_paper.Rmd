@@ -12,11 +12,33 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013a). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @Aitken2008a).
+# Introduction
+As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
+This effect is already obvious in many species [@Parmesan2006; @Franks2014]. 
+Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects on dependent species [@Inouye2008; @Chuine2001a].
 
- I will predict the timing of pollen shed and cone receptivity in lodgepole pine (*Pinus contorta* spp. *latifolia*) across its range
- 
- ## Study species
+
+[Conifers are important and affected by this problem, but it hasn't been investigated very much]
+In conifers, pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination. 
+Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed orchard productivity declines. 
+
+[talk about wind pollination]
+
+[Also affects gene flow now and is important for understanding current spatial genetic structure and local adaptation] Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013a). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @Aitken2008a). 
+
+current and future gene flow could have significant adaptive consequences.
+In order to investigate the effects of gene flow on adaptation in lodgepole pine under climate change, we must first be able to predict pollination phenology. 
+
+Lodgepole pine, an ecologically and economically important species in western North America with lots of data on flowering phenology.
+Predicting pollination phenology will also have practical benefits. Seed orchard managers in British Columbia are particularly concerned about protandry, when all pollen in an area is shed before cones become receptive (*personal communication, Chris Walsh, Former Seed Orchard Manager, Kalamalka Seed Orchards, February 13, 2013*). 
+Protandry occurs in particularly hot and dry years [@Owens2005]. If this pattern holds, protandry could become more common in natural populations, leaving some populations pollen limited and likely hampering local adaption. [Outcrossing! Inbreeding!]
+
+I will use pollination phenology and temperature data to fit a mechanistic model predicting pollen shed and cone receptivity across the entire range of *Pinus contorta* spp. *latifolia* and consider how the date and length of pollination phenology periods vary normally and under several climate change scenarios. 
+Specifically, I will answer 1) What is the relationship between temperature and pollen shed and temperature and cone receptivity timing and length? 2) How strong is the genetic versus environmental effect on pollination phenology? 3) How many days will pollination phenology shift under the next 30, 60, and 90 years of climate change 4) Will protandry become more common?
+
+# Methods
+## Study species
+[Need to explain earlier why local adaptation such a big deal for my questions - have to account for/test for it in model]
 Lodgepole pine is an ideal candidate with which to explore these questions. 
 It is an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
 Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Figure \ref{range}) with widespread and significant local adaptation in many traits. 
@@ -35,25 +57,46 @@ The smaller distributions and lower economic values of the *contorta*, *murrayan
 
 My research will proceed in three stages, which I've divided into chapters. In the first stage, I will model pollination phenology.
 
-# Research Chapter 1: Model pollination phenology
-As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
-This effect is already obvious in many species [@Parmesan2006; @Franks2014]. 
-Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects on dependent species [@Inouye2008; @Chuine2001a].
-Lodgepole pine, an ecologically and economically important species in western North America, is of particular interest because of extensive local adaptation; 
-current and future gene flow could have significant adaptive consequences.
 
-In conifers, pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination. 
-Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in lodgepole pine and other conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed orchard productivity declines. 
-In order to investigate the effects of gene flow on adaptation in lodgepole pine under climate change, we must first be able to predict pollination phenology. 
 
-Predicting pollination phenology will also have practical benefits. Seed orchard managers in British Columbia are particularly concerned about protandry, when all pollen in an area is shed before cones become receptive (*personal communication, Chris Walsh, Former Seed Orchard Manager, Kalamalka Seed Orchards, February 13, 2013*). 
-Protandry occurs in particularly hot and dry years [@Owens2005]. If this pattern holds, protandry could become more common in natural populations, leaving some populations pollen limited and likely hampering local adaption.
 
-I will use pollination phenology and temperature data to fit a mechanistic model predicting pollen shed and cone receptivity across the entire range of *Pinus contorta* var. *latifolia* and consider how the date and length of pollination phenology periods vary normally and under several climate change scenarios. 
-Specifically, I will answer 1) What is the relationship between temperature and pollen shed and temperature and cone receptivity timing and length? 2) How strong is the genetic versus environmental effect on pollination phenology? 3) How many days will pollination phenology shift under the next 30, 60, and 90 years of climate change 4) Will protandry become more common?
+
+### Data
+#### Weather data
+[build model with local data from orchards and weather stations, apply across landscape with (talk to colin and/or Roland for updated options]
+
+#### Phenology Data
+Trees selected from across the British Columbia portion of the lodgepole pine range are grown in both large scale provenance trials and seed orchards, which are similar to common gardens, as part of tree breeding programs. 
+There are two types of orchards: first generation and second generation. 
+Each orchard contains trees that are the descendants of seeds and scions collected from mother trees in one particular provenance.
+First generation orchards have not undergone selective breeding but may be subject to selection through the process of choosing mother trees (called "plus" trees by tree breeders), testing and selection of mother tree offspring, or culling of unfavorable trees in the orchard.
+First generation orchard trees are clones of mother trees and their offspring grafted onto rootstock.
+There are three types of first generation orchards subject to different levels of selection: 1.0, 1.5, and 1.75 generation orchards.
+All orchards are subject to selection based on mother tree selection.
+In 1.5 generation orchards, superior offspring of mother trees are selected for the orchard or poor trees are culled from the orchard. 
+This selection may be strong; more than 50% of offspring can be rejected in this process due to poor growth form [@Ukrainetz2011].
+In 1.75 generation orchards, data from 10 year tests of mother tree offspring are used to select 40 of the best genotypes for a given provenance.
+Offspring from controlled crosses between trees in first generation orchards are tested in field trials and the best trees are then cloned and grafted onto root stock in advanced generation orchards. 
+
+I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 
+    
+I obtained records for 17 of the 26 lodgepole pine seed orchards in British Columbia. Orchards include the offspring of trees from 6 of the 7 BC seed planning zones (SPZs) (Figure \ref{SPZ}) grown at at 7 sites across BC. SPZs are biogeoclimatic and political units used for seed planting purposes by British Columbia. SPZs are divided into elevation bands called Seed Planning Units (SPUs), which form this project's provenances. At least 13 of the seed orchards are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.
+
+![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPZ}](/home/sus/Documents/research_phd/maps/SPUmaps/SPUmap.png)
+
+Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology.
+
+![Contingency table of Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](/home/sus/Documents/research_phd/phd_proposal/figure/contingencytable.png)
+
+Provenances and sites included in my data exclude the coldest and wettest parts of the range. Figure \ref{siteprovclimate} shows the 1961-1990 climate normal mean annual temperature (MAT) and mean annual precipitation (MAP) for data from all lodgepole pine provenances in BC, provenances included in my data set, and sites where provenances were grown. Orchard sites are generally much warmer and drier than many locations where lodgepole pine grow. I may have difficulty extrapolating into the coolest and wettest parts of the lodgepole pine range, depending on actual yearly conditions at sites for which I have data. However, this may be advantageous when it comes to predicting phenology under climate change.
+
+![Provenance (SPU) climates of data included in this proposal, provenances not included in this proposal, and sites where provenances were grown. MAT is mean annual temperature and MAP is mean annual precipitation. \label{siteprovclimate}](/home/sus/Documents/research_phd/phd_proposal/figure/climate.png)
+
+
+## Modeling
 
 ## Phenology Modeling 
-
+[Probably most of this isn't necessary]
 Scientists have modeled plant phenology for centuries with an overwhelming variety of model structures. 
 Predictive phenology models are usually mechanistic, but the parameters are rarely directly measured since many stages of development are unseen. 
 Instead, models rely on dates of a few visible stages of development, such as budburst or flowering.
@@ -73,48 +116,9 @@ Thus, I expect to be able to disregard the state of chilling and fit only Equati
 Once the model is parameterized I will be able to calculate the timing of pollen shed and cone receptivity across the lodgepole pine species range using location specific climate data from seed orchards and ClimateWNA [@Wang2012]. 
 I will validate the model by comparing predictions to phenological measurements from the National Phenology Network.
 
-### Data
-
-PMP requires dates of phenological events and temperature data. I will use pollination phenology data from British Columbian seed orchards and climate data from ClimateWNA and seed orchards. 
-
-#### Phenology Data
-Trees selected from across the British Columbia portion of the lodgepole pine range are grown in both large scale provenance trials and seed orchards, which are similar to common gardens, as part of tree breeding programs. 
-There are two types of orchards: first generation and second generation. 
-Each orchard contains trees that are the descendants of seeds and scions collected from mother trees in one particular provenance.
-First generation orchards have not undergone selective breeding but may be subject to selection through the process of choosing mother trees (called "plus" trees by tree breeders), testing and selection of mother tree offspring, or culling of unfavorable trees in the orchard.
-First generation orchard trees are clones of mother trees and their offspring grafted onto rootstock.
-There are three types of first generation orchards subject to different levels of selection: 1.0, 1.5, and 1.75 generation orchards.
-All orchards are subject to selection based on mother tree selection.
-In 1.5 generation orchards, superior offspring of mother trees are selected for the orchard or poor trees are culled from the orchard. 
-This selection may be strong; more than 50% of offspring can be rejected in this process due to poor growth form [@Ukrainetz2011].
-In 1.75 generation orchards, data from 10 year tests of mother tree offspring are used to select 40 of the best genotypes for a given provenance.
-Offspring from controlled crosses between trees in first generation orchards are tested in field trials and the best trees are then cloned and grafted onto root stock in advanced generation orchards. 
-
-I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 
-
-
-
-    
-So far, I have obtained records for 17 of the 26 lodgepole pine seed orchards in British Columbia. Orchards include the offspring of trees from 6 of the 7 BC seed planning zones (SPZs) (Figure \ref{SPZ}) grown at at 7 sites across BC. SPZs are biogeoclimatic and political units used for seed planting purposes by British Columbia. SPZs are divided into elevation bands called Seed Planning Units (SPUs), which form this project's provenances. At least 13 of the seed orchards are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.
-
-![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPZ}](/home/sus/Documents/research_phd/maps/SPUmaps/SPUmap.png)
-
-Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology.
-
-
-
-
-![Contingency table of Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](/home/sus/Documents/research_phd/phd_proposal/figure/contingencytable.png)
-
-Provenances and sites included in my data exclude the coldest and wettest parts of the range. Figure \ref{siteprovclimate} shows the 1961-1990 climate normal mean annual temperature (MAT) and mean annual precipitation (MAP) for data from all lodgepole pine provenances in BC, provenances included in my data set, and sites where provenances were grown. Orchard sites are generally much warmer and drier than many locations where lodgepole pine grow. I may have difficulty extrapolating into the coolest and wettest parts of the lodgepole pine range, depending on actual yearly conditions at sites for which I have data. However, this may be advantageous when it comes to predicting phenology under climate change.
-
-![Provenance (SPU) climates of data included in this proposal, provenances not included in this proposal, and sites where provenances were grown. MAT is mean annual temperature and MAP is mean annual precipitation. \label{siteprovclimate}](/home/sus/Documents/research_phd/phd_proposal/figure/climate.png)
-
-### Climate data
-
 To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions
 
-### Questions and expected results
+### Results
 
 1) How strong are the genetic vs. environmental effects on pollination phenology?
 
