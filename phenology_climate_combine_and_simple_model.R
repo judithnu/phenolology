@@ -9,7 +9,7 @@ library(ggplot2)
 
 
 #rawdat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
-phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted/derived_phenophase.csv', stringsAsFactors = FALSE)
+phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived//derived_phenophase.csv', stringsAsFactors = FALSE)
 climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PrinceGeorgeSTP.csv', header = TRUE)
 
 # Functions ----------------------------------
@@ -41,7 +41,7 @@ calculate_heat_sum <- function(climate_df, threshold_temp) {
 # Calculate heatsum -----------------
 
 # climate data
-clim <- subset(climdat, Year %in% unique(mdat$Year))
+clim <- subset(climdat, Year %in% unique(phendat$Year))
 colnames(clim)[2] <- "DoY" #rename DayofYear to DoY
 
 #calculate amount of heat per day assume no heating below 5 degrees and linear heating starting at 5
@@ -74,7 +74,7 @@ mdf <- subset(phendf, Sex == "MALE")
 
 fdf <- subset(phendf, Sex == "FEMALE")
 
-write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum.csv")
+#write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum.csv")
 
 #Test that no data dropped unintentionally
 nrow(mdf) + nrow(fdf) == nrow(phendf)
