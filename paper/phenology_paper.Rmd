@@ -67,7 +67,7 @@ My research will proceed in three stages, which I've divided into chapters. In t
 
 ### Data
 #### Weather data
-[build model with local data from orchards and weather stations, apply across landscape with (talk to colin and/or Roland for updated options]
+[build model with local data from orchards and weather stations, apply across landscape with [PCIC daily gridded data](https://pacificclimate.org/data/daily-gridded-meteorological-datasets)
 
 #### Phenology Data
 Trees selected from across the British Columbia portion of the lodgepole pine range are grown in both large scale provenance trials and seed orchards, which are similar to common gardens, as part of tree breeding programs. 
