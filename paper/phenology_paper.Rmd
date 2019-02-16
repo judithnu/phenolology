@@ -96,6 +96,33 @@ Provenances and sites included in my data exclude the coldest and wettest parts 
 
 ![Provenance (SPU) climates of data included in this proposal, provenances not included in this proposal, and sites where provenances were grown. MAT is mean annual temperature and MAP is mean annual precipitation. \label{siteprovclimate}](/home/sus/Documents/research_phd/phd_proposal/figure/climate.png)
 
+##### Phenophases
+There are three phenological stages of interest each for a tree's male and female cones
+
+- 1. The cones have not yet flowered
+- 2. The cones are flowering
+- 3. The cones have finished flowering
+
+Phenophases in the field were recorded using different symbol sets and resolutions. I assigned each symbol to one of the phenophases above. Trees that did not produce cones are assigned phenological stage 0.
+
+
+```{r phenophase_derivation}
+no_flowers <- '0'
+#before_flowering <- c('1', '2.5', '-') #stage 1
+before_flowering <- c("1, 2.5, -")
+#flowering <- c('3', '3.5', '4', '4.5', '5', 'pollenshed20', 'receptive20') #stage 2
+flowering <- c("3, 3.5, 4, 4.5, 5, pollenshed20, receptive20")
+#after_flowering <- c('-', 'receptive80', 'pollenshed80') #stage 3
+after_flowering <- c("-, receptive80, pollenshed80")
+derived_phenophase <- c(0:3)
+male_desc <- c("none produced", "not yet shedding", "shedding", "finished shedding")
+female_desc <- c("none produced", "not yet receptive", "receptive", "no longer receptive")
+recorded_as <- c(no_flowers, before_flowering, flowering, af=after_flowering)
+
+phenophase_legend <- data.frame(Phenophase = derived_phenophase, Symbols = recorded_as, Male.Cones = male_desc, Female.Cones = female_desc)
+kable(phenophase_legend, padding = 0)
+```
+
 
 ## Modeling
 
