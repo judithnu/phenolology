@@ -4,7 +4,7 @@ library(lubridate)
 library(tidyr)
 library(viridis)
 library(ggplot2)
-
+library(rethinking)
 # Data --------------------------------------------------------------------
 
 
@@ -74,7 +74,7 @@ mdf <- subset(phendf, Sex == "MALE")
 
 fdf <- subset(phendf, Sex == "FEMALE")
 
-#write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum.csv")
+write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum.csv")
 
 #Test that no data dropped unintentionally
 nrow(mdf) + nrow(fdf) == nrow(phendf)
