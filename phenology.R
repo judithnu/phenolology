@@ -10,7 +10,7 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 util <- new.env()
-source('stan_utility.R', local=util)
+source('~/Documents/classes/STANworkshop/material/1 - workflow/stan_utility.R', local=util)
 
 ############################################################
 # 1. Conceptual Analysis -------------------------
@@ -22,13 +22,14 @@ source('stan_utility.R', local=util)
 ############################################################
 # 2. Define Observations ----------------------------
 ############################################################
-phenology_data <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived//derived_phenophase.csv', header = TRUE, stringsAsFactors = FALSE)
+phenology_and_heatsum_data <- read.csv('~/Documents/research_phenolology/data/phenology_heatsum.csv', stringsAsFactors = FALSE)
 
-pd <- phenology_data
+pd <- phenology_and_heatsum_data
 
-ggplot(pd, aes(x=DoY, y=Phenophase_Derived, colour=Sex)) +
+ggplot(pd, aes(x=Heatsum, y=Phenophase_Derived, colour=Sex)) +
     geom_jitter(shape = 3, alpha = 0.5) +
     facet_wrap(.~Year)
+
 
 hist(pd$Phenophase_Derived, xlab = "Phenophase")
 # discrete proportion of each phenophase value
@@ -41,6 +42,21 @@ cum_pr_pd <- cumsum(pr_pd)
 
 # plot
 plot(c(0:3), cum_pr_pd, type = "b", xlab = "Phenophase", ylab = "cumulative proportion", ylim=c(0,1))
+
+# cumulative proportion by heatsum
+pr_by_heat <- table(pd$Phenophase_Derived, pd$Heatsum)
+
+
+# This graph for lab meeting
+ggplot(pd, aes(x = Heatsum, color = as.factor(Phenophase_Derived) )) +
+    stat_ecdf() +
+    scale_colour_viridis_d() +
+    ggtitle("Cumulative proportion of each phenophase as heatsum increases")
+
+ggplot(pd, aes(x = DoY, color = as.factor(Phenophase_Derived))) +
+    stat_ecdf() +
+    scale_colour_viridis_d() +
+    ggtitle("Cumulative proportion of each phenophase as day of year increases")
 
 # apply link function
 
@@ -57,10 +73,20 @@ lco <- logit(cum_pr_pd) #log cumulative odds
 
 
 ############################################################
-# 4. Build a Generative Model
+# 4. Build a Generative Model (Create fake data)
 ############################################################
 writeLines(readLines("~/Documents/research_phenolology/phenology.stan"))
-gen_model <- "~/Documents/research_phenolology/phenology.stan"
+gen_model <- "~/Documents/research_phenolology/generative_model.stan"
+
+generated_data_model <- stan(file=gen_model, iter=1,
+            chains=1, algorithm="Fixed_param")
+
+sim_data <- data.frame(heatsum = t(extract(generated_data_model)$heatsum),
+           phenophase = t(extract(generated_data_model)$phenophase))
+
+ggplot(sim_data, aes(x = heatsum, y=phenophase)) +
+    geom_point() +
+    ggtitle('Simulated heatsum and phenophase data')
 ############################################################
 # 5. Analyze the Generative Ensemble
 ############################################################
