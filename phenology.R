@@ -87,24 +87,35 @@ sim_data <- data.frame(heatsum = t(extract(generated_data_model)$heatsum),
 ggplot(sim_data, aes(x = heatsum, y=phenophase)) +
     geom_point() +
     ggtitle('Simulated heatsum and phenophase data')
+
 ############################################################
-# 5. Analyze the Generative Ensemble
+# 5. Analyze the Generative Ensemble (Build a model with your fake data and see if you can get the parameters back)
 ############################################################
+
 R <- 100 # 1000 draws from the Bayesian joint distribution
-N <- 3
-#theta <- c(1,1,1)/sum(c(1,1,1))
+N <- nrow(sim_data)
+K <- length(unique(sim_data$phenophase))
+heatsum <- sim_data$heatsum
+phenophase <- sim_data$phenophase
+
+stan_rdump(c("N", "K", "heatsum", "phenophase"), file="simulated_data_from_gen_model.data.R")
+
+
+
 
 ############################################################
-# 5a. Analyze the Prior Predictive Distribution
+# 5a. Analyze the Simulated Data
 ############################################################
-simu_data <- list("N" = N, "theta" = theta)
 
-fit <- stan(file=gen_model, data=simu_data,
-            iter=R, warmup=0, chains=1, refresh=R,
-            seed=4838282, algorithm="Fixed_param")
+sim_data_for_stan <- read_rdump("simulated_data_from_gen_model.data.R")
 
-simu_ys <- extract(fit)$y
-hist(simu_ys)
+sim_fit <- stan(file='phenology.stan', data=sim_data_for_stan,
+            iter=10000, warmup=1000, chains=5)
+
+util$check_all_diagnostics(sim_fit)
+
+params <- extract(sim_fit)
+posterior_cp <- as.array(sim_fit)
 
 ############
 

@@ -1,46 +1,22 @@
-// data{
-// int<lower=2> after;
-// int<lower=1> flowering;
-// int<lower=0> before;
-// int<lower=1, upper=after> y[N]
-// row_vector[flowering] x[N]
-// }
-//
-// parameters {
-//     vector[flowering] beta;
-//     ordered[after - 1] c; //cutpoints
-// }
+// ordered logistic model
+
 
 data{
     int<lower=2> K; // number of possible phenophases
-    int<lower=0> N; // number of phenophases observations
-    int<lower=1, upper=K> y[N]; //phenophase outcomes (response)
+    int<lower=0> N; // number of phenophase observations
+    int<lower=1, upper=K> phenophase[N]; //phenophase outcomes (response)
 
-    int<lower=0> D; //number of heatsum observations
-    row_vector[D] x[N]; //heatsums
+    real<lower=0> heatsum[N]; //heatsums
 }
 
 parameters{
-    vector[D] beta;
-    ordered[K-1] c; //cutpoints mean
+    real<lower=0, upper=1> beta;
+    ordered[K-1] c; //how many cutpoints are there
 }
 
 model {
+    c ~ uniform(0, 500); //cutpoints prior
     for (n in 1:N)
-      y[n] ~ ordered_logistic(x[n] * beta, c);
+      phenophase[n] ~ ordered_logistic(heatsum[n] * beta, c);
 }
 
-
-// generated quantities {
-//     // Simulate model configuration from prior model
-//
-//     //Simulate data from observational model
-//     int y[N] = rep_array(0,N);
-//     for (n in 1:N)
-//       y[n] = ordered_logistic_rng(theta);
-// }
-
-// model {
-//     for (n in 1:N)
-//     y[n] ~ ordered_logistic(x[n] * beta, c);
-// }
