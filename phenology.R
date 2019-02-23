@@ -6,6 +6,7 @@ library(tidyr)
 library(dplyr)
 
 library(rstan)
+library(bayesplot)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
@@ -41,7 +42,7 @@ pr_pd <- table(pd_narm$Phenophase_Derived)/nrow(pd_narm)
 cum_pr_pd <- cumsum(pr_pd)
 
 # plot
-plot(c(0:3), cum_pr_pd, type = "b", xlab = "Phenophase", ylab = "cumulative proportion", ylim=c(0,1))
+plot(c(1:3), cum_pr_pd, type = "b", xlab = "Phenophase", ylab = "cumulative proportion", ylim=c(0,1))
 
 # cumulative proportion by heatsum
 pr_by_heat <- table(pd$Phenophase_Derived, pd$Heatsum)
@@ -115,8 +116,58 @@ sim_fit <- stan(file='phenology.stan', data=sim_data_for_stan,
 util$check_all_diagnostics(sim_fit)
 
 params <- extract(sim_fit)
-posterior_cp <- as.array(sim_fit)
+posterior_cp <- as.array(sim_fit) #extract posterior draws
+lp_cp <- log_posterior(sim_fit)
 
+np_cp <- nuts_params(sim_fit) #nuts params
+head(np_cp)
+
+color_scheme_set("darkgray")
+mcmc_parcoord(posterior_cp, np = np_cp) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
+
+mcmc_pairs(posterior_cp, np = np_cp, pars = c("beta", "c[1]", "c[2]")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
+
+scatter_c1_cp <- mcmc_scatter( # investigate a single bivariate plot to investigate it more closely. plot centered parameterization
+    posterior_cp,
+    pars = c("c[1]", "beta"),
+    transformations = list(beta = "log"),
+    np = np_cp
+)
+
+scatter_c1_cp
+
+mcmc_trace(posterior_cp, np=np_cp) #trace plot. time series plot of markov chains. use window argument to zoom in on suspicious sections.
+
+color_scheme_set("red")
+mcmc_nuts_divergence(np_cp, lp_cp) # understand how divergences interact with the model globally. Identify light tails and incomplete exploration of target distribution. use chain argument to overlay the plot for a particular Markov chain on the plot
+
+color_scheme_set("red")
+mcmc_nuts_energy(np_cp)
+            # energy plot. shows overlaid histograms of the (centered) marginal energy distribution piE and the first-differenced distribution pi_deltaE. id overly heavy tails (also challenging for sampling). the energy diagnostic for HMC (and the related energy-based Bayesian fraction of missing info) quantifies the heaviness of the tails of the posterior. Ideally the two histograms will look the same
+
+# MCMC diagnostics: convergence?
+
+# Rhat: potential scale reduction statistic
+# compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
+
+rhats <- rhat(sim_fit)
+color_scheme_set("brightblue")
+mcmc_rhat(rhats) +
+    yaxis_text(hjust = 1)
+
+# Effective sample size
+# estimate of the number of independent draws from the posterior dist of the estimand of interest. n_eff in stan is based on ability of draws to estimate the true mean value of the param. because draws are not independent if there is autocorrelation between draws, neff is usually smaller than total N. the larger the ration of n_eff to N, the better. ratios depend not just on the model but on the algorithm used to fit the model
+
+ratios_cp <- neff_ratio(sim_fit)
+print(ratios_cp)
+
+mcmc_neff(ratios_cp, size = 2) +
+    yaxis_text(hjust = 1)
+
+# Autocorrelation
+#n_eff/N decreases as autocorrelation becomes more extreme. Visualize autocorrelation using mcmc_acf or mcmc_acf_bar. Postive autocorrelation is bad because it means the chain gets stuck. Ideally, it drops quickly to zero as lag increasses. negative autocorrelation indicates fast convergence of sample mean towards true
+
+mcmc_acf(posterior_cp, lags = 10)
 ############
 
 N <- nrow(pd)
