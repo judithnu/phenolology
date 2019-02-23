@@ -15,7 +15,8 @@ parameters{
 }
 
 model {
-    c ~ uniform(0, 500); //cutpoints prior
+    c ~ normal(5, 10); //cutpoints prior
+    beta ~ beta(1,1); //beta prior
     for (n in 1:N)
       phenophase[n] ~ ordered_logistic(heatsum[n] * beta, c);
 }
