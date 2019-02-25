@@ -82,10 +82,11 @@ gen_model <- "~/Documents/research_phenolology/generative_model.stan"
 generated_data_model <- stan(file=gen_model, iter=1,
             chains=1, algorithm="Fixed_param")
 
+show(generated_data_model)
 sim_data <- data.frame(heatsum = t(extract(generated_data_model)$heatsum),
-           phenophase = t(extract(generated_data_model)$phenophase))
+           phenophase = t(extract(generated_data_model)$phenophase), beta = t(extract(generated_data_model)$beta), clone = t(extract(generated_data_model)$clone))
 
-ggplot(sim_data, aes(x = heatsum, y=phenophase)) +
+ggplot(sim_data, aes(x = heatsum, y=phenophase, color = clone)) +
     geom_point() +
     ggtitle('Simulated heatsum and phenophase data')
 
@@ -93,13 +94,14 @@ ggplot(sim_data, aes(x = heatsum, y=phenophase)) +
 # 5. Analyze the Generative Ensemble (Build a model with your fake data and see if you can get the parameters back)
 ############################################################
 
-R <- 100 # 1000 draws from the Bayesian joint distribution
+#R <- 100 # 1000 draws from the Bayesian joint distribution
 N <- nrow(sim_data)
 K <- length(unique(sim_data$phenophase))
+N_clone <- length(unique(sim_data$clone))
 heatsum <- sim_data$heatsum
 phenophase <- sim_data$phenophase
-
-stan_rdump(c("N", "K", "heatsum", "phenophase"), file="simulated_data_from_gen_model.data.R")
+clone <- sim_data$clone
+stan_rdump(c("N", "K", "clone", "heatsum", "phenophase"), file="simulated_data_from_gen_model.data.R")
 
 
 
@@ -114,6 +116,8 @@ sim_fit <- stan(file='phenology.stan', data=sim_data_for_stan,
             iter=10000, warmup=1000, chains=5)
 
 util$check_all_diagnostics(sim_fit)
+
+show(sim_fit)
 
 # VISUAL MCMC DIAGNOSTICS
 ############################################################
