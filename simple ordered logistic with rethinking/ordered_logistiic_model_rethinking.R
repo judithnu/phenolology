@@ -1,103 +1,22 @@
-# try logit model with subset of real data
+# combine phenology and weather station data
 library(dplyr)
 library(lubridate)
 library(tidyr)
 library(viridis)
 library(ggplot2)
 library(rethinking)
-# Data --------------------------------------------------------------------
 
 
-#rawdat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
-phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived//derived_phenophase.csv', stringsAsFactors = FALSE)
-climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PrinceGeorgeSTP.csv', header = TRUE)
 
-# Functions ----------------------------------
+# Ordered Logit Model (rethinking)
 
-#function to calculate heat sum using a linear threshold model of heat sum accumulation. If mean temp for the day is below a given threshold, no heat is accumulated. If mean temp for the day is above a given threshold, the heat accumulated = mean temp - threshold temp. This requires a dataframe with MeanTempC columns (Mean temperature, numeric) and Year and DoY (Day of Year) columns. threshold temp is a number. Returns a df with year, day of year, daily heat and heatsum columns
+# read in data
 
-#eventually will need to modify so site id in here somewhere
-
-calculate_heat_sum <- function(climate_df, threshold_temp) {
-    # calculate heat added on a given day
-    # days where no heat is added bc threshold temp not reached
-    no_heat <- climate_df %>%
-        filter(MeanTempC < threshold_temp) %>%
-        mutate(Heat = 0)
-    # days where heat is added bc threshold temp is reached
-    heat <- climate_df %>%
-        filter(MeanTempC >= threshold_temp) %>%
-        mutate(Heat = MeanTempC - threshold_temp)
-
-    clim <- rbind(no_heat, heat) %>%
-        arrange(Year, DoY) %>%
-        group_by(Year) %>%
-        mutate(Heatsum = cumsum(Heat)) %>% # add heatsum
-        select(Year, DoY, Heat, Heatsum)
-
-    return(clim)
-}
-
-# Calculate heatsum -----------------
-
-# climate data
-clim <- subset(climdat, Year %in% unique(phendat$Year))
-colnames(clim)[2] <- "DoY" #rename DayofYear to DoY
-
-#calculate amount of heat per day assume no heating below 5 degrees and linear heating starting at 5
-
-clim <- calculate_heat_sum(clim, 5)
-
-ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
-    geom_point() #check nothing weird happened
-
-# RUN FOR ONLY WAGNER DATA -------------------------------
-# Combine climate and phenology data
-
-# phenology data
-
-phen <- subset(phendat, Source == "Rita Wagner") #only Wagner
-phen_pgtis <- subset(phendat, Site = "PGTIS") #all PGTIS
-
-# mdat <- subset(rawdat, Sex == "MALE" & Source == "Rita Wagner") #male
-#
-# fdat <- subset(rawdat, Sex == "FEMALE" & Source == "Rita Wagner") #female
-
-
-phendf <- merge(phen, clim) %>%
-    select(Sex, Year, DoY, Index, Clone, Phenophase_Derived, Heat, Heatsum, Orchard) %>%
-    arrange(Year, Sex, Index, Clone, DoY) %>%
-    filter(!Phenophase_Derived==0) # drop trees that didn't flower
-phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
+phendf <- read.csv("~/Documents/research_phenolology/data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header=TRUE)
 
 mdf <- subset(phendf, Sex == "MALE")
 
 fdf <- subset(phendf, Sex == "FEMALE")
-
-write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum.csv")
-
-#Test that no data dropped unintentionally
-nrow(mdf) + nrow(fdf) == nrow(phendf)
-
-# Visualize the data
-
-ggplot(phendf, aes(x = Phenophase_Derived, y=Heatsum, color = Sex)) +
-    geom_violin() +
-    ggtitle("Distribution of Heatsums at each phenophase") +
-    facet_wrap(~ Year)
-
-ggplot(phendf, aes(x = Heatsum, y = Phenophase_Derived, color = Sex)) +
-    geom_jitter(shape = 1, alpha = .5)
-
-ggplot(phendf, aes(x = Heatsum, y = Phenophase_Derived, color = Sex)) +
-    geom_jitter(shape = 1, alpha = .5) +
-    facet_wrap(~ Year)
-
-ggplot(phendf, aes(x = Heatsum, y = Phenophase_Derived, color = Sex)) +
-    geom_jitter(shape = 1, alpha = .5) +
-    facet_wrap(Orchard ~ .)
-
-# Ordered Logit Model (rethinking)
 
 # read in data for priors
 heatsum_priors_dat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/orchard_heatsums_WalshWebber2008.csv')
