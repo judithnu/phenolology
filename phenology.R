@@ -29,7 +29,7 @@ pd <- phenology_and_heatsum_data
 
 ggplot(pd, aes(x=Heatsum, y=Phenophase_Derived, colour=Sex)) +
     geom_jitter(shape = 3, alpha = 0.5) +
-    facet_wrap(.~Year)
+    facet_wrap(Site~Year)
 
 
 hist(pd$Phenophase_Derived, xlab = "Phenophase")
@@ -45,14 +45,16 @@ cum_pr_pd <- cumsum(pr_pd)
 plot(c(1:3), cum_pr_pd, type = "b", xlab = "Phenophase", ylab = "cumulative proportion", ylim=c(0,1))
 
 # cumulative proportion by heatsum
-pr_by_heat <- table(pd$Phenophase_Derived, pd$Heatsum)
+pr_by_heat <- table(pd$Phenophase_Derived, pd$Heatsum, pd$Site)
 
 
 # This graph for lab meeting
-ggplot(pd, aes(x = Heatsum, color = as.factor(Phenophase_Derived) )) +
+ggplot(pd, aes(x = Heatsum, color = Site)) +
     stat_ecdf() +
-    scale_colour_viridis_d() +
-    ggtitle("Cumulative proportion of each phenophase as heatsum increases")
+    scale_colour_viridis_d(end = 0.8) +
+    ggtitle("Cumulative proportion of each phenophase as heatsum increases") +
+    facet_wrap(Phenophase_Derived ~ . ) +
+    legend_move(position = "bottom")
 
 ggplot(pd, aes(x = DoY, color = as.factor(Phenophase_Derived))) +
     stat_ecdf() +
@@ -86,8 +88,11 @@ show(generated_data_model)
 sim_data <- data.frame(heatsum = t(extract(generated_data_model)$heatsum),
            phenophase = t(extract(generated_data_model)$phenophase), beta = t(extract(generated_data_model)$beta), clone = t(extract(generated_data_model)$clone))
 
+hist(sim_data$beta)
+plot(sim_data$clone, sim_data$beta)
+
 ggplot(sim_data, aes(x = heatsum, y=phenophase, color = clone)) +
-    geom_point() +
+    geom_line() +
     ggtitle('Simulated heatsum and phenophase data')
 
 ############################################################
@@ -131,7 +136,7 @@ head(np_cp)
 color_scheme_set("darkgray")
 mcmc_parcoord(posterior_cp, np = np_cp) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
 
-mcmc_pairs(posterior_cp, np = np_cp, pars = c("beta", "c[1]", "c[2]")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
+mcmc_pairs(posterior_cp, np = np_cp, pars = c("c[1]", "c[2]", "shape1", "shape2")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
 
 scatter_c1_cp <- mcmc_scatter( # investigate a single bivariate plot to investigate it more closely. plot centered parameterization
     posterior_cp,
@@ -189,7 +194,9 @@ dimnames(posterior)
 
 # central posterior uncertainty intervals. by default shows 50% intervals (thick) and 90% intervals (thinner outer). Use point_est to show or hide point estimates
 color_scheme_set("red")
-mcmc_intervals(posterior, pars = c("c[1]", "c[2]", "beta"))
+mcmc_intervals(posterior, pars = c("c[1]", "c[2]"))
+mcmc_intervals(posterior, regex_pars = "shape")
+mcmc_intervals(posterior, regex_pars = "beta")
 
 # show uncertainty intervals as shaded areas under estimated posterior density curves
 

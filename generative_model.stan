@@ -20,12 +20,12 @@ generated quantities {
 
     // Construct a heatsum covariate
     for (n in 1:N) {
-        heatsum[n] = uniform_rng(0,500);
+        heatsum[n] = uniform_rng(0,800);
     }
 
     // Construct beta parameter
     for (i in 1:N_clone) {
-        beta[i] = beta_rng(2,5);
+        beta[i] = beta_rng(.5,5);
     }
 
     // Simulate data from observational model
