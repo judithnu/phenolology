@@ -1,13 +1,17 @@
 library(rethinking)
 library(dplyr)
-library(magrittr)
+library(bayesplot)
+#library(magrittr)
 
-phenology_data <- read.csv("~/Documents/research_phenolology/data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE)
-SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-    select(SPU_Name, Orchard)
+options(mc.cores=parallel::detectCores())
+rstan_options(auto_write=TRUE)
+
+phenology_data <- read.csv("~/phenolology/data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE)
+SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+    dplyr::select(SPU_Name, Orchard)
 
 phendf <- phenology_data
-phendf <- left_join(phenology_data, SPU_dat)
+phendf <- dplyr::left_join(phenology_data, SPU_dat)
 #Create Clone IDs
 phendf$CloneID <- group_indices(phendf, Clone)
 #Create OrchardIDs
@@ -27,7 +31,7 @@ mdf <- subset(phendf, Sex == "MALE") %>%
 fdf <- subset(phendf, Sex == "FEMALE")
 
 # read in data for priors
-heatsum_priors_dat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/orchard_heatsums_WalshWebber2008.csv')
+heatsum_priors_dat <- read.csv('~/phd/data/PhenologyAndPollenCounts/orchard_heatsums_WalshWebber2008.csv')
 # calculate priors
 
 simple_beta_prior = 0.5
@@ -39,8 +43,8 @@ pre_pollination_summary <- pre_pollination_summary*simple_beta_prior
 cutpoint_mean <- pre_pollination_summary$mean
 cutpoint_sd <- pre_pollination_summary$sd
 
-#varying intercepts on clones
-m2 <- ulam(
+#varying intercepts on clones and Provenance, varying provenance slopes
+mSpIcp <- ulam(
     alist(
         #likelihood
         Phenophase_Derived ~ ordered_logistic(phi, cutpoints),
@@ -57,11 +61,15 @@ m2 <- ulam(
     ),
     data = mdf,
     start= list(a1=100*.2, a2=250*.2),
-    warmup = 10, iter=500, chains = 1, cores = 1
+    warmup = 2000, iter=10000, chains = 10, cores = 10
 )
+
+m2 <- mSpIcp
 precis(m2, depth=2)
 plot(m2)
 traceplot(m2)
-stanfit(m2)
 
-
+sfm2 <- m2@stanfit
+saveRDS(sfm2, file="2019-03-03_mSpIcp.rds")
+stancode(sfm2)
+write(stancode(sfm2), file="2019-03-03_mSpIcp.stan")
