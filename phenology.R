@@ -48,11 +48,21 @@ plot(c(1:3), cum_pr_pd, type = "b", xlab = "Phenophase", ylab = "cumulative prop
 pr_by_heat <- table(pd$Phenophase_Derived, pd$Heatsum)
 
 
+
 # This graph for lab meeting
+pd <- dplyr::filter(pd, Phenophase_Derived > 1)
+
+pd_med <- pd %>% dplyr::group_by_at(vars(Sex, Phenophase_Derived))  %>%
+    summarise(mheat = median(Heatsum)) #median heatsums
 ggplot(pd, aes(x = Heatsum, color = as.factor(Phenophase_Derived) )) +
-    stat_ecdf() +
-    scale_colour_viridis_d() +
-    ggtitle("Cumulative proportion of each phenophase as heatsum increases")
+    stat_ecdf(size=1.2) +
+    scale_colour_viridis_d(name = "Phenophase") +
+    ggtitle("Cumulative proportion of each phenophase as heatsum increases") +
+    theme_bw(base_size = 19) +
+    theme(legend.position = "top") +
+    geom_vline(data=pd_med, aes(xintercept=mheat, group=Sex), color="darkgray") +
+    facet_grid(Sex ~ .)
+
 
 ggplot(pd, aes(x = DoY, color = as.factor(Phenophase_Derived))) +
     stat_ecdf() +
@@ -85,9 +95,19 @@ generated_data_model <- stan(file=gen_model, iter=1,
 sim_data <- data.frame(heatsum = t(extract(generated_data_model)$heatsum),
            phenophase = t(extract(generated_data_model)$phenophase))
 
-ggplot(sim_data, aes(x = heatsum, y=phenophase)) +
-    geom_point() +
+ggplot(sim_data, aes(x = heatsum, color=phenophase)) +
+    geom_ecdf() +
     ggtitle('Simulated heatsum and phenophase data')
+
+sim_med <- sim_data %>% dplyr::group_by(phenophase)  %>%
+    summarise(mheat = median(heatsum)) #median heatsums
+ggplot(sim_data, aes(x = heatsum, color = as.factor(phenophase))) +
+    stat_ecdf() +
+    scale_colour_viridis_d(name = "Phenophase") +
+    ggtitle("Cumulative proportion of each phenophase as heatsum increases") +
+    theme_bw(base_size = 19) +
+    theme(legend.position = "top") +
+    geom_vline(data=sim_med, aes(xintercept=mheat), color="darkgray")
 
 ############################################################
 # 5. Analyze the Generative Ensemble (Build a model with your fake data and see if you can get the parameters back)
