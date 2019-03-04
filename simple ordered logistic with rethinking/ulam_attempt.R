@@ -56,24 +56,24 @@ mIcp <- ulam(
         a_clone[CloneID] ~ dnorm(0, sigma_clone),
         a_provenance[ProvenanceID] ~ dnorm(0, sigma_provenance),
         #hyperpriors
-        sigma_clone ~ gamma(1,2),
-        sigma_provenance ~ gamma(1,2)
+        sigma_clone ~ exponential(1.5),
+        sigma_provenance ~ exponential(1.5)
     ),
     data = mdf,
     start= list(a1=100*.2, a2=250*.2),
-    warmup = 2000, iter=10000, chains = 10, cores = 10
+    warmup = 1000, iter=5000, chains = 10, cores = 10
 )
 
-m2 <- mSpIcp
-precis(m2, depth=2)
-plot(m2)
-traceplot(m2)
+m3 <- mIcp
+precis(m3, depth=2)
+plot(m3)
+traceplot(m3)
 
-sfm2 <- m2@stanfit
-saveRDS(sfm2, file="2019-03-03_mSpIcp.rds")
-stancode(sfm2)
-write(stancode(sfm2), file="2019-03-03_mSpIcp.stan")
-m2fit <- readRDS("~/Documents/research_phenolology/2019-03-03_mSpIcp.rds")
+sfm3 <- m3@stanfit
+saveRDS(sfm3, file="2019-03-03_mSpIcp.rds")
+stancode(sfm3)
+write(stancode(sfm3), file="2019-03-03_mIcp.stan")
+m3fit <- readRDS("~/Documents/research_phenolology/2019-03-03_mIcp.rds")
 
 # VISUAL MCMC DIAGNOSTICS
 ############################################################
@@ -141,7 +141,7 @@ mcmc_acf(posterior_cp, lags = 10)
 ############################################################
 # Plotting MCMC draws
 
-posterior <- as.array(sim_fit)
+posterior <- as.array(m3)
 dim(sim_fit)
 
 dimnames(posterior)
