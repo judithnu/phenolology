@@ -1,7 +1,9 @@
 library(rethinking)
 library(dplyr)
 library(bayesplot)
-#library(magrittr)
+
+util <- new.env()
+source('~/Documents/classes/STANworkshop/material/1 - workflow/stan_utility.R', local=util)
 
 options(mc.cores=parallel::detectCores())
 rstan_options(auto_write=TRUE)
@@ -101,6 +103,8 @@ stancode(sfm3)
 write(stancode(sfm3), file="2019-03-03_mIcp.stan")
 m3fit <- readRDS("~/Documents/research_phenolology/2019-03-03_mIcp.rds")
 
+util$check_all_diagnostics(m2fit)
+
 # VISUAL MCMC DIAGNOSTICS
 ############################################################
 params <- extract(fit)
@@ -132,7 +136,7 @@ scatter_c1_cp
 mcmc_trace(posterior_cp, np=np_cp) #trace plot. time series plot of markov chains. use window argument to zoom in on suspicious sections.
 
 color_scheme_set("red")
-mcmc_nuts_divergence(np_cp, lp_cp) # understand how divergences interact with the model globally. Identify light tails and incomplete exploration of target distribution. use chain argument to overlay the plot for a particular Markov chain on the plot
+mcmc_nuts_divergence(np_cp, lp_cp, chain = 2) # understand how divergences interact with the model globally. Identify light tails and incomplete exploration of target distribution. use chain argument to overlay the plot for a particular Markov chain on the plot
 
 color_scheme_set("red")
 mcmc_nuts_energy(np_cp)
@@ -151,7 +155,7 @@ mcmc_rhat(rhats) +
 # Effective sample size
 # estimate of the number of independent draws from the posterior dist of the estimand of interest. n_eff in stan is based on ability of draws to estimate the true mean value of the param. because draws are not independent if there is autocorrelation between draws, neff is usually smaller than total N. the larger the ration of n_eff to N, the better. ratios depend not just on the model but on the algorithm used to fit the model
 
-ratios_cp <- neff_ratio(sim_fit)
+ratios_cp <- neff_ratio(m2fit)
 print(ratios_cp)
 
 mcmc_neff(ratios_cp, size = 2) +
@@ -176,9 +180,10 @@ dimnames(posterior)
 
 # central posterior uncertainty intervals. by default shows 50% intervals (thick) and 90% intervals (thinner outer). Use point_est to show or hide point estimates
 color_scheme_set("red")
-mcmc_intervals(posterior, pars = c("c[1]", "c[2]"))
-mcmc_intervals(posterior, regex_pars = "shape")
-mcmc_intervals(posterior, regex_pars = "beta")
+mcmc_intervals(posterior, pars = param_names[c(1:4)], point_est = "none")
+mcmc_intervals(posterior, regex_pars = "a_clone")
+mcmc_intervals(posterior, regex_pars = "cutpoints")
+mcmc_intervals(posterior, regex_pars = "a_provenance", point_est = "none")
 
 #NB
 mcmc_intervals(posterior_cp, regex_pars = c("beta", "provenance"))
@@ -205,21 +210,21 @@ mcmc_areas_ridges(posterior_cp, regex_pars=c("clone"))
 
 # plot marginal posterior distributions combining all chains. Tranformations argument can be helpful
 color_scheme_set("green")
-mcmc_hist(posterior, pars = c("c[1]", "c[2]", "beta"))
+mcmc_hist(posterior, regex_pars="a_provenance")
 
 color_scheme_set("brightblue")
 mcmc_hist_by_chain(posterior, pars = c("c[1]", "c[2]", "beta"))
 
 # plot densities rather than histograms
 color_scheme_set("purple")
-mcmc_dens(posterior, pars = c("c[1]", "c[2]", "beta"))
+mcmc_dens(posterior, regex_pars = c("a_provenance"))
 # by chain
 mcmc_dens_overlay(posterior, pars = c("c[1]", "c[2]", "beta"))
 
 # plot violins
 
 color_scheme_set("teal")
-mcmc_violin(posterior, pars = c("c[1]", "c[2]", "beta"), probs = c(0.1, 0.5, 0.9))
+mcmc_violin(posterior, regex_pars = "a_provenance", probs = c(0.1, 0.5, 0.9))
 
 ### Bivariate plots
 
@@ -255,7 +260,7 @@ color_scheme_set("viridis")
 mcmc_trace(posterior, pars = c("c[1]", "c[2]", "beta"))
 
 # use points instead of lines and highlight a single chain
-mcmc_trace_highlight(posterior, pars = c("c[1]", "c[2]", "beta"), highlight = 3)
+mcmc_trace_highlight(posterior, regex_pars = "a_provenance", highlight = 3)
 
 
 

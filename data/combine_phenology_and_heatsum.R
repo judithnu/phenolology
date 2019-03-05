@@ -11,6 +11,7 @@ library(ggplot2)
 
 #rawdat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
 phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived//derived_phenophase.csv', stringsAsFactors = FALSE)
+phendat$TreeID <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PrinceGeorgeSTP_VernonNorth.csv', header = TRUE)
 
 # Functions ----------------------------------
@@ -50,9 +51,21 @@ clim <- subset(climdat, Year %in% unique(phendat$Year))
 
 clim <- calculate_heat_sum(clim, 5)
 
+#check nothing weird happened
 ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
     geom_point() +
-    facet_wrap(Site ~ .) #check nothing weird happened
+    facet_wrap(Site ~ .) +
+    theme_bw(base_size=18)
+
+ggplot(climdat, aes(x=as.factor(DoY), y=MeanTempC, color=Site)) +
+    geom_violin() +
+    theme_bw() +
+    xlab("Day of Year") +
+    #theme(axis.text.x=element_blank()) +
+    theme_bw(base_size=20) +
+    theme(axis.text.x=element_blank(), legend.position = "top") +
+    ggtitle("Mean Temperature 1996-2012")
+
 
 # RUN FOR ONLY WAGNER DATA -------------------------------
 # Combine climate and phenology data
@@ -68,7 +81,7 @@ phen <- subset(phendat, Site %in% c("Kalamalka","PGTIS")) #Kalamalka and PGTIS
 
 
 phendf <- merge(phen, clim) %>%
-    select(Site, Sex, Year, DoY, Index, Clone, Phenophase_Derived, Heat, Heatsum, Orchard) %>%
+    select(Site, Sex, Year, DoY, Index, Clone, TreeID, Phenophase_Derived, Heat, Heatsum, Orchard) %>%
     arrange(Site, Year, Sex, Index, Clone, DoY) %>%
     filter(!Phenophase_Derived==0) # drop trees that didn't flower
 phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
