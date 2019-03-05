@@ -20,15 +20,17 @@ phendf$OrchardID <- group_indices(phendf, Orchard)
 phendf$ProvenanceID <- group_indices(phendf, SPU_Name)
 #Create SiteIDs
 phendf$SiteID <- group_indices(phendf, Site)
+#Create SexIDs
+phendf$SexID <- group_indices(phendf, Sex)
 
 
 #drop "non-numeric" cols to make stan quit complaining
-phendf <- select(phendf, -Site, -SPU_Name)
+phendf <- select(phendf, -Site, -SPU_Name, -Sex)
 
-mdf <- subset(phendf, Sex == "MALE") %>%
-    select(-Sex)
-
-fdf <- subset(phendf, Sex == "FEMALE")
+# mdf <- subset(phendf, Sex == "MALE") %>%
+#     select(-Sex)
+# 
+# fdf <- subset(phendf, Sex == "FEMALE")
 
 # read in data for priors
 heatsum_priors_dat <- read.csv('~/phd/data/PhenologyAndPollenCounts/orchard_heatsums_WalshWebber2008.csv')
@@ -64,12 +66,36 @@ mIcp <- ulam(
     warmup = 1000, iter=5000, chains = 10, cores = 10
 )
 
-m3 <- mIcp
-precis(m3, depth=2)
+mSsIcp <- ulam(
+  alist(
+    #likelihood
+    Phenophase_Derived ~ ordered_logistic(phi, cutpoints),
+    #model
+    phi <- beta[SexID]*Heatsum + a_provenance[ProvenanceID] + a_clone[CloneID],
+    #priors
+    beta[SexID] ~ dbeta(.5,5),
+    cutpoints ~ dnorm(197, 176),
+    a_clone[CloneID] ~ dnorm(0, 1),
+    a_provenance[ProvenanceID] ~ dnorm(0, 1)
+    #hyperpriors
+    #sigma_clone ~ exponential(1.5),
+    #sigma_provenance ~ exponential(1.5)
+  ),
+  data = phendf,
+  start= list(a1=100*.2, a2=250*.2),
+  warmup = 1000, iter=5000, chains = 10, cores = 10
+)
+
+fit <- mSsIcp@stanfit
+precis(fit, depth=2)
+plot(fit)
 plot(m3)
 traceplot(m3)
 
-sfm3 <- m3@stanfit
+saveRDS(fit@stanfit, file = "~/phenolology/2019-03-04_mSsIcp.rds")
+
+test <- readRDS("~/phenolology/2019-03-04_mSsIcp.rds")
+
 saveRDS(sfm3, file="2019-03-03_mSpIcp.rds")
 stancode(sfm3)
 write(stancode(sfm3), file="2019-03-03_mIcp.stan")
@@ -77,13 +103,13 @@ m3fit <- readRDS("~/Documents/research_phenolology/2019-03-03_mIcp.rds")
 
 # VISUAL MCMC DIAGNOSTICS
 ############################################################
-params <- extract(m2fit)
-posterior_cp <- as.array(m2fit) #extract posterior draws
-lp_cp <- log_posterior(m2fit)
+params <- extract(fit)
+posterior_cp <- as.array(fit) #extract posterior draws
+lp_cp <- log_posterior(fit)
 
 param_names <- attributes(posterior_cp)$dimnames$parameters
 
-np_cp <- nuts_params(m2fit) #nuts params
+np_cp <- nuts_params(fit) #nuts params
 
 head(np_cp)
 
@@ -117,7 +143,7 @@ mcmc_nuts_energy(np_cp)
 # Rhat: potential scale reduction statistic
 # compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
 
-rhats <- rhat(sim_fit)
+rhats <- rhat(fit)
 color_scheme_set("brightblue")
 mcmc_rhat(rhats) +
     yaxis_text(hjust = 1)
@@ -154,6 +180,10 @@ mcmc_intervals(posterior, pars = c("c[1]", "c[2]"))
 mcmc_intervals(posterior, regex_pars = "shape")
 mcmc_intervals(posterior, regex_pars = "beta")
 
+#NB
+mcmc_intervals(posterior_cp, regex_pars = c("beta", "provenance"))
+mcmc_intervals(posterior_cp, regex_pars = c("clone"))
+
 # show uncertainty intervals as shaded areas under estimated posterior density curves
 
 mcmc_areas(
@@ -163,6 +193,12 @@ mcmc_areas(
     prob_outer = 0.99, # 99% intervals
     point_est = "mean"
 )
+
+#PRES
+mcmc_areas(posterior_cp,
+           regex_pars = "beta")
+
+mcmc_areas_ridges(posterior_cp, regex_pars=c("clone"))
 
 ### Univariate marginal posterior distributions
 # Look at histograms or kernel density estimates of marginal posterior distributions, chains together or separate
