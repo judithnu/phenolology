@@ -31,7 +31,7 @@ phendf <- select(phendf, -Site, -SPU_Name, -Sex)
 
 # mdf <- subset(phendf, Sex == "MALE") %>%
 #     select(-Sex)
-# 
+#
 # fdf <- subset(phendf, Sex == "FEMALE")
 
 # read in data for priors
@@ -96,7 +96,8 @@ traceplot(m3)
 
 saveRDS(fit@stanfit, file = "~/phenolology/2019-03-04_mSsIcp.rds")
 
-test <- readRDS("~/phenolology/2019-03-04_mSsIcp.rds")
+fit <- readRDS("~/Documents/research_phenolology/2019-03-04_mSsIcp.rds")
+
 
 saveRDS(sfm3, file="2019-03-03_mSpIcp.rds")
 stancode(sfm3)
@@ -107,7 +108,7 @@ util$check_all_diagnostics(m2fit)
 
 # VISUAL MCMC DIAGNOSTICS
 ############################################################
-params <- extract(fit)
+#params <- extract(fit)
 posterior_cp <- as.array(fit) #extract posterior draws
 lp_cp <- log_posterior(fit)
 
@@ -186,8 +187,9 @@ mcmc_intervals(posterior, regex_pars = "cutpoints")
 mcmc_intervals(posterior, regex_pars = "a_provenance", point_est = "none")
 
 #NB
-mcmc_intervals(posterior_cp, regex_pars = c("beta", "provenance"))
-mcmc_intervals(posterior_cp, regex_pars = c("clone"))
+mcmc_intervals(posterior_cp, regex_pars = c("beta")) + ggtitle("Female and male transition speed")
+mcmc_intervals(posterior_cp, regex_pars = c("provenance")) + ggtitle("Provenance intercepts")
+mcmc_intervals(posterior_cp, regex_pars = c("clone")) + ggtitle("Clone intercepts")
 
 # show uncertainty intervals as shaded areas under estimated posterior density curves
 
