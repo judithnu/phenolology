@@ -2,6 +2,8 @@
 title: "Predicting pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
 date: "January 25, 2019"
+params:
+  date !r SysDate()
 output:
   pdf_document: default
   html_document: 
@@ -146,6 +148,25 @@ in the AdapTree project, lodgepole pine seedlings grown for three to four weeks 
 Thus, I expect to be able to disregard the state of chilling and fit only Equations \ref{forcing} and \ref{simp_force_amt}).
 Once the model is parameterized I will be able to calculate the timing of pollen shed and cone receptivity across the lodgepole pine species range using location specific climate data from seed orchards and ClimateWNA [@Wang2012]. 
 I will validate the model by comparing predictions to phenological measurements from the National Phenology Network.
+
+### Actual methods
+I modeled the derived phenological states with a multilevel ordered logistic model fit in Stan [@standevelopmentteamRStanInterfaceStan2018].
+
+$$\begin{array}{ll}
+S_i&\sim \mathrm{Categorical}(p) &\text{probability of data} \\
+p_1 & =q_1 &\text{probabilities of each value of } k\\
+p_2 & = q_2 - q_1 \\
+p_3 & = 1-q_3 \\
+logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
+\eta_i&= \beta_{sex} h_i + \alpha_{provenance} + \alpha_{clone} &\text{linear model}\\
+\\
+\kappa_k&\sim \mathrm{normal}(5,10) &\text{common prior for cutpoints}\\
+\beta_{clone}&\sim \mathrm{beta}(1,1) \\
+\alpha_{clone} &\sim \mathrm{normal}(0,1) \\
+\alpha_{provenance} &\sim \mathrm{normal}(0,1) \\
+\bf{H}_1 &= \beta_{sex}/(c_1+\alpha_{clone}+\alpha_{provenance})\\
+\bf{H}_2 &= \beta_{sex}/(c_2+\alpha_{clone}+\alpha_{provenance})
+\end{array}$$
 
 To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions
 
