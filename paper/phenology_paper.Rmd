@@ -85,6 +85,8 @@ In 1.75 generation orchards, data from 10 year tests of mother tree offspring ar
 Offspring from controlled crosses between trees in first generation orchards are tested in field trials and the best trees are then cloned and grafted onto root stock in advanced generation orchards. 
 
 I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 
+
+![Map of seed orchard locations. Boxed area in map on left is shown in greater detail on the right.](~/Documents/research_phd/maps/SiteMaps/sitemap.png)
     
 I obtained records for 17 of the 26 lodgepole pine seed orchards in British Columbia. Orchards include the offspring of trees from 6 of the 7 BC seed planning zones (SPZs) (Figure \ref{SPZ}) grown at at 7 sites across BC. SPZs are biogeoclimatic and political units used for seed planting purposes by British Columbia. SPZs are divided into elevation bands called Seed Planning Units (SPUs), which form this project's provenances. At least 13 of the seed orchards are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.
 
