@@ -152,11 +152,39 @@ Once the model is parameterized I will be able to calculate the timing of pollen
 I will validate the model by comparing predictions to phenological measurements from the National Phenology Network.
 
 ### Actual methods
-I modeled the derived phenological states with a multilevel ordered logistic model fit in Stan [@standevelopmentteamRStanInterfaceStan2018].
+I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan [@standevelopmentteamRStanInterfaceStan2018].
+
+For phenological states $k \in \{1,2,3\}$, the probability of 
+
+The ordered logistic probability mass function is
+$$\text{OrderedLogistic}(k~|~\eta,c) = \left\{ \begin{array}{ll} 1 -
+\text{logistic}(\eta - c_1)  &  \text{if } k = 1, \\[4pt]
+\text{logistic}(\eta - c_1) - \text{logistic}(\eta - c_2)  &
+\text{if } k=2, \text{and} \\[4pt] \text{logistic}(\eta -
+c_3) - 0  &  \text{if } k = 3. \end{array} \right.$$
+
+
+$$\begin{array}{rlr}
+S_i & \sim OrderedLogistic(\eta,\kappa) & \text{probability of data}\\
+\eta_i & = \beta_{sex} h_i + \alpha_{provenance} + \alpha_{clone} & \text{linear model}\\
+\kappa_k & \sim \mathrm{normal}(5,10) & \text{common prior for cutpoints}\\
+\beta_{clone} & \sim \mathrm{beta}(1,1) & \text{prior for transition speed}\\
+\alpha_{clone} & \sim \mathrm{normal}(0,1) & \text{prior for clone threshold effects}\\
+\alpha_{provenance} & \sim \mathrm{normal}(0,1) & \text{prior for provenance threshold effects}
+\end{array}$$
+
+
+The overall threshold for for phase transition can be calculated by dividing the slope by the intercept.
+
+$$\begin{array}{threshold}
+\bf{H}_1 &= \beta_{sex}/(c_1+\alpha_{clone}+\alpha_{provenance})\\
+\bf{H}_2 &= \beta_{sex}/(c_2+\alpha_{clone}+\alpha_{provenance})
+\end{array}$$
+
 
 $$\begin{array}{ll}
-S_i&\sim \mathrm{Categorical}(p) &\text{probability of data} \\
-p_1 & =q_1 &\text{probabilities of each value of } k\\
+S_i&\sim \mathrm{Categorical}(\bf{p}) &\text{probability of data} \\
+p_1 & = q_1 &\text{probabilities of each value of } k\\
 p_2 & = q_2 - q_1 \\
 p_3 & = 1-q_3 \\
 logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
@@ -169,6 +197,7 @@ logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
 \bf{H}_1 &= \beta_{sex}/(c_1+\alpha_{clone}+\alpha_{provenance})\\
 \bf{H}_2 &= \beta_{sex}/(c_2+\alpha_{clone}+\alpha_{provenance})
 \end{array}$$
+
 
 To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions
 
