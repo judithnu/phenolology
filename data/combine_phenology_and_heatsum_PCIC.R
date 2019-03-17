@@ -58,12 +58,31 @@ clim <- subset(clim, Year %in% unique(phendat$Year))
 #calculate amount of heat per day assume no heating below 5 degrees and linear heating starting at 5
 
 clim0 <- calculate_heat_sum(clim, 0)
+colnames(clim0)[4] <- "Heatsum0"
 clim1 <- calculate_heat_sum(clim, 1)
+colnames(clim1)[4] <- "Heatsum1"
 clim2 <- calculate_heat_sum(clim, 2)
+colnames(clim2)[4] <- "Heatsum2"
 clim3 <- calculate_heat_sum(clim, 3)
+colnames(clim3)[4] <- "Heatsum3"
 clim4 <- calculate_heat_sum(clim, 4)
+colnames(clim4)[4] <- "Heatsum4"
 clim5 <- calculate_heat_sum(clim, 5)
+colnames(clim5)[4] <- "Heatsum5"
 clim6 <- calculate_heat_sum(clim, 6)
+colnames(clim6)[4] <- "Heatsum6"
+clim7 <- calculate_heat_sum(clim, 7)
+colnames(clim7)[4] <- "Heatsum7"
+
+heatsum_vary_thresholds <- full_join(clim0, clim1) %>%
+    full_join(clim2) %>%
+    full_join(clim3) %>%
+    full_join(clim4) %>%
+    full_join(clim5) %>%
+    full_join(clim6) %>%
+    full_join(clim7)
+
+heatsum_vary_thresholds <- gather(heatsum_vary_thresholds, key=threshold, value = Heatsum, contains("Heatsum"))
 
 clim <- clim5
 
