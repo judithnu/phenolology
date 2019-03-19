@@ -9,8 +9,10 @@ options(mc.cores=parallel::detectCores())
 rstan_options(auto_write=TRUE)
 
 phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE)
-SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-    dplyr::select(SPU_Name, Orchard)
+#SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+ #   dplyr::select(SPU_Name, Orchard)
+SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+  dplyr::select(SPU_Name, Orchard)
 
 phendf <- phenology_data %>%
     na.omit()
@@ -73,7 +75,7 @@ phendf <- select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -C
 #     warmup = 1000, iter=5000, chains = 10, cores = 10
 # )
 #############################
-m_SsIpcst <- ulam(
+m_SsIpcst_maxdepth <- ulam(
   alist(
     #likelihood
     Phenophase_Derived ~ ordered_logistic(phi, cutpoints),
@@ -90,29 +92,38 @@ m_SsIpcst <- ulam(
     sigma_clone ~ exponential(1.5),
     sigma_provenance ~ exponential(1.5),
     sigma_site ~ exponential(1.5),
-    sigma_tree ~ exponential(1.5)
-  ),
+    sigma_tree ~ exponential(1.5),
+    # calculate 50% transition points
+    gq> firsttrans <- (cutpoints[1] + a_provenance[ProvenanceID] + a_clone[CloneID] + a_site[SiteID] + a_tree[TreeID_new])/beta[SexID],
+    gq> secondtrans <- (cutpoints[2] + a_provenance[ProvenanceID] + a_clone[CloneID] + a_site[SiteID] + a_tree[TreeID_new])/beta[SexID]
+    ),
   data = phendf,
-  warmup = 10, iter=50, chains = 1, cores = 10
+  warmup = 1500, iter=7500, chains = 10, cores = 10, algorithm="NUTS", control= list(max_treedepth=12)
 )
 
-fit <- mSsIcp@stanfit
-precis(fit, depth=2)
+fit_ulam <- m_SsIpcst_maxdepth
+fit <- m_SsIpcst_maxdepth@stanfit
+fitprecis <- precis(fit, depth=2)
 plot(fit)
 plot(m3)
 traceplot(m3)
 
-saveRDS(fit@stanfit, file = "~/phenolology/2019-03-04_mSsIcp.rds")
-
-fit <- readRDS("~/Documents/research_phenolology/2019-03-04_mSsIcp.rds")
 
 
-saveRDS(sfm3, file="2019-03-03_mSpIcp.rds")
-stancode(sfm3)
-write(stancode(sfm3), file="2019-03-03_mIcp.stan")
-m3fit <- readRDS("~/Documents/research_phenolology/2019-03-03_mIcp.rds")
+saveRDS(fit, file = "~/phenolology/2019-03-19_mSsIpcst_maxdepth.rds")
+
+testfit <- readRDS("~/phenolology/2019-03-19_mSsIpcst_maxdepth.rds")
+
+
+#saveRDS(sfm3, file="2019-03-03_mSpIcp.rds")
+stancode(fit)
+write(stancode(fit), file="2019-03-17_mSsIpcst.stan")
+#m3fit <- readRDS("~/Documents/research_phenolology/2019-03-03_mIcp.rds")
 
 util$check_all_diagnostics(m2fit)
+
+posterior_cp <- as.array(fit)
+mcmc_areas_ridges(fit, regex_pars=c("beta", "cutpoints"))
 
 # VISUAL MCMC DIAGNOSTICS
 ############################################################
