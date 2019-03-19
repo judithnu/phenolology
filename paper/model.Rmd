@@ -1,0 +1,43 @@
+---
+title: "A hierarchical Bayesian model of pollination phenology in Lodgepole pine"
+author: "Susannah Tysor"
+date: "March 19, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r depends}
+library(rethinking)
+library(dplyr)
+library(bayesplot)
+
+```
+
+```{r stan setup}
+util <- new.env()
+source('~/Documents/classes/STANworkshop/material/1 - workflow/stan_utility.R', local=util)
+
+options(mc.cores=parallel::detectCores())
+rstan_options(auto_write=TRUE)
+```
+## Conceptual Analysis
+
+Pollination phenology in lodgepole pine refers to the timing of two events - pollen shed and cone receptivity. I want to estimatethe beginning, end, and length of both events. 
+
+As the developmental process for grown appears to be logistic, I will use a logistic model. There are two transitions I need to model with each 
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
