@@ -15,6 +15,8 @@ SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv
 phendf <- phenology_data %>%
     na.omit()
 phendf <- dplyr::left_join(phenology_data, SPU_dat)
+
+#Create indexes that stan will like
 #Create Clone IDs
 phendf$CloneID <- group_indices(phendf, Clone)
 #Create OrchardIDs
@@ -93,7 +95,7 @@ m_SsIpcst <- ulam(
     sigma_tree ~ exponential(1.5)
   ),
   data = phendf,
-  warmup = 10, iter=50, chains = 1, cores = 10
+  warmup = 1000, iter=5000, chains = 5, cores = 5
 )
 
 fit <- mSsIcp@stanfit
