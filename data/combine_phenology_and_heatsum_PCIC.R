@@ -11,9 +11,8 @@ library(tidyr)
 
 
 #rawdat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
-phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/derived_phenophase.csv', stringsAsFactors = FALSE)
+phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv', stringsAsFactors = FALSE)
 phendat$TreeID <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
-phendat <- filter(phendat, Site !="Quesnel") #drop quesnel until climate data obtained
 
 climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites.csv', header = TRUE) %>%
     mutate(DoY = yday(Date))
@@ -24,7 +23,7 @@ climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_se
 
 #eventually will need to modify so site id in here somewhere
 
-calculate_heat_sum <- function(climate_df, threshold_temp) {
+calculate_GDD <- function(climate_df, threshold_temp) {
     # calculate heat added on a given day
     # days where no heat is added bc threshold temp not reached
     no_heat <- climate_df %>%
@@ -40,58 +39,102 @@ calculate_heat_sum <- function(climate_df, threshold_temp) {
         dplyr::arrange(Site, Year, DoY) %>%
         dplyr::group_by(Site, Year) %>%
         dplyr::mutate(Heatsum = cumsum(Heat)) %>% # add heatsum
-        select(Site, Year, DoY, Heatsum)
+        select(Site, Year, DoY, Heat, Heatsum)
 
+    return(clim)
+}
+
+#calculate forcing units according to Sarvas 1972/4/Hanninen 1990/Chuine ForcSar 1999
+calculate_forcing_units <- function(climate_df) { #climatedf is a dataframe with a column named "mean_temp" containing mean temperatures in Celcius. columns named Site, Year, and DoY must also exist
+    #calculate the amount of forcing any mean daily temperature provices
+    climate_df$ristos <- 28.4/(1+exp(-0.185*(climate_df$mean_temp-18.4)))
+    #sum the forcing units
+    clim <- climate_df
+    clim <- clim %>%
+        dplyr::arrange(Site, Year, DoY) %>%
+        dplyr::group_by(Site, Year) %>%
+        dplyr::mutate(forcing_units = cumsum(ristos)) %>%
+        select(Site, Year, DoY, mean_temp, ristos, forcing_units)
     return(clim)
 }
 
 # Calculate heatsum -----------------
 
-# climate data
+
+# Climate data processing
 clim <- mutate(climdat, Year = year(Date))
-clim <- subset(clim, Year %in% unique(phendat$Year))
+clim <- subset(clim, Year %in% unique(phendat$Year)) # drop climate data not in phenology dataset
 
 
 
 
+# Calculate Forcing Units and Forcing sums
 
-#calculate amount of heat per day assume no heating below 5 degrees and linear heating starting at 5
+risto <- calculate_forcing_units(climate_df = clim)
+clim5 <- calculate_GDD(clim, threshold_temp = 5)
 
-clim0 <- calculate_heat_sum(clim, 0)
-colnames(clim0)[4] <- "Heatsum0"
-clim1 <- calculate_heat_sum(clim, 1)
-colnames(clim1)[4] <- "Heatsum1"
-clim2 <- calculate_heat_sum(clim, 2)
-colnames(clim2)[4] <- "Heatsum2"
-clim3 <- calculate_heat_sum(clim, 3)
-colnames(clim3)[4] <- "Heatsum3"
-clim4 <- calculate_heat_sum(clim, 4)
-colnames(clim4)[4] <- "Heatsum4"
-clim5 <- calculate_heat_sum(clim, 5)
-colnames(clim5)[4] <- "Heatsum5"
-clim6 <- calculate_heat_sum(clim, 6)
-colnames(clim6)[4] <- "Heatsum6"
-clim7 <- calculate_heat_sum(clim, 7)
-colnames(clim7)[4] <- "Heatsum7"
-
-heatsum_vary_thresholds <- full_join(clim0, clim1) %>%
-    full_join(clim2) %>%
-    full_join(clim3) %>%
-    full_join(clim4) %>%
-    full_join(clim5) %>%
-    full_join(clim6) %>%
-    full_join(clim7)
-
-heatsum_vary_thresholds <- gather(heatsum_vary_thresholds, key=threshold, value = Heatsum, contains("Heatsum"))
-
-clim <- clim5
+clim <- dplyr::full_join(risto, clim5)
 
 #check nothing weird happened
-ggplot(heatsum_vary_thresholds, aes(x=DoY, y=Heatsum, color = Year)) +
+ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
     geom_point() +
-    facet_grid(Site ~ threshold) +
+    facet_wrap("Site") +
     theme_bw(base_size=18)
 
+ggplot(clim, aes(x=DoY, y=forcing_units, color=Year)) +
+    geom_point() +
+    facet_wrap("Site") +
+    theme_bw(base_size=18)
+
+# Visualizations that should be moved somewhere else ##################
+activeperiod <- filter(clim, DoY < 181) #Jan thru June only
+ggplot(activeperiod, aes(x=Heatsum, y=forcing_units, color=Year)) +
+    geom_point() +
+    facet_wrap("Site") +
+    theme_bw(base_size=18)
+
+# Forcing units begin to accumulate before heatsum does
+
+activeperiod <- filter(clim, DoY < 181) #Jan thru June only
+ggplot(activeperiod, aes(x=Heat, y=ristos)) +
+    geom_point() +
+    #facet_wrap("Site") +
+    theme_bw(base_size=18) +
+    geom_abline()
+
+
+ggplot(activeperiod_g, aes(x=mean_temp, y=daily_forcing, color=daily_forcing_type)) +
+    geom_line(lwd=1.2) +
+    facet_wrap("Site") +
+    theme_bw(base_size=14) +
+    geom_abline()
+
+
+# Tidy forcing unit df ##########
+gclim <- clim %>%
+    gather(key=daily_forcing_type, value=daily_forcing, ristos, Heat) %>%
+    tidyr::gather(key=cummulation_type, value=forcing_accum, forcing_units, Heatsum) %>%
+    dplyr::filter(!(daily_forcing_type == "ristos" & cummulation_type == "Heatsum")) %>%
+    dplyr::filter(!(daily_forcing_type == "Heat" & cummulation_type == "forcing_units"))
+
+
+# More stuff that should be moved out of this file ##########
+earliest_accummulation <- gclim %>% group_by(Site, Year, daily_forcing_type) %>%
+    filter(forcing_accum > 5) %>%
+    dplyr::summarize(earliest_accummulation = min(DoY))
+
+gclim <- full_join(gclim, earliest_accummulation)
+
+ggplot(gclim, aes(x=DoY, y=forcing_accum, color=daily_forcing_type, line_type=as.factor(Year))) +
+    geom_line(alpha=0.7) +
+    facet_wrap("Site") +
+    geom_vline(aes(xintercept=earliest_accummulation, color=daily_forcing_type, alpha=0.5)) +
+    theme_bw(base_size = 14) +
+    scale_color_viridis_d(end=.85, option="A") +
+    xlim(0,180) +
+    ylim(0,1000)
+
+# Plot climate data ####################
 climdat$Year <- lubridate::year(climdat$Date)
 climdat$Month <- lubridate::month(climdat$Date)
 ggplot(climdat, aes(x=as.factor(Month), y=mean_temp, fill=Site)) +
@@ -118,12 +161,12 @@ phen <- phendat
 # fdat <- subset(rawdat, Sex == "FEMALE" & Source == "Rita Wagner") #female
 
 
-phendf <- merge(phen, clim5) %>%
-    rename(Heatsum=Heatsum5) %>%
-    select(-Tree, -X, -Y, -Source, -First_RF, -Last_RF) %>%
+phendf <- merge(phen, gclim) %>%
+    select(-Tree, -X, -Y, -Source, -First_RF, -Last_RF, -cummulation_type) %>%
     #select(Site, Sex, Year, DoY, Index, Clone, TreeID, Phenophase_Derived, Heat, Heatsum, Orchard) %>%
-    arrange(Heatsum, Site, Year, Sex, Index, Clone, DoY) %>%
+    arrange(daily_forcing_type, Site, Year, Sex, Index, Clone, DoY) %>%
     filter(!Phenophase_Derived==0) # drop trees that didn't flower
+
 phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
 
 write.csv(phendf, "~/Documents/research_phenolology/data/stan_input/phenology_heatsum.csv", row.names = FALSE)
@@ -134,26 +177,26 @@ mdf <- subset(phendf, Sex == "MALE")
 
 fdf <- subset(phendf, Sex == "FEMALE")
 
-# Determine best threshold
-ggplot(mdf, aes(x=Heatsum, color=Site))+
-    stat_ecdf() +
-    facet_grid(threshold ~ Phenophase_Derived) +
-    ggtitle("Male phenophase transitions with varying heating thresholds") +
-    theme_bw()
-
-ggplot(fdf, aes(x=Heatsum, color=Site))+
-    stat_ecdf() +
-    facet_grid(threshold ~ Phenophase_Derived) +
-    ggtitle("Female phenophase transitions with varying heating thresholds") +
-    theme_bw()
-
-
 
 #Test that no data dropped unintentionally
 nrow(mdf) + nrow(fdf) == nrow(phendf)
 
-# Visualize the data
-ggplot(mdf, aes(x = Heatsum, color=Site)) +
+# Visualize the data # MOVE
+ggplot(mdf, aes(x = forcing_accum, color=Site)) +
+    stat_ecdf() +
+    facet_grid(daily_forcing_type ~ Phenophase_Derived)
+
+ggplot(mdf, aes(x=forcing_accum, fill=Site)) +
+    geom_density() +
+    facet_grid(daily_forcing_type ~ Phenophase_Derived) +
+    ggtitle("Male")
+
+ggplot(fdf, aes(x=forcing_accum, fill=Site)) +
+    geom_density() +
+    facet_grid(daily_forcing_type ~ Phenophase_Derived) +
+    ggtitle("Female")
+
+ggplot(mdf, aes(x=forcing_units, color=Site)) +
     stat_ecdf() +
     facet_wrap("Phenophase_Derived")
 
