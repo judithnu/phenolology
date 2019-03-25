@@ -24,9 +24,48 @@ rstan_options(auto_write=TRUE)
 ```
 ## Conceptual Analysis
 
-Pollination phenology in lodgepole pine refers to the timing of two events - pollen shed and cone receptivity. I want to estimatethe beginning, end, and length of both events. 
+Pollination phenology in lodgepole pine refers to the timing of two events - pollen shed and cone receptivity. I want to estimate the beginning, end, and length of both events. 
 
-As the developmental process for grown appears to be logistic, I will use a logistic model. There are two transitions I need to model with each 
+As the developmental process for pollen shed and cone receptivity appears to be logistic (Sarvas 1972), I will use a logistic model. A logistic model has two parameters. $k$ affects the speed of transition and $h$ determines the time ("location") of transition. $k$ must be positive and between 0 and 1. $k$ near 0 is a slow transition. $k$ near one is a near instantaneous transition. $h$ is the inflection point of the curve, in our case, the point at which a given tree is 50% likely to have transitioned from state $s$ to state $s+1$
+
+$$y = \frac{1}{1+e^{-k(x-h)}}$$
+
+There are two transitions I need to model for each event - 
+1) transitioning from not started to active and 
+2) from active to completed. 
+
+Since there are two transitions, I use an ordered logistic model.
+
+For $S=3$ categories
+
+$$\small{\text{OrderedLogistic}(s|~\eta,c) = \left\{ \begin{array}{ll} 1 -
+\text{logistic}(\eta - c_1)  &  \text{if } s = 1, \\[4pt]
+\text{logistic}(\eta - c_1) - \text{logistic}(\eta - c_2)  &
+\text{if } s=2, \text{and} \\[4pt] \text{logistic}(\eta -
+c_3) - 0  &  \text{if } s = 3. \end{array} \right.}
+$$
+Where $\eta$ is a linear model with explanatory variable x - in our case, heatsum, and $k$ slope
+$$\eta = k x \\$$
+This model is parameterized slightly differently than the logistic model above. In this model 
+
+$$k=k \\
+h_s=\frac{c_s}{k}\\$$
+
+An ordered logistic model respects the ordering of the phenological states and generates two curves - one representing the "not-yet to active" transition and the other the "active to complete" transition. The transition from before not-yet to not-yet is not meaningful and $c_1$ is set to 0.
+
+I also want to know if there are provenance effects for these transitions. To test for this, I can add provenance effects to the model. However, I am unsure whether a provenance effect would affect the speed of transition ($k$) or the point of transition ($h$). 
+
+Sarvas's experimental work on development in trees says that 
+
+> the regression of the rate of progress of the active period on temperature is the same for all the genera, species, individual trees and the different parts of the active period investigated in this study. [@Sarvas1972]
+
+His study included *Populus*, *Betula*, *Alnus* as well as *Picea abies*, *Pinus sylvestris*, and 2 *Larix* species.
+
+I think this means that everything should have the same slope, but different location.
+
+Male and female strobili develop separately as part of the same elongating stem. I think including them in the same model with separate slope and threshold parameters is
+
+
 
 ```{r cars}
 summary(cars)
