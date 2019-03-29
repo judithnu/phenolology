@@ -1,12 +1,12 @@
 ---
-title: "A hierarchical Bayesian model of pollination phenology in Lodgepole pine"
+title: "A hierarchical Bayesian model of pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "March 19, 2019"
+date: "March 25, 2019"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
 ```
 ```{r depends}
 library(rethinking)
@@ -22,6 +22,37 @@ source('~/Documents/classes/STANworkshop/material/1 - workflow/stan_utility.R', 
 options(mc.cores=parallel::detectCores())
 rstan_options(auto_write=TRUE)
 ```
+
+```{r data}
+phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE)
+#SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+ #   dplyr::select(SPU_Name, Orchard)
+SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+  dplyr::select(SPU_Name, Orchard) #add provenance information
+
+phendf <- phenology_data %>%
+    na.omit()
+phendf <- dplyr::left_join(phenology_data, SPU_dat)
+
+#Create indexes that stan will like
+#Create Clone IDs
+phendf$CloneID <- group_indices(phendf, Clone)
+#Create OrchardIDs
+phendf$OrchardID <- group_indices(phendf, Orchard)
+#Create ProvenanceIDs
+phendf$ProvenanceID <- group_indices(phendf, SPU_Name)
+#Create SiteIDs
+phendf$SiteID <- group_indices(phendf, Site)
+#Create SexIDs
+phendf$SexID <- group_indices(phendf, Sex)
+#Create TreeIDs
+phendf$TreeID_new <- group_indices(phendf, TreeID)
+
+phen <- phendf #make a copy that will let me translate between ids and values
+
+#drop "non-numeric" cols to make stan quit complaining
+phendf <- select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone)
+```
 ## Conceptual Analysis
 
 Pollination phenology in lodgepole pine refers to the timing of two events - pollen shed and cone receptivity. I want to estimate the beginning, end, and length of both events. 
@@ -34,7 +65,7 @@ There are two transitions I need to model for each event -
 1) transitioning from not started to active and 
 2) from active to completed. 
 
-Since there are two transitions, I use an ordered logistic model.
+Since there are two transitions, I will use an ordered logistic model that describes the likelihood of being in each phenological state $s$ given a linear model $\eta$ and cutpoints $c$.
 
 For $S=3$ categories
 
@@ -44,7 +75,7 @@ $$\small{\text{OrderedLogistic}(s|~\eta,c) = \left\{ \begin{array}{ll} 1 -
 \text{if } s=2, \text{and} \\[4pt] \text{logistic}(\eta -
 c_3) - 0  &  \text{if } s = 3. \end{array} \right.}
 $$
-Where $\eta$ is a linear model with explanatory variable x - in our case, heatsum, and $k$ slope
+Where $\eta$ is a linear model with explanatory variable x - in our case, forcing units (*e.g.* heatsum), and $k$ slope
 $$\eta = k x \\$$
 This model is parameterized slightly differently than the logistic model above. In this model 
 
@@ -53,7 +84,14 @@ h_s=\frac{c_s}{k}\\$$
 
 An ordered logistic model respects the ordering of the phenological states and generates two curves - one representing the "not-yet to active" transition and the other the "active to complete" transition. The transition from before not-yet to not-yet is not meaningful and $c_1$ is set to 0.
 
-I also want to know if there are provenance effects for these transitions. To test for this, I can add provenance effects to the model. However, I am unsure whether a provenance effect would affect the speed of transition ($k$) or the point of transition ($h$). 
+Adding compoents to $\eta$ is like adding them to the cutpoints. For example, adding a provenance effect to eta 
+
+$$\eta=kx + \alpha_{provenance}$$
+means that the location $h_s$ is calculated as
+
+$$h_s = \frac{c_s+\alpha_{provenance}}{k}$$
+
+In this parameterization, cutpoints are not sex or population specific. $\alpha$ components in $\eta$ affect both transitions equally. So a provenance effect $\alpha_{provenance}$ will shift both the transition from state from 1 to 2 and from 2 to 3 by the same amount. Is this (biologically) correct?
 
 Sarvas's experimental work on development in trees says that 
 
@@ -61,22 +99,113 @@ Sarvas's experimental work on development in trees says that
 
 His study included *Populus*, *Betula*, *Alnus* as well as *Picea abies*, *Pinus sylvestris*, and 2 *Larix* species.
 
-I think this means that everything should have the same slope, but different location.
+The unit for the "rate of progress" is period units/hour where period units are 1/5 of the cycle interval that the active period of a given genotype progresses in 1 hour at a constant temperature of 10 degrees C.
 
-Male and female strobili develop separately as part of the same elongating stem. I think including them in the same model with separate slope and threshold parameters is
+So if it takes 100 hours to go from phenophase 1 to 2 at 10 degrees, then the period unit is 20 minutes.
+
+This does not mean that everything should have the same slope ($k$). It does mean that I can use the same forcing units for everything.
+
+I could parameterize the model differently I think. For example, considering just the effects of sex and provenance: 
+
+$$\eta = (k + k_{sex} + k_{provenance})x \\
+c_1 = \alpha + \alpha_{sex} + \alpha_{provenance} \\
+c_2 = \beta + \beta_{sex} + \beta_{provenance}
+$$
+This means making way more priors, but I think makes biological sense! In earlier iterations of the model, I've been forcing $h_s$ to have all the same components - except for the primary $\alpha$ and $\beta$. 
+In old versions of my model, whatever other effects there are from provenance, clone, ramet, etc shift all $h_s$ by the same amount. 
+
+I am concerned that the model as structured could become non-identifiable. I also think I need to deal with correlations between parameters using cholesky and/or LR things.
+
+### How to include effects of sex, provenance, etc.
+The first question is whether to include the effect in the speed of transition $k$ or the locations.
+
+### Male and female in same model?
+I am not sure whether to include male and female strobili in the same model. Male and female strobili develop separately but as as part of the same elongating stem. 
+
+If I include them in the same model, unless I do some really crazy parameterization, then I am assuming that clonal, provenance, tree, and site effects are the same across sexes. For example, a clone that has a lower threshold has a lower threshold for both males and females. 
+
+I could do a test for this by running separate models or adding *a lot* of parameters.
+
+The location must vary by sex. If there isn't a cutpoint component  for sex, then curves will be identical for males and females unless the $k$ is allowed to vary. Since $h_s$ depends on $k$ as well as the cutpoints, changes in $k$ can shift the location of the curve. 
+
+Previous model runs have been letting $k$ vary by sex, but not the location. I believe that was a mistake. They could very easily have different $k$ and $h_s$
+
+### Should the sex component have partial pooling?
+No! Sex components should not be pooled across males and females. They're connected but separate and I believe they should be allowed to vary completely independently.
+
+## What about pooling for other effects?
+For clone, site, and provenance, I believe partial pooling is the right decision. No pooling will overfit and exaggerate effects, but ignoring the effects (total pooling) will ignore effects I'm testing for (provenance) or that undoubtedly exist (clone, site).
+
+Can I explain why I don't think the sex component will be overfit?
+
+## So what should the model look like?
+
+$$\begin{array}{rlr}
+S & \sim \text{OrderedLogistic}(s |\eta, c_s)\\
+\eta & = k \times f \\
+c_1 &= \alpha + \alpha_{sex} + \alpha_{provenance} + \alpha_{site} + \alpha_{clone} + \alpha_{ramet} \\
+c_2 &= \beta + \beta_{sex} + \beta_{provenance} + \beta_{site} + \beta_{clone} + \beta_{ramet} \\
+
+&& \text{priors} \\
+k &\sim \text{beta}(.5,5) & \text{slope}\\
+\\
+\alpha &\sim \text{normal}(10, 5) \\
+\alpha_{sex} &\sim \text{normal}(0, \sigma_{sex})\\
+\alpha_{provenance} &\sim \text{normal}(0, \sigma_{provenance}) \\
+\alpha_{site} &\sim \text{normal}(0, \sigma_{site}) \\
+\alpha_{clone} &\sim \text{normal}(0, \sigma_{clone}) \\
+\alpha_{tree} &\sim \text{normal}(0, \sigma_{tree}) \\
+\\
+\beta &\sim \text{normal}(20,5) \\
+\beta_{sex} &\sim \text{normal}(0, \upsilon_{sex}) \\
+\beta_{provenance} &\sim \text{normal}(0, \upsilon_{provenance}) \\
+\beta_{site} &\sim \text{normal}(0, \upsilon_{site}) \\
+\beta_{clone} &\sim \text{normal}(0, \upsilon_{clone}) \\
+\beta_{tree} &\sim \text{normal}(0, \upsilon_{tree}) \\
+
+&& \text{hyperpriors}\\
+\sigma_{sex} & \sim \text{exponential}(1.5) \\
+\upsilon_{sex} &\sim \text{exponential}(1.5) \\
+\\
+\sigma_{provenance} &\sim \text{exponential}(1.5) \\
+\upsilon_{provenance} &\sim \text{exponential}(1.5) \\
+\\
+\sigma_{site} &\sim \text{exponential}(1.5) \\
+\upsilon_{site} &\sim \text{exponential}(1.5) \\
+\\
+\sigma_{clone} &\sim \text{exponential}(1.5) \\
+\upsilon_{clone} &\sim \text{exponential}(1.5) \\
+\\
+\sigma_{ramet} &\sim \text{exponential}(1.5) \\
+\upsilon_{ramet} &\sim \text{exponential}(1.5)
+\end{array}$$
 
 
+$f$ accumulated forcing units
 
-```{r cars}
-summary(cars)
+## What about calculating the start, end, and length of the phenological period?
+
+## Woah now let's calm down and do a simpler version. Maybe look back at an old workflow and try again.
+
+## Simulate some data
+
+```{r simulate_data}
+cutpoints <- c(0)
+cutpoints[2] <- abs(rnorm(1,5,2))
+cutpoints[3] <- abs(rnorm(1,20,2))
+k <- rbeta(1,.5, 5)
+eta <- k * phendf$forcing_accum
+state <- rordlogit(length(eta), phi = eta, a = cutpoints)
+
+sim <- data.frame(forcing = phendf$forcing_accum,state)
+
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r visualize simulated_data}
+hist(sim$state)
+ggplot(sim, aes(x=forcing, y=state)) +
+    geom_point()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Fit model to simulated data
+

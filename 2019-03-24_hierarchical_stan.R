@@ -92,4 +92,13 @@ input_data <- read_rdump('2019-03-24_data_rdump.R')
 
 fit <- stan(file = '2019-03-24_ulam_fit.stan', data=input_data, chains = 6, iter=5000, algorithm = "NUTS", cores=6)
 
+
 util$check_all_diagnostics(fit)
+
+#save fit
+saveRDS(fit, file = "~/Documents/research_phd/2019-03-24_mSsItcsp.rds")
+
+# visualizations
+posterior <- rstan::extract(fit)
+posterior_array <- as.array(fit)
+mcmc_areas_ridges(posterior_array, regex_pars="a_clone")
