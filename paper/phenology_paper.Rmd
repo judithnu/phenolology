@@ -45,8 +45,7 @@ Specifically, I will answer 1) What is the relationship between temperature and 
 # Methods
 ## Study species
 [Need to explain earlier why local adaptation such a big deal for my questions - have to account for/test for it in model]
-Lodgepole pine is an ideal candidate with which to explore these questions. 
-It is an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
+Lodgepole pine is an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
 Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Figure \ref{range}) with widespread and significant local adaptation in many traits. 
 For example, populations from both northern interior British Columbia and northern Idaho can survive in areas with mean annual temperatures between -4 and 6 $^\circ\mathrm{C}$, but the northern British Columbia population survives best where mean annual temperatures are ~ 1 $^\circ\mathrm{C}$ and the Idaho population best at ~ 4 $^\circ\mathrm{C}$ [@Rehfeldt1999a]. 
 Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@Rehfeldt1983]. 
@@ -55,13 +54,13 @@ At smaller scales within the Rocky Mountain region, cone serotiny is predicted w
 
 ![Rangemap of lodgepole pine. After @Little1971 \label{range}.](/home/sus/Documents/research_phd/maps/SpeciesDistribution/distmap_pincon.png)
 
-Several other traits make *Pinus contorta* suitable for this project. Pollen movement is an important vector for identifying gene flow because outcrossing is common, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. Selfing is typically infrequent [@Sorensen2001], though when lodgepole pine occurs at low frequencies within a stand, selfing can climb to 21% [@Sorensen1993]. This project also builds on other landscape-scale work on adaptation in lodgepole pine: there is evidence for spatially varying levels of gene flow in the species as populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006], and the relative roles of wind, phenology and divergent selection are unclear. Crucial to the scale of this project, decades of high quality reproductive and vegetative phenology data are available from seed orchards producing seed for reforestation for lodgepole pine from many locations throughout the range. Because of lodgepole's importance, the large scale genomics project [AdapTree](http://adaptree.sites.olt.ubc.ca/) is producing detailed phenological and genetic descriptions of local adaptation in this species that will
+Several other traits make *Pinus contorta* suitable for this project. Pollen movement is an important vector for identifying gene flow in lodgepole pine because outcrossing is common, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. Selfing is typically infrequent [@Sorensen2001], though when lodgepole pine occurs at low frequencies within a stand, selfing can climb to 21% [@Sorensen1993]. This project also builds on other landscape-scale work on adaptation in lodgepole pine: there is evidence for spatially varying levels of gene flow in the species as populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006], and the relative roles of wind, phenology and divergent selection are unclear. Crucial to the scale of this project, decades of high quality reproductive and vegetative phenology data are available from seed orchards producing seed for reforestation for lodgepole pine from many locations throughout the range. Because of lodgepole's importance, the large scale genomics project [AdapTree](http://adaptree.sites.olt.ubc.ca/) is producing detailed phenological and genetic descriptions of local adaptation in this species that will
 complement this project. 
 
 While lodgepole pine has four subspecies (*P. contorta* spp. *contorta*, *P. contorta* spp. *murrayana*, *P. contorta* spp. *bolanderi*, and *P. contorta* spp. *latifolia*), I will be focusing solely on *latifolia*. 
 The smaller distributions and lower economic values of the *contorta*, *murrayana*, and *bolanderi* subspecies unfortunately limit data availability. Hereafter, lodgepole pine refers to *P. contorta* spp. *contorta* only unless otherwise noted. This includes references to the range of the species; only spp. *contorta* is under consideration.
 
-My research will proceed in three stages, which I've divided into chapters. In the first stage, I will model pollination phenology.
+In the first stage, I will model pollination phenology.
 
 
 
@@ -73,7 +72,7 @@ My research will proceed in three stages, which I've divided into chapters. In t
 
 #### Phenology Data
 Trees selected from across the British Columbia portion of the lodgepole pine range are grown in both large scale provenance trials and seed orchards, which are similar to common gardens, as part of tree breeding programs. 
-There are two types of orchards: first generation and second generation. 
+There are two types of orchards: first generation and advanced. 
 Each orchard contains trees that are the descendants of seeds and scions collected from mother trees in one particular provenance.
 First generation orchards have not undergone selective breeding but may be subject to selection through the process of choosing mother trees (called "plus" trees by tree breeders), testing and selection of mother tree offspring, or culling of unfavorable trees in the orchard.
 First generation orchard trees are clones of mother trees and their offspring grafted onto rootstock.
@@ -83,6 +82,21 @@ In 1.5 generation orchards, superior offspring of mother trees are selected for 
 This selection may be strong; more than 50% of offspring can be rejected in this process due to poor growth form [@Ukrainetz2011].
 In 1.75 generation orchards, data from 10 year tests of mother tree offspring are used to select 40 of the best genotypes for a given provenance.
 Offspring from controlled crosses between trees in first generation orchards are tested in field trials and the best trees are then cloned and grafted onto root stock in advanced generation orchards. 
+
+```{r calculate orchard generations}
+orchards_in_data <- read.csv("~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/derived_phenophase.csv", header=TRUE, stringsAsFactors = FALSE) %>% 
+    select(Orchard, Year, ) %>%
+    group_by(Orchard) %>%
+    dplyr::summarise(Years = n_distinct(Year))
+orchard_gen <- read.csv("~/Documents/research_phd/data/OrchardInfo/OrchardGen.csv", header=TRUE, stringsAsFactors = FALSE)
+
+orchard_meta <- dplyr::left_join(orchards_in_data, orchard_gen) %>%
+    unique()
+
+knitr::kable(orchard_meta)
+
+
+```
 
 I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 
 
