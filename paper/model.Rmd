@@ -232,7 +232,7 @@ Simulate data from an ordered logistic distribution with three states and forcin
 cuts <- c(15,20)
 beta <- 0.05
 forcing <- unique(phendf$forcing_accum)
-eta <- beta * forcing
+eta <- beta * forcing 
 state <- rordlogit(length(eta), phi = eta, a = cuts)
 
 sim <- data.frame(forcing,state)
@@ -282,14 +282,16 @@ util$check_all_diagnostics(simfit)
 ```
 
 ### Consider fit of model to simulated data
+```{r precis simulated data fit}
+precis(simfit, depth=2)
+```
+
 ```{r extract fit}
 simpost <- as.matrix(simfit)
 pairs(simpost)
 ```
 
-```{r precis simulated data fit}
-precis(simfit, depth=2)
-```
+
 
 ```{r plot real params vs posterior}
 mcmc_areas(simpost, regex_pars = "cutpoints") + 
