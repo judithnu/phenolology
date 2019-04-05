@@ -1,0 +1,95 @@
+---
+title: "Predicting pollination phenology in lodgepole pine"
+subtitle: "A rewrite of Varis et al. 2019 The Extent of South-North Pollen Transfer in Finnish Scots Pine"
+author: "Susannah Tysor"
+date: "April 2, 2019"
+params:
+  date !r SysDate()
+output:
+  pdf_document: default
+  html_document: 
+    toc:TRUE
+---
+
+*This document is a writing exercise. I took the paper "The Extent of South-North Pollen Transfer in Finnish Scots Pine" by Varis et al. 2019 and rewrote it, sentence by sentence, to apply to my research.*
+
+# Introduction
+
+Gene flow among populations is belived to be one of the key elements in adaptation of forest tree species to climate change. Garcia and Kirkpatrick showed how models in which genes flowed from central to peripheral populations prevent local adaptation at the distributional limits. The northern range limit of lodgepole pine (*Pinus contorta* subsp. *latifolia*) is in the Yukon and northern British Columbia and it may be suffering from maladaptation in a harsher environment caused by gene flow from the south. In a warming world, gene flow from southern to northern populations may provide alleles that are (pre)adapted to a future climate.
+
+Climatologists predict that climate change will affect the entire distribution of Scots pine within 100 years. In Canada, future climate models predict an increase in annual mean temperature of about 7 degrees above mid 20th century temperatures by the end of the century and increases will be even higher at the northern extent of the species range. The warmer temperatures predicted for the end of the century are more like those currently to the south.
+
+Adaptation to this kind of rapid change requires, among other things, long distance gene flow mediated by pollen transport. In observation studies, pollen grains of wind pollinated tree species have been reported to rise high above the trees and travel long distances, usually tens of kilometers. The earliest reports are from the Gulf of Bothnia where Hesselman (1919) observed pollen of spruce, pine and birch even 55 km from the coast. Recent aerobiological studies have shown that pollen grains can rise to over a kilometer in altitude and travel over 1000km per day. During the preproductive period of lodgepole pine, air masses from the south may bring pollen grains from areas where pollen shed has already begun.
+
+Pollen grain germability after long distance transport is of critical importance to gene flow. The mean germination percentage of lodgepole pine pollen after 24 hours is 50% [@Bohrerova2009]. Lindgren et al. collected airborne pollen of Scots pine in central Sweden and pointed out that the early pollen likely came from distant trees, and its germability remailed high enough to fertilize egg cells in most of their samples.
+
+Even if pollen can remain germinable over long distances, receptive female strobili must receive them upon their arrival. Lodgepole pine flowering starts from the south and the female strobili can become receptive before, after, or while male strobili are shedding pollen. While there are studies of pollen contamination in lodgepole pine seed orchards and investigation of conditions that result in homogamy, protogyny, and protandry, to my knowledge there is no study that considers how pollination phenology affects inter rather than intra population mating. 
+
+My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, I modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. I then applied the model to weather data across the lodgepole pine distribution to determine the distance between populations with synchronous pollen shed and cone receptivity.
+
+## Materials and methods
+
+Between 1997 and 2011, pollination phenology of lodgepole pine was collected at 8 seed orchard sites in the interior of British Columbia. [define seed orchard] 4 of the sites are clustered near to one another, but sites span about 5 degrees of latitude and are at elevations from x to y. [map] Trees grown at the seed orchards were sourced from 6 biogeoclimate regions known as Seed Planning Units. [describe selection and generations]. Prince George Tree Improvement Station has the most complete record of phenology.
+
+Workers monitored seed orchards for the beginning of pollen shed and cone receptivity. ~15 clones usually represented by 2 ramets each were selected for specific observations. When the active period seemed to be starting, workers began going into the orchard every few days to make observations on the selected ramets.
+
+Active and inactive states were recorded for both pollen shed and cone receptivity. When a branch on the x side of the tree released noticably pollen when shaken, it was considered active. When pollen cones on a branch on the y side of the tree were visibly mature and no longer releasing pollen, the tree was considered inactive. When ~20% of the new female cones on a branch on the x side of the tree had become receptive, the tree was marked active and when most or all on a branch on the y side had swollen shut, it was considered inactive. There is some subjectivity in recording these states.
+
+At the Prince George Tree Improvement Station, ramets were marked as active or not active on each day of observation. In other orchards, only the first day observed active and the first day observed completed were recorded.
+
+Individual genotypes in the orchards are represented by multiple ramets.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
