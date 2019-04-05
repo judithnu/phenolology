@@ -29,15 +29,26 @@ My aim was to model pollination phenology in lodgepole pine and calculate synchr
 
 ## Materials and methods
 
-Between 1997 and 2011, pollination phenology of lodgepole pine was collected at 8 seed orchard sites in the interior of British Columbia. [define seed orchard] 4 of the sites are clustered near to one another, but sites span about 5 degrees of latitude and are at elevations from x to y. [map] Trees grown at the seed orchards were sourced from 6 biogeoclimate regions known as Seed Planning Units. [describe selection and generations]. Prince George Tree Improvement Station has the most complete record of phenology.
+Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 8 seed orchard sites in the interior of British Columbia as part of a project to identify causes of low seed set [Cite 0722]. [define seed orchard] Prince George Tree Improvement Station has the most complete record of phenology. 4 of the sites are clustered near to one another, but sites span about 5 degrees of latitude and are at elevations from x to y. [map] Trees grown at the seed orchard sites were sourced from 6 biogeoclimate regions known as Seed Planning Units. [describe selection and generations]. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
-Workers monitored seed orchards for the beginning of pollen shed and cone receptivity. ~15 clones usually represented by 2 ramets each were selected for specific observations. When the active period seemed to be starting, workers began going into the orchard every few days to make observations on the selected ramets.
+[table with Site Columns and SPU rows with years of data as values]
+ [table of number of trees/clones in a given year for a given site/spu combo]
 
-Active and inactive states were recorded for both pollen shed and cone receptivity. When a branch on the x side of the tree released noticably pollen when shaken, it was considered active. When pollen cones on a branch on the y side of the tree were visibly mature and no longer releasing pollen, the tree was considered inactive. When ~20% of the new female cones on a branch on the x side of the tree had become receptive, the tree was marked active and when most or all on a branch on the y side had swollen shut, it was considered inactive. There is some subjectivity in recording these states.
 
-At the Prince George Tree Improvement Station, ramets were marked as active or not active on each day of observation. In other orchards, only the first day observed active and the first day observed completed were recorded.
+Protocol C in [@Woods1996] was used as the basis for collecting pollen shed and cone receptivity data, though operational constraints led to some modifications. Workers monitored seed orchards for the beginning of pollen shed and cone receptivity. ~15 clones, usually represented by 2 trees each, were selected for specific observations. When the active period seemed to be starting, workers went into the orchard every few days to make observations on the selected trees.
 
-Individual genotypes in the orchards are represented by multiple ramets.
+Stages of pollen and seed cone development are described by [Owens & Molder 1984 and updated in Owens2006] and were used as a general guide for determining the phenological state of pollen and seed cones. Pollen cones are flowering when tapping causes pollen to be released and seed cones are flowering when there are gaps between the bract-scale complexes. Pollination drops are also produced during flowering, though they recede midday if pollen is not present [@Owens2006]. 
+
+"Flowering" states were recorded for both pollen shed and cone receptivity at the level of each tree. Protocol C recommends marking the dates when 20% of the cones on a tree have begun flowering and when 80% of the cones on a tree have finished flowering. Operationally, there was some subjectivity and tree-level states for each cone type should be interpreted as "starting flowering" and "finished flowering." There is some subjectivity here. 
+
+There were some differences in how data was recorded at the Prince George Tree Improvement Station versus the other sites. At Prince George, trees were marked as flowering or not flowering on each day of observation. At other sites, only the first day observed flowering and the first day observed finished flowering were recorded. I inferred that trees were not yet flowering on observation days prior to their first recorded flowering date. I cleaned and harmonized the data for analysis in a single model using R scripts provided so that, for pollen cones and seed cones, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 finished flowering. 
+
+### Interval censoring and truncation
+
+Observations were not made every day and survey periods varied in length. At Prince George, not all trees have complete phenological records, *e.g* if a tree is not flowering on the first day of observation, the start date is unknown. 
+
+
+Not all trees have complete phenological records. At Prince George,
 
 
 
