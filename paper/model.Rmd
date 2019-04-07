@@ -229,40 +229,50 @@ Simulate data from an ordered logistic distribution with three states and forcin
 # cutpoints[3] <- abs(rnorm(1,20,2))
 # #k <- rbeta(1,.5, 5)
 
-cuts <- c(15,20)
-beta <- 0.05
-forcing <- unique(phendf$forcing_accum)
-eta <- beta * forcing 
-state <- rordlogit(length(eta), phi = eta, a = cuts)
+simulate <- function(groupid, cuts = c(15,20), beta=0.05) {
+    cuts <- cuts
+    beta <- beta
+    forcing <- unique(phendf$forcing_accum)
+    eta <- beta * forcing 
+    state <- rordlogit(length(eta), phi = eta, a = cuts)
+    sim <- data.frame(group=groupid,forcing,state)
+    return(sim)
+}
 
-sim <- data.frame(forcing,state)
-sim$state <- group_indices(sim, state)
+g1 <- simulate(1, cuts= c(14, 21), beta = 0.05)
+g2 <- simulate(2, cuts= c(15, 21), beta = 0.05)
+
+sim <- rbind(g1, g2)
+sim$state <- as.integer(sim$state)
+sim$group <- as.integer(sim$group)
 
 ```
 
 ```{r visualize simulated_data}
 hist(sim$state)
-ggplot(sim, aes(x=forcing, y=state)) +
-    geom_point()
+ggplot(sim, aes(x=forcing, y=state, color=as.factor(group))) +
+    geom_jitter()
 ```
 
 ## Fit model to simulated data
 
 ```{r simulated fit}
-# Use ulam to help draft the model
-# simfit <- ulam(
-#     alist(
-#         #likelihood
-#         state ~ dordlogit(eta, cutpoints),
-#         #linear model
-#         eta <- beta * forcing,
-#         #priors
-#         cutpoints ~ dnorm(7.5,1),
-#         beta ~ dbeta(.5,5)
-#     ),
-#     data=sim, chains=1, cores=1, iter=20
-# )
-# 
+#Use ulam to help draft the model
+simfit <- ulam(
+    alist(
+        #likelihood
+        state ~ dordlogit(eta, cutpoints),
+        # model
+        eta <- beta * forcing,
+        cutpoints[1] ~ dnorm(alpha, 5),
+        cutpoints[2] ~ dnorm(beta, 5),
+        # priors
+        beta ~ dbeta(.5,5)
+        alpha ~
+    ),
+    data=sim, chains=1, cores=1, iter=20
+)
+
 # stancode(simfit)
 
 # Write simulated data in a format stan can understand
@@ -290,7 +300,6 @@ precis(simfit, depth=2)
 simpost <- as.matrix(simfit)
 pairs(simpost)
 ```
-
 
 
 ```{r plot real params vs posterior}
