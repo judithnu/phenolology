@@ -14,8 +14,6 @@ data{
 
     vector[N] forcing;
     int state[N];
-
-    real L; // lower bound for cutpoints difference
 }
 
 parameters{
@@ -35,7 +33,7 @@ parameters{
 
 transformed parameters{
     //declare
-    real<lower=1>cdiff; // don't allow cutpoint collapse
+    real<lower=0>cdiff; // don't allow cutpoint collapse
 
     //define
     cdiff = cutpoints[2]-cutpoints[1];
@@ -54,9 +52,9 @@ model{
     a_site ~ normal( 0 , sigma_site );
     a_provenance ~ normal( 0 , sigma_provenance );
     a_clone ~ normal( 0 , sigma_clone );
-
+    
+    cdiff ~ gamma(5,.5);
     cutpoints[1] ~ gamma( 7.5 , 1 );
-    cdiff ~ gamma(5,1) T[L,];
 
     beta ~ beta( 0.5 , 5 );
 
@@ -64,7 +62,8 @@ model{
     for ( i in 1:N ) {
         phi[i] = beta[SexID[i]] * forcing[i] + a_sex[SexID[i]] + a_provenance[ProvenanceID[i]] + a_clone[CloneID[i]] + a_site[SiteID[i]];
     }
-    for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , cutpoints ); //consider vectorizing
+    
+    state ~ ordered_logistic( phi , cutpoints ); 
 }
 
 

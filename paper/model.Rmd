@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+library(knitr)
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
 ```
 ```{r depends}
@@ -24,12 +25,12 @@ rstan_options(auto_write=TRUE)
 ```
 
 ```{r data}
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
     filter(daily_forcing_type=="ristos")
 
 #SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
  #   dplyr::select(SPU_Name, Orchard)
-SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard) #add provenance information
 
 phendf <- phenology_data %>%
@@ -346,7 +347,7 @@ standat <- read_rdump("multilevel_phenology.Rdump")
 ```
 
 ```{r fit model}
-fit <- stan("multilevel_phenology.stan", 
-               chains=1, cores=1, iter=20, 
+fit <- stan("../multilevel_phenology.stan", 
+               chains=10, cores=10, iter=3000, 
                data=standat)
 ```
