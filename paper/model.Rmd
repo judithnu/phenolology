@@ -243,8 +243,9 @@ g1 <- simulate(1, cuts= c(14, 21), beta = 0.05)
 g2 <- simulate(2, cuts= c(15, 21), beta = 0.05)
 
 sim <- rbind(g1, g2)
-sim$state <- as.integer(sim$state)
-sim$group <- as.integer(sim$group)
+state <- as.integer(sim$state)
+group <- as.integer(sim$group)
+forcing <- sim$forcing
 
 ```
 
@@ -258,27 +259,29 @@ ggplot(sim, aes(x=forcing, y=state, color=as.factor(group))) +
 
 ```{r simulated fit}
 #Use ulam to help draft the model
-simfit <- ulam(
-    alist(
-        #likelihood
-        state ~ dordlogit(eta, cutpoints),
-        # model
-        eta <- beta * forcing,
-        cutpoints[1] ~ dnorm(alpha, 5),
-        cutpoints[2] ~ dnorm(beta, 5),
-        # priors
-        beta ~ dbeta(.5,5)
-        alpha ~
-    ),
-    data=sim, chains=1, cores=1, iter=20
-)
+# sim <- select(sim, state, forcing)
+# simfit <- ulam(
+#     alist(
+#         #likelihood
+#         state ~ dordlogit(eta, cutpoints),
+#         # model
+#         eta <- beta * forcing,
+#         cutpoints <- c(c1, c2),
+#         c1 ~ half_normal(5, 3),
+#         c2 ~ half_normal(20, 5),
+#         # priors
+#         beta ~ dbeta(.5,5)
+#     ),
+#     data=sim, chains=1, cores=1, iter=20
+# )
 
 # stancode(simfit)
 
 # Write simulated data in a format stan can understand
 K = length(unique(sim$state))
 N = nrow(sim)
-stan_rdump(c("N", "K", "forcing", "state"), "simulated_data.Rdump")
+Ngroup = length(unique(sim$group))
+stan_rdump(c("N", "K", "Ngroup", "forcing", "state", "group"), "simulated_data.Rdump")
 simdat <- read_rdump("simulated_data.Rdump")
 
 # Fit model to simulated data
