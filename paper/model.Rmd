@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+library(knitr)
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
 ```
 ```{r depends}
@@ -54,7 +55,7 @@ phen <- phendf #make a copy that will let me translate between ids and values
 phen$Phenophase_Derived <- as.factor(phen$Phenophase_Derived)
 
 #drop "non-numeric" cols to make stan quit complaining
-phendf <- select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -TreeID_new, -daily_forcing_type)
+phendf <- select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone)
 ```
 ## Conceptual Analysis
 
@@ -239,11 +240,8 @@ simulate <- function(groupid, cuts = c(15,20), beta=0.05) {
     return(sim)
 }
 
-g1 <- simulate(1, cuts = c(14, 21), beta = 0.05)
-g2 <- simulate(2, cuts = c(15, 21), beta = 0.05)
-g3 <- simulate(3, cuts = c(15, 23), beta = 0.05)
-
-
+g1 <- simulate(1, cuts= c(14, 21), beta = 0.05)
+g2 <- simulate(2, cuts= c(15, 21), beta = 0.05)
 
 sim <- rbind(g1, g2)
 state <- as.integer(sim$state)
@@ -320,33 +318,3 @@ If cutpoints prior is a single gamma distribution, cutpoints are not returned we
 Also want to try 
 - modeling cutpoints with separate linear models
 - 
-
-## Real data
-```{r data}
-N <- nrow(phendf)
-K <- length(unique(phendf$Phenophase_Derived))
-Nsex <- length(unique(phendf$SexID))
-Nclone <- length(unique(phendf$CloneID))
-Nprovenance <- length(unique(phendf$ProvenanceID))
-Nsite <- length(unique(phendf$SiteID))
-
-SexID <- phendf$SexID
-OrchardID <- phendf$OrchardID
-SiteID <- phendf$SiteID
-CloneID <- phendf$CloneID
-ProvenanceID <- phendf$ProvenanceID
-
-forcing <- phendf$forcing_accum
-state <- phendf$Phenophase_Derived
-
-L <- 1
-
-stan_rdump(c("N", "K", "L", "Nsex", "Nclone", "Nprovenance", "Nsite", "SexID", "SiteID", "CloneID", "ProvenanceID", "forcing", "state"), "multilevel_phenology.Rdump")
-standat <- read_rdump("multilevel_phenology.Rdump")
-```
-
-```{r fit model}
-fit <- stan("multilevel_phenology.stan", 
-               chains=1, cores=1, iter=20, 
-               data=standat)
-```
