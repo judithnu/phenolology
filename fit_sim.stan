@@ -60,6 +60,4 @@ model{
     // }
 }
 
-generated quantities{
-    matrix[Ngroup,K-1] cuts;
-}
+
