@@ -14,11 +14,11 @@ Rho <- matrix( c(1,rho,rho,1) , nrow=2 ) # correlation matrix
 Sigma <- diag(sigmas) %*% Rho %*% diag(sigmas)
 N_cafes <- 20
 library(MASS)
-set.seed(5) # used to replicate example
+
 vary_effects <- mvrnorm( N_cafes , Mu , Sigma )
 a_cafe <- vary_effects[,1]
 b_cafe <- vary_effects[,2]
-set.seed(22)
+
 N_visits <- 10
 afternoon <- rep(0:1,N_visits*N_cafes/2)
 cafe_id <- rep( 1:N_cafes , each=N_visits )
@@ -39,7 +39,7 @@ m14.1 <- ulam(
         sigma_cafe ~ exponential(1),
         sigma ~ exponential(1),
         Rho ~ lkj_corr(2)
-    ) , data=d , chains=1 , cores=1, iter=20 )
+    ) , data=d , sample=FALSE )
 
 stancode(m14.1)
 
