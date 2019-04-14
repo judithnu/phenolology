@@ -380,8 +380,15 @@ standat <- read_rdump("multilevel_phenology.Rdump")
 
 ```{r fit model}
 
+
 fit <- stan("multilevel_phenology.stan", 
-               chains=5, cores=5, iter=3000)
+               chains=5, cores=5, iter=3000, data=standat)
 
 
 ```
+
+```{r save model}
+saveRDS(fit, file = "multilevel_phenology.rds")
+posterior_cp <- as.array(fit)
+```
+
