@@ -43,16 +43,16 @@ model{
     vector[N] phi;
 
     //sample priors
-
-    sigma_site ~ exponential( 1.5 );
-    sigma_provenance ~ exponential( 1.5 );
-    sigma_clone ~ exponential( 1.5 );
+    sigma_sex ~ exponential( 1 );
+    sigma_site ~ exponential( 1 );
+    sigma_provenance ~ exponential( 1 );
+    sigma_clone ~ exponential( 1 );
 
     a_sex ~ normal( 0, sigma_sex);
     a_site ~ normal( 0 , sigma_site );
     a_provenance ~ normal( 0 , sigma_provenance );
     a_clone ~ normal( 0 , sigma_clone );
-    
+
     cdiff ~ gamma(5,.5);
     cutpoints[1] ~ gamma( 7.5 , 1 );
 
@@ -62,8 +62,8 @@ model{
     for ( i in 1:N ) {
         phi[i] = beta[SexID[i]] * forcing[i] + a_sex[SexID[i]] + a_provenance[ProvenanceID[i]] + a_clone[CloneID[i]] + a_site[SiteID[i]];
     }
-    
-    state ~ ordered_logistic( phi , cutpoints ); 
+
+    state ~ ordered_logistic( phi , cutpoints );
 }
 
 
