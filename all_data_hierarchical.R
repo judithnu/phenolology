@@ -96,8 +96,8 @@ m_SsIpcst_maxdepth <- ulam(
     sigma_site ~ exponential(1.5),
     sigma_tree ~ exponential(1.5),
     # calculate 50% transition points
-    gq> firsttrans <- (cutpoints[1] + a_provenance[ProvenanceID] + a_clone[CloneID] + a_site[SiteID] + a_tree[TreeID_new])/beta[SexID],
-    gq> secondtrans <- (cutpoints[2] + a_provenance[ProvenanceID] + a_clone[CloneID] + a_site[SiteID] + a_tree[TreeID_new])/beta[SexID]
+    # gq> firsttrans <- (cutpoints[1] + a_provenance[ProvenanceID] + a_clone[CloneID] + a_site[SiteID] + a_tree[TreeID_new])/beta[SexID],
+    # gq> secondtrans <- (cutpoints[2] + a_provenance[ProvenanceID] + a_clone[CloneID] + a_site[SiteID] + a_tree[TreeID_new])/beta[SexID]
     ),
   data = phendf,
 
