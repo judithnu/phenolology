@@ -351,3 +351,8 @@ fit <- stan("../multilevel_phenology.stan",
                chains=10, cores=10, iter=3000, 
                data=standat)
 ```
+
+```{r save model}
+saveRDS(fit, file = "multilevel_phenology.rds")
+posterior_cp <- as.array(fit)
+```

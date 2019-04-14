@@ -34,9 +34,11 @@ parameters{
 transformed parameters{
     //declare
     real<lower=0>cdiff; // don't allow cutpoint collapse
+    vector<lower=0>[N] intercept; //don't allow cutpoint collapse
 
     //define
     cdiff = cutpoints[2]-cutpoints[1];
+    intercept = a_sex + a_provenance + a_clone + a_site;
 }
 
 model{
@@ -55,6 +57,7 @@ model{
     
     cdiff ~ gamma(5,.5);
     cutpoints[1] ~ gamma( 7.5 , 1 );
+    intercept ~ exponential(.5);
 
     beta ~ beta( 0.5 , 5 );
 
