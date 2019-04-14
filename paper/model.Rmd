@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
 library(rethinking)
 library(dplyr)
 library(bayesplot)
+library(tidyr)
 
 ```
 
@@ -224,36 +225,63 @@ $f$ accumulated forcing units
 
 Simulate data from an ordered logistic distribution with three states and forcing values from real data. 
 
-```{r simulate_data}
+```{r simulate simplest data}
+cuts <- c(15,20)
+beta <- 0.05
+forcing <- runif(300, 175, 500)
+eta <- beta * forcing 
+state <- rordlogit(length(eta), phi = eta, a = cuts)
+sim <- data.frame(forcing,state)
+#sim$state <- group_indices(sim, state)
+```
+
+7 sites, 6 provenances, and 10 observations for each of 15 individuals at different forcing temperatures
+```{r simulate_grouped_data}
 # cutpoints <- c(0)
 # cutpoints[2] <- abs(rnorm(1,5,2))
 # cutpoints[3] <- abs(rnorm(1,20,2))
 # #k <- rbeta(1,.5, 5)
 
-simulate <- function(groupid, cuts = c(15,20), beta=0.05) {
-    cuts <- cuts
-    beta <- beta
-    forcing <- unique(phendf$forcing_accum)
-    eta <- beta * forcing 
-    state <- rordlogit(length(eta), phi = eta, a = cuts)
-    sim <- data.frame(group=groupid,forcing,state)
-    return(sim)
-}
+nsite <- 7
+nprov <- 6
+nindiv <- 15
+nobs <- 3
+forcing <- runif(10, 175,500)
+basecut <- c(15,20)
+beta = 0.05
+cut_site <- rnorm(n= nsite, mean=1, sd=1)
+cut_prov <- rnorm(n= nprov, mean=-2, sd=1)
 
-g1 <- simulate(1, cuts= c(14, 21), beta = 0.05)
-g2 <- simulate(2, cuts= c(15, 21), beta = 0.05)
+sites <- data.frame(site = 1:nsite, effect = cut_site)
+provs <- data.frame(prov = 1:nprov, effect= cut_prov)
 
-sim <- rbind(g1, g2)
-state <- as.integer(sim$state)
-group <- as.integer(sim$group)
-forcing <- sim$forcing
+simu_prep <- tidyr::crossing(site = sites$site, prov = provs$prov, nobs, indiv = 1:nindiv, forcing) %>%
+    dplyr::left_join(sites) %>% #add site and prov effects
+    rename(site_effect = effect) %>%
+    left_join(provs) %>%
+    rename(prov_effect = effect) %>%
+    mutate(group_effects = site_effect + prov_effect) 
 
+simu <- simu_prep %>% # calculate cutpoints and eta
+    # cutpoints
+    mutate(cut1 = group_effects + basecut[1])  %>%
+    mutate(cut2 = group_effects + basecut[2]) %>%
+    # linear model eta
+    mutate(eta = beta * forcing) 
+
+#simulate states
+for (i in 1:nrow(simu)) {
+    simu$state[i] <- rordlogit(1, 
+                               phi = simu$eta[i], 
+                               a = c(simu$cut1[i], simu$cut2[i]))
+    }
 ```
 
 ```{r visualize simulated_data}
-hist(sim$state)
-ggplot(sim, aes(x=forcing, y=state, color=as.factor(group))) +
-    geom_jitter()
+hist(simu$state)
+ggplot(simu, aes(x=forcing, y=state, color=prov)) +
+    geom_jitter() +
+    facet_wrap("site")
 ```
 
 ## Fit model to simulated data
@@ -279,16 +307,23 @@ ggplot(sim, aes(x=forcing, y=state, color=as.factor(group))) +
 # stancode(simfit)
 
 # Write simulated data in a format stan can understand
+# simplest data
 K = length(unique(sim$state))
 N = nrow(sim)
+stan_rdump(c("N", "K", "forcing", "state"), "simulated_nogroups.Rdump")
+simplesimdat <- read_rdump("simulated_nogroups.Rdump")
+
+# 1 group data
+K <- length(unique(sim$state))
+N <- nrow(sim)
 Ngroup = length(unique(sim$group))
 stan_rdump(c("N", "K", "Ngroup", "forcing", "state", "group"), "simulated_data.Rdump")
 simdat <- read_rdump("simulated_data.Rdump")
 
 # Fit model to simulated data
-simfit <- stan("fit_sim.stan", 
+simfit <- stan("cutpoints_difference.stan", 
                chains=5, cores=5, iter=2000, 
-               data=simdat)
+               data=simplesimdat)
               #control=list(adapt_delta=0.99))#, max_treedepth=11))
 
 # Check diagnostics
