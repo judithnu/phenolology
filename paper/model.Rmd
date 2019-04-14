@@ -51,12 +51,14 @@ phendf$SiteID <- group_indices(phendf, Site)
 phendf$SexID <- group_indices(phendf, Sex)
 #Create TreeIDs
 phendf$TreeID_new <- group_indices(phendf, TreeID)
+#Create YearIDs
+phendf$YearID <- group_indices(phendf, Year)
 
 phen <- phendf #make a copy that will let me translate between ids and values
 phen$Phenophase_Derived <- as.factor(phen$Phenophase_Derived)
 
 #drop "non-numeric" cols to make stan quit complaining
-phendf <- select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -TreeID_new, -daily_forcing_type)
+phendf <- dplyr::select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -TreeID_new, -daily_forcing_type)
 ```
 ## Conceptual Analysis
 
@@ -392,3 +394,117 @@ saveRDS(fit, file = "multilevel_phenology.rds")
 posterior_cp <- as.array(fit)
 ```
 
+### Model version with correlation
+
+```{r dataprep}
+head(phendf)
+```
+```{r ulam version sex only no corr}
+
+
+draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- b[SexID] * forcing_accum + a_sex[SexID],
+        #c(a_sex, b_sex)[SexID] ~ multi_normal(c(a_sex, b_sex), Rho, sigma_sex),
+        a_sex[SexID] ~ dnorm(0,1),
+        b[SexID] ~ dbeta(.5,5),
+        #sigma_sex ~ exponential(1),
+        kappa ~ dnorm(10,2)
+       # Rho ~ lkj_corr(2)
+    ),
+    data=phendf, cores=1, chains=1, iter = 10
+)
+```
+
+``` {r ulam version sex with corr}
+
+
+m14.1 <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- a_sex[SexID] + b_sex[SexID]*forcing_accum,
+        c(a_sex,b_sex)[SexID] ~ multi_normal( c(a,b) , Rho , sigma_sex ),
+        a ~ normal(5,2),
+        b ~ normal(-1,0.5),
+        sigma_cafe ~ exponential(1),
+        sigma ~ exponential(1),
+        Rho ~ lkj_corr(2)
+    ) , data=d , sample=FALSE )
+
+sexonly <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- a_sex[SexID] + b_sex[SexID]*forcing_accum,
+        c(a_sex, b_sex)[SexID] ~ multi_normal(c(a, b), Rho, sigma_sex),
+        a ~ dnorm(0,1),
+        b ~ dbeta(.5,5),
+        sigma_sex ~ exponential(1),
+        kappa ~ dnorm(10,2),
+        Rho ~ lkj_corr(2)
+    ),
+    data=phendf, sample=FALSE, declare_all_data= FALSE, iter = 10
+)
+stancode(draft)
+
+```
+
+```{r sex and prov with corr}
+#generate stan code for a draft of the stan code
+fit_full_draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- alphas + beta*forcing_accum,
+        alphas <- a_sex[SexID] + a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID],
+        beta <- b + b_sex[SexID] + b_prov[ProvenanceID],
+        #priors
+        b ~ dbeta(.5,5),
+        kappa ~ dnorm(10,2),
+        a_site[SiteID] ~ dnorm(0,1),
+        a_clone[CloneID] ~ dnorm(0,1),
+        a_year[YearID] ~ dnorm(0,1),
+        #sex
+        c(a_sex, b_sex)[SexID] ~ multi_normal(c(as, bs), Rhos, sigma_sex),
+        as ~ dnorm(0,1),
+        bs ~ dnorm(0, 0.1),
+        sigma_sex ~ exponential(1),
+        #provenance
+        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
+        ap ~ dnorm(0,1),
+        bp ~ dnorm(0, 0.1),
+        sigma_prov ~ exponential(1),
+        Rhos ~ lkj_corr(2),
+        Rhop ~ lkj_corr(2)
+    ),
+    data=phendf, sample=FALSE, declare_all_data= FALSE, iter = 10
+)
+stancode(fit_full_draft)
+```
+
+```{r fit full model}
+fitful <- stan("correlation.stan", 
+               chains=1, cores=, iter=20, 
+               data=phendf)
+```
+
+```{r error diag}
+library(rethinking)
+data(Trolley)
+d <- Trolley
+
+dat <- list(
+    R = d$response,
+    A = d$action,
+    I = d$intention,
+    C = d$contact )
+m12.6 <- ulam(
+    alist(
+        R ~ dordlogit( phi , cutpoints ),
+        phi <- bA*A + bC*C + BI*I ,
+        BI <- bI + bIA*A + bIC*C ,
+        c(bA,bI,bC,bIA,bIC) ~ dnorm( 0 , 0.5 ),
+        cutpoints ~ dnorm( 0 , 1.5 )
+    ) , data=dat , chains=1 , cores=1, iter=10 )
+precis( m12.6 )
+```
+```
