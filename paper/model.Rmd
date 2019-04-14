@@ -26,13 +26,15 @@ rstan_options(auto_write=TRUE)
 ```
 
 ```{r data}
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+#phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+ #   filter(daily_forcing_type=="ristos")
+phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
     filter(daily_forcing_type=="ristos")
 
-#SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
- #   dplyr::select(SPU_Name, Orchard)
-SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-  dplyr::select(SPU_Name, Orchard) #add provenance information
+SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+    dplyr::select(SPU_Name, Orchard)
+# SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+#   dplyr::select(SPU_Name, Orchard) #add provenance information
 
 phendf <- phenology_data %>%
     na.omit()
@@ -401,7 +403,6 @@ head(phendf)
 ```
 ```{r ulam version sex only no corr}
 
-
 draft <- ulam(
     alist(
         Phenophase_Derived ~ dordlogit(phi, kappa),
@@ -419,18 +420,6 @@ draft <- ulam(
 
 ``` {r ulam version sex with corr}
 
-
-m14.1 <- ulam(
-    alist(
-        Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- a_sex[SexID] + b_sex[SexID]*forcing_accum,
-        c(a_sex,b_sex)[SexID] ~ multi_normal( c(a,b) , Rho , sigma_sex ),
-        a ~ normal(5,2),
-        b ~ normal(-1,0.5),
-        sigma_cafe ~ exponential(1),
-        sigma ~ exponential(1),
-        Rho ~ lkj_corr(2)
-    ) , data=d , sample=FALSE )
 
 sexonly <- ulam(
     alist(
@@ -483,7 +472,7 @@ stancode(fit_full_draft)
 
 ```{r fit full model}
 fitful <- stan("correlation.stan", 
-               chains=1, cores=, iter=20, 
+               chains=8, cores=8, iter=4000, 
                data=phendf)
 ```
 
