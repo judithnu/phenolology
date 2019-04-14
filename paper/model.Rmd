@@ -55,7 +55,7 @@ phen <- phendf #make a copy that will let me translate between ids and values
 phen$Phenophase_Derived <- as.factor(phen$Phenophase_Derived)
 
 #drop "non-numeric" cols to make stan quit complaining
-phendf <- select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone)
+phendf <- select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -TreeID_new, -daily_forcing_type)
 ```
 ## Conceptual Analysis
 
@@ -318,3 +318,35 @@ If cutpoints prior is a single gamma distribution, cutpoints are not returned we
 Also want to try 
 - modeling cutpoints with separate linear models
 - 
+
+## Real data
+```{r data}
+N <- nrow(phendf)
+K <- length(unique(phendf$Phenophase_Derived))
+Nsex <- length(unique(phendf$SexID))
+Nclone <- length(unique(phendf$CloneID))
+Nprovenance <- length(unique(phendf$ProvenanceID))
+Nsite <- length(unique(phendf$SiteID))
+
+SexID <- phendf$SexID
+OrchardID <- phendf$OrchardID
+SiteID <- phendf$SiteID
+CloneID <- phendf$CloneID
+ProvenanceID <- phendf$ProvenanceID
+
+forcing <- phendf$forcing_accum
+state <- phendf$Phenophase_Derived
+
+L <- 1
+
+stan_rdump(c("N", "K", "L", "Nsex", "Nclone", "Nprovenance", "Nsite", "SexID", "SiteID", "CloneID", "ProvenanceID", "forcing", "state"), "multilevel_phenology.Rdump")
+standat <- read_rdump("multilevel_phenology.Rdump")
+```
+
+```{r fit model}
+
+fit <- stan("multilevel_phenology.stan", 
+               chains=5, cores=5, iter=3000)
+
+
+```
