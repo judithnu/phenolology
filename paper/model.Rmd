@@ -313,7 +313,7 @@ ggplot(simu, aes(x=forcing, y=state, color=prov)) +
 
 ## Fit model to simulated data
 
-```{r simulated fit}
+```{r simulated fit, eval=FALSE}
 #Use ulam to help draft the model
 # sim <- select(sim, state, forcing)
 # simfit <- ulam(
@@ -358,17 +358,17 @@ util$check_all_diagnostics(simfit)
 ```
 
 ### Consider fit of model to simulated data
-```{r precis simulated data fit}
+```{r precis simulated data fit, eval=FALSE}
 precis(simfit, depth=2)
 ```
 
-```{r extract fit}
+```{r extract fit, eval=FALSE}
 simpost <- as.matrix(simfit)
 pairs(simpost)
 ```
 
 
-```{r plot real params vs posterior}
+```{r plot real params vs posterior, eval=FALSE}
 mcmc_areas(simpost, regex_pars = "cutpoints") + 
     geom_vline(xintercept = c(15,20))
 mcmc_areas(simpost, pars="beta") +
@@ -382,7 +382,7 @@ Also want to try
 - 
 
 ## Real data
-```{r data}
+```{r dataprep real, eval=FALSE}
 N <- nrow(phendf)
 K <- length(unique(phendf$Phenophase_Derived))
 Nsex <- length(unique(phendf$SexID))
@@ -405,7 +405,7 @@ stan_rdump(c("N", "K", "L", "Nsex", "Nclone", "Nprovenance", "Nsite", "SexID", "
 standat <- read_rdump("multilevel_phenology.Rdump")
 ```
 
-```{r fit model}
+```{r fit model, eval=FALSE}
 
 
 fit <- stan("multilevel_phenology.stan", 
@@ -414,17 +414,17 @@ fit <- stan("multilevel_phenology.stan",
 
 ```
 
-```{r save model}
+```{r save model, eval=FALSE}
 saveRDS(fit, file = "multilevel_phenology.rds")
 posterior_cp <- as.array(fit)
 ```
 
 ### Model version with correlation
 
-```{r dataprep}
+```{r dataprep, eval=FALSE}
 head(phendf)
 ```
-```{r ulam version sex only no corr}
+```{r ulam version sex only no corr, eval=FALSE}
 
 
 draft <- ulam(
@@ -442,7 +442,7 @@ draft <- ulam(
 )
 ```
 
-``` {r ulam version sex with corr}
+``` {r ulam version sex with corr, eval=FALSE}
 
 
 m14.1 <- ulam(
@@ -474,7 +474,7 @@ stancode(draft)
 
 ```
 
-```{r sex and prov with corr}
+```{r sex and prov with corr, eval=FALSE}
 #generate stan code for a draft of the stan code
 fit_full_draft <- ulam(
     alist(
@@ -506,30 +506,38 @@ fit_full_draft <- ulam(
 stancode(fit_full_draft)
 ```
 
-```{r fit full model}
+```{r fit full model, eval=FALSE}
 fitful <- stan("correlation.stan", 
                chains=1, cores=, iter=20, 
                data=phendf)
 ```
 
-```{r error diag}
-library(rethinking)
-data(Trolley)
-d <- Trolley
-
-dat <- list(
-    R = d$response,
-    A = d$action,
-    I = d$intention,
-    C = d$contact )
-m12.6 <- ulam(
+```{r sample from prior, eval=FALSE}
+fit_full_draft <- ulam(
     alist(
-        R ~ dordlogit( phi , cutpoints ),
-        phi <- bA*A + bC*C + BI*I ,
-        BI <- bI + bIA*A + bIC*C ,
-        c(bA,bI,bC,bIA,bIC) ~ dnorm( 0 , 0.5 ),
-        cutpoints ~ dnorm( 0 , 1.5 )
-    ) , data=dat , chains=1 , cores=1, iter=10 )
-precis( m12.6 )
-```
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- alphas + beta*forcing_accum,
+        alphas <- a_sex[SexID] + a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID],
+        beta <- b + b_sex[SexID] + b_prov[ProvenanceID],
+        #priors
+        b ~ dbeta(.5,5),
+        kappa ~ dnorm(10,2),
+        a_site[SiteID] ~ dnorm(0,1),
+        a_clone[CloneID] ~ dnorm(0,1),
+        a_year[YearID] ~ dnorm(0,1),
+        #sex
+        c(a_sex, b_sex)[SexID] ~ multi_normal(c(as, bs), Rhos, sigma_sex),
+        as ~ dnorm(0,1),
+        bs ~ dnorm(0, 0.1),
+        sigma_sex ~ exponential(1),
+        #provenance
+        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
+        ap ~ dnorm(0,1),
+        bp ~ dnorm(0, 0.1),
+        sigma_prov ~ exponential(1),
+        Rhos ~ lkj_corr(2),
+        Rhop ~ lkj_corr(2)
+    ),
+    data=phendf, sample=FALSE, declare_all_data= FALSE, sample_prior = TRUE
+)
 ```
