@@ -1,7 +1,7 @@
 ---
 title: "A hierarchical Bayesian model of pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "March 25, 2019"
+date: "April 14, 2019"
 output: html_document
 ---
 
@@ -398,24 +398,10 @@ posterior_cp <- as.array(fit)
 
 ### Model version with correlation
 
+#### Simplest - sex only
+
 ```{r dataprep}
 head(phendf)
-```
-```{r ulam version sex only no corr}
-
-draft <- ulam(
-    alist(
-        Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- b[SexID] * forcing_accum + a_sex[SexID],
-        #c(a_sex, b_sex)[SexID] ~ multi_normal(c(a_sex, b_sex), Rho, sigma_sex),
-        a_sex[SexID] ~ dnorm(0,1),
-        b[SexID] ~ dbeta(.5,5),
-        #sigma_sex ~ exponential(1),
-        kappa ~ dnorm(10,2)
-       # Rho ~ lkj_corr(2)
-    ),
-    data=phendf, cores=1, chains=1, iter = 10
-)
 ```
 
 ``` {r ulam version sex with corr}
@@ -437,7 +423,7 @@ sexonly <- ulam(
 stancode(draft)
 
 ```
-
+### sex, site, prov, clone, year
 ```{r sex and prov with corr}
 #generate stan code for a draft of the stan code
 fit_full_draft <- ulam(
@@ -448,7 +434,7 @@ fit_full_draft <- ulam(
         beta <- b + b_sex[SexID] + b_prov[ProvenanceID],
         #priors
         b ~ dbeta(.5,5),
-        kappa ~ dnorm(10,2),
+        kappa ~ dnorm(10,2), #change to gamma in real model
         a_site[SiteID] ~ dnorm(0,1),
         a_clone[CloneID] ~ dnorm(0,1),
         a_year[YearID] ~ dnorm(0,1),
@@ -471,11 +457,57 @@ stancode(fit_full_draft)
 ```
 
 ```{r fit full model}
-fitful <- stan("correlation.stan", 
-               chains=8, cores=8, iter=4000, 
+fitful <- stan("../correlation.stan", 
+               chains=8, cores=8, warmup = 1000, iter=1200, 
                data=phendf)
 ```
+```{r save model output}
+parsum <- precis(fitful, depth = 2)
+saveRDS(fitful, file = "2019-04-14_correlation.rds")
+posterior_cp <- as.array(fit)
 
+```
+```{r with pooling}
+#generate stan code for a draft of the stan code
+fit_full_draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- alphas + beta*forcing_accum,
+        alphas <- a_sex[SexID] + a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID],
+        beta <- b + b_sex[SexID] + b_prov[ProvenanceID],
+        #priors
+        b ~ dbeta(.5,5),
+        kappa ~ dnorm(10,2), # change to gamma in stan
+        a_site[SiteID] ~ dnorm(0,site_sigma),
+        a_clone[CloneID] ~ dnorm(0,clone_sigma),
+        a_year[YearID] ~ dnorm(0,year_sigma),
+        #sex
+        c(a_sex, b_sex)[SexID] ~ multi_normal(c(as, bs), Rhos, sigma_sex),
+        as ~ dnorm(0,1),
+        bs ~ dnorm(0, 0.1),
+        sigma_sex ~ exponential(1),
+        #provenance
+        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
+        ap ~ dnorm(0,1),
+        bp ~ dnorm(0, 0.1),
+        sigma_prov ~ exponential(1),
+        #pop varying effects
+        Rhos ~ lkj_corr(2),
+        Rhop ~ lkj_corr(2),
+        # hyperpriors
+        site_sigma ~ exponential(2),
+        clone_sigma ~ exponential(2),
+        year_sigma ~ exponential(2)
+    ),
+    data=phendf, sample=FALSE, declare_all_data= FALSE
+)
+stancode(fit_full_draft)
+```
+```{r fit correlation with pooling}
+fitfulpool <- stan("../correlation_with_pooling.stan", 
+               chains=8, cores=8, warmup = 1000, iter=1300, 
+               data=phendf)
+```
 ```{r error diag}
 library(rethinking)
 data(Trolley)
