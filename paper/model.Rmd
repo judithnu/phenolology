@@ -132,14 +132,14 @@ h_s=\frac{c_s}{k}\\$$
 
 An ordered logistic model respects the ordering of the phenological states and generates two curves - one representing the "not-yet to active" transition and the other the "active to complete" transition. The transition from before not-yet to not-yet is not meaningful and $c_1$ is set to 0.
 
-Adding compoents to $\eta$ is like adding them to the cutpoints. For example, adding a provenance effect to eta 
+Adding intercept components to $\eta$ shifts the location and they are added to the cutpoints when calculating $h_s$. For example, adding a provenance effect to eta 
 
 $$\eta=kx + \alpha_{provenance}$$
 means that the location $h_s$ is calculated as
 
 $$h_s = \frac{c_s+\alpha_{provenance}}{k}$$
 
-In this parameterization, cutpoints are not sex or population specific. $\alpha$ components in $\eta$ affect both transitions equally. So a provenance effect $\alpha_{provenance}$ will shift both the transition from state from 1 to 2 and from 2 to 3 by the same amount. Is this (biologically) correct?
+In this example parameterization, cutpoints are not sex or population specific. $\alpha$ components in $\eta$ affect both transitions equally. So a provenance effect $\alpha_{provenance}$ will shift both the transition from state from 1 to 2 and from 2 to 3 by the same amount. Is this (biologically) correct?
 
 Sarvas's experimental work on development in trees says that 
 
@@ -153,16 +153,30 @@ So if it takes 100 hours to go from phenophase 1 to 2 at 10 degrees, then the pe
 
 This does not mean that everything should have the same slope ($k$). It does mean that I can use the same forcing units for everything.
 
+I will parameterize this model with effects on k (slopes) from Sex and Provenance and effects on location (intercepts) from Sex, Site, Provenance, Clone, and Year.
+
+### Important model assumptions
+In a model where effects are included in eta, any effect influences both curves identically. That is, curves can be shifted to the left or right by an effect, but cannot be shifted in opposite directions.
+
+I am making assumptions about the kinds of effects that are possible in what I choose to include on both slopes and intercepts.
+
+####Alternative parameterizations
+##### Effects on each cutpoint
 I could parameterize the model differently I think. For example, considering just the effects of sex and provenance: 
 
 $$\eta = (k + k_{sex} + k_{provenance})x \\
 c_1 = \alpha + \alpha_{sex} + \alpha_{provenance} \\
 c_2 = \beta + \beta_{sex} + \beta_{provenance}
 $$
-This means making way more priors, but I think makes biological sense! In earlier iterations of the model, I've been forcing $h_s$ to have all the same components - except for the primary $\alpha$ and $\beta$. 
-In old versions of my model, whatever other effects there are from provenance, clone, ramet, etc shift all $h_s$ by the same amount. 
+This means making way more priors, but I think makes biological sense!  
+In old versions of my model, whatever effects there are from provenance, clone, ramet, etc shift all $h_s$ by the same amount. 
 
-I am concerned that the model as structured could become non-identifiable. I also think I need to deal with correlations between parameters using cholesky and/or LR things.
+This model would have at least double the number of parameters as the other parameterization and may be very difficult or impossible to fit. I did successfully create a model with different effects on both cutpoints, but wasn't able to make the model fit more than one group. This is a technical issue and not a theoretical one. 
+
+##### Difference between cutpoints
+Instead of modeling intercepts as part of $\eta$ or on each cutpoint individually, I could model the *difference* between cutpoints. This is my preferred approach, but I cannot make any versions of this with actual effects included work. I've asked for help [here](https://discourse.mc-stan.org/t/add-effects-to-difference-between-cutpoints-in-multilevel-ordered-logistic-model/8421).
+
+I think this makes sense biologically. I'd estimate some main cutpoints and then the effects on the difference would determine the precise location. A positive male effect on the difference would mean that the curves are pushed apart. A negative male effect would mean the curves are pulled closer together. This is still symmetric, but could capture an effect like - males begin flowering at lower forcing units and stop flowering at higher forcing units than females.
 
 ### How to include effects of sex, provenance, etc.
 The first question is whether to include the effect in the speed of transition $k$ or the locations.
@@ -181,35 +195,34 @@ Previous model runs have been letting $k$ vary by sex, but not the location. I b
 ### Should the sex component have partial pooling?
 No! Sex components should not be pooled across males and females. They're connected but separate and I believe they should be allowed to vary completely independently.
 
-## What about pooling for other effects?
-For clone, site, and provenance, I believe partial pooling is the right decision. No pooling will overfit and exaggerate effects, but ignoring the effects (total pooling) will ignore effects I'm testing for (provenance) or that undoubtedly exist (clone, site).
+### What about pooling for other effects?
+For clone, site, year, and provenance, I believe partial pooling is the right decision. No pooling will overfit and exaggerate effects, but ignoring the effects (total pooling) will ignore effects I'm testing for (provenance) or that undoubtedly exist (clone, site).
 
-Can I explain why I don't think the sex component will be overfit?
-
-## So what should the model look like?
+## So what does the model look like?
 
 $$\begin{array}{rlr}
-S & \sim \text{OrderedLogistic}(s |\eta, c_s)\\
-\eta & = k \times f \\
-c_1 &= \alpha + \alpha_{sex} + \alpha_{provenance} + \alpha_{site} + \alpha_{clone} + \alpha_{ramet} \\
-c_2 &= \beta + \beta_{sex} + \beta_{provenance} + \beta_{site} + \beta_{clone} + \beta_{ramet} \\
+
+S_i & \sim \text{OrderedLogistic}(s |\eta_i, c_s)\\
+\eta_i & = (k + k_{sex[i]} + k_{provenance[i]}) \times f_i + \alpha_i \\
+\alpha_i &= \alpha_{sex[i]} + \alpha_{provenance[i]} + \alpha_{site[i]} + \alpha_{clone[i]} + \alpha_{year[i]} \\
+
 
 && \text{priors} \\
-k &\sim \text{beta}(.5,5) & \text{slope}\\
-\\
-\alpha &\sim \text{normal}(10, 5) \\
-\alpha_{sex} &\sim \text{normal}(0, \sigma_{sex})\\
+c_s &\sim \text{gamma}(7.5,1)
+k &\sim \text{beta}(.5,5) & \text{slope priors}\\
+k_{sex}, k_{provenance} &\sim \text{normal}(0, 0.1) \\
+\alpha_{sex} &\sim \text{normal}(0, \sigma_{sex}) & \text{intercept priors}\\
 \alpha_{provenance} &\sim \text{normal}(0, \sigma_{provenance}) \\
 \alpha_{site} &\sim \text{normal}(0, \sigma_{site}) \\
 \alpha_{clone} &\sim \text{normal}(0, \sigma_{clone}) \\
-\alpha_{tree} &\sim \text{normal}(0, \sigma_{tree}) \\
+\alpha_{year} &\sim \text{normal}(0, \sigma_{tree}) \\
 \\
-\beta &\sim \text{normal}(20,5) \\
-\beta_{sex} &\sim \text{normal}(0, \upsilon_{sex}) \\
-\beta_{provenance} &\sim \text{normal}(0, \upsilon_{provenance}) \\
-\beta_{site} &\sim \text{normal}(0, \upsilon_{site}) \\
-\beta_{clone} &\sim \text{normal}(0, \upsilon_{clone}) \\
-\beta_{tree} &\sim \text{normal}(0, \upsilon_{tree}) \\
+&&\text{populations of varying effects} \\
+\begin{bmatrix}
+\alpha{sex} \\
+\beta{sex}
+\end{bmatrix} &\sim \text{MVNormal} \\
+
 
 && \text{hyperpriors}\\
 \sigma_{sex} & \sim \text{exponential}(1.5) \\
