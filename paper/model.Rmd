@@ -1,7 +1,7 @@
 ---
-title: "A hierarchical Bayesian model of pollination phenology in lodgepole pine"
+title: "A multilevel Bayesian model of pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "March 25, 2019"
+date: "April 14, 2019"
 output: html_document
 ---
 
@@ -14,6 +14,7 @@ library(rethinking)
 library(dplyr)
 library(bayesplot)
 library(tidyr)
+library(summarytools)
 
 ```
 
@@ -25,8 +26,8 @@ options(mc.cores=parallel::detectCores())
 rstan_options(auto_write=TRUE)
 ```
 
-```{r data}
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+```{r data, echo=FALSE}
+phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
     filter(daily_forcing_type=="ristos")
 
 #SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
@@ -36,8 +37,13 @@ SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv
 
 phendf <- phenology_data %>%
     na.omit()
-phendf <- dplyr::left_join(phenology_data, SPU_dat)
+phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+    unique()
 
+view(dfSummary(phendf))
+```
+
+```{r stanindexing}
 #Create indexes that stan will like
 #Create Clone IDs
 phendf$CloneID <- group_indices(phendf, Clone)
@@ -59,39 +65,45 @@ phen$Phenophase_Derived <- as.factor(phen$Phenophase_Derived)
 
 #drop "non-numeric" cols to make stan quit complaining
 phendf <- dplyr::select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -TreeID_new, -daily_forcing_type)
+
 ```
 ## Conceptual Analysis
 
 Pollination phenology in lodgepole pine refers to the timing of two events - pollen shed and cone receptivity. I want to estimate the beginning, end, and length of both events. 
 
-### Plot data
-
-```{r initial data vis}
-ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
-    stat_ecdf() +
-    theme_bw(base_size=16) +
-    facet_grid(Site ~ SPU_Name) +
-    scale_color_viridis_d(direction =-1) +
-    ggtitle("Phenophase accumulation as heatsum increases\n by Site and Provenance")
-
-ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived)) +
-    geom_density() +
-    theme_bw(base_size=16) +
-    facet_grid(Site ~ SPU_Name, scales="free_y") +
-    scale_color_viridis_d(direction=-1) +
-    ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance")
-
-ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived)) +
-    geom_density() +
-    theme_bw(base_size=16) +
-    facet_grid(SPU_Name ~ Site, scales="free_y") +
-    scale_color_viridis_d(direction=-1) +
-    ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance")
-```
+### Phenology data summary
 
 Pollen shed almost always begins prior to or simultaneously with cone receptivity. Pollen shed finishes before the receptive period is over less than half the time and sometimes finishes after the receptivity period is done. 
 
+```{r dataviz, fig.width=11, fig.height=9}
+ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
+    stat_ecdf() +
+    theme_bw(base_size=16) +
+    facet_grid(SPU_Name ~ Site) +
+    scale_color_viridis_d(direction =-1) +
+    ggtitle("Phenophase accumulation as heatsum increases\n by Site and Provenance") +
+    theme(legend.position = "bottom")
+
+# ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived)) +
+#     geom_density() +
+#     theme_bw(base_size=16) +
+#     facet_grid(Site ~ SPU_Name, scales="free_y") +
+#     scale_color_viridis_d(direction=-1) +
+#     ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance")
+# 
+# ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived)) +
+#     geom_density() +
+#     theme_bw(base_size=16) +
+#     facet_grid(SPU_Name ~ Site, scales="free_y") +
+#     scale_color_viridis_d(direction=-1) +
+#     ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance")
+```
+
 The order of development and the forcing accumulation required is much more consistent across sites than provenances, suggesting stronger site than provenance effects. The proportion of each phenophase at different forcing amounts is much more consistent within a site than within provenances, suggesting strong site effects/limited provenance effects.
+
+![Site x Provenance](../graphsforsally/phenophase_prop_sitexprov.png)
+![Provenance x Site](../graphsforsally/phenophase_prop_provxsite.png)
+
 
 As the developmental process for pollen shed and cone receptivity appears to be logistic (Sarvas 1972), I will use a logistic model. A logistic model has two parameters. $k$ affects the speed of transition and $h$ determines the time ("location") of transition. $k$ must be positive and between 0 and 1. $k$ near 0 is a slow transition. $k$ near one is a near instantaneous transition. $h$ is the inflection point of the curve, in our case, the point at which a given tree is 50% likely to have transitioned from state $s$ to state $s+1$
 
