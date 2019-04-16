@@ -174,6 +174,8 @@ In a model where effects are included in eta, any effect influences both curves 
 
 I am making assumptions about the kinds of effects that are possible in what I choose to include on both slopes and intercepts.
 
+In my current model
+
 ####Alternative parameterizations
 ##### Effects on each cutpoint
 I could parameterize the model differently I think. For example, considering just the effects of sex and provenance: 
@@ -544,15 +546,94 @@ fit_full_draft <- ulam(
 )
 stancode(fit_full_draft)
 ```
-```{r fit correlation with pooling}
+```{r fit correlation with pooling, eval=FALSE}
 fitfulpool <- stan("../correlation_with_pooling.stan", 
                chains=8, cores=8, warmup = 1000, iter=1300, 
                data=phendf)
 ```
 
 ```{r save pooling model output}
-parsumpool <- precis(fitfulpool, depth = 2)
-saveRDS(fitfulpool, file = "2019-04-15_correlation_with_pooling.rds")
-posterior_cp <- as.array(fit)
+#parsumpool <- precis(fitfulpool, depth = 2)
+#saveRDS(fitfulpool, file = "2019-04-15_correlation_with_pooling.rds")
+
+fitfulpool.stan <- readRDS("../2019-04-15_correlaton_with_pooling.rds")
+posteriorpool <- as.array(fitfulpool.stan)
+parsumpool <- precis(fitfulpool.stan, depth=2)
+postext <- extract.samples(fitfulpool.stan)
 
 ```
+```{r plot some model}
+dens( postext$Rhop[,1,2] )
+dens( postext$Rhos[,1,2] )
+```
+Negative correlation between slopes and intercepts for provenance.
+Unclear correlatoin between slopes and intercepts for sex. This doesn't look well fit. I think I might need separate models for each sex.
+
+```{r pooling}
+# compute unpooled estimates directly from data
+ap_unpooled <- sapply( 1:length(unique(phendf$ProvenanceID)) ,
+        function(i) mean(phendf$forcing_accum[phendf$ProvenanceID==i]) )
+#bp_unpooled <- sapply( 1:length(unique(phendf$ProvenanceID)) ,
+      #  function(i) mean(phendf$forcing_accum[phendf$ProvenanceID==i])) - ap_unpooled
+# extract posterior means of partially pooled estimates
+
+a_prov <- apply( postext$a_prov , 2 , mean )
+b_prov <- apply( postext$b_prov , 2 , mean )
+
+# plot both and connect with lines
+plot( ap_unpooled * b_prov, b_prov , xlab="intercept" , ylab="slope" ,
+    pch=16 , col=rangi2 , ylim=c( min(b_prov)-0.1 , max(b_prov)+0.1 ) ,
+    xlim=c( min(a_prov)-0.1 , max(a_prov)+0.1 ) )
+points( a_prov , b_prov , pch=1 )
+#for ( i in 1:N_cafes ) lines( c(a1[i],a2[i]) , c(b1[i],b2[i]) )
+
+# compute posterior mean bivariate Gaussian
+Mu_est <- c( mean(postext$ap) , mean(postext$bp) )
+rho_est <- mean( postext$Rhop[,1,2] )
+sa_est <- mean( postext$sigma_prov[,1] )
+sb_est <- mean( postext$sigma_prov[,2] )
+cov_ab <- sa_est*sb_est*rho_est
+Sigma_est <- matrix( c(sa_est^2,cov_ab,cov_ab,sb_est^2) , ncol=2 )
+# draw contours
+library(ellipse)
+for ( l in c(0.1,0.3,0.5,0.8,0.99) )
+    lines(ellipse(Sigma_est,centre=Mu_est,level=l),
+        col=col.alpha("black",0.2))
+```
+
+```{r}
+mcmc_intervals(posteriorpool, regex_pars = c("a_prov", "a_site", "a_year", "a_sex"))
+mcmc_intervals(posteriorpool, regex_pars = c("b_prov", "b_site", "b_year", "b_sex", "b"))
+
+mcmc_intervals(posteriorpool, regex_pars = "b_prov") + ggtitle("slope effect provenance")
+mcmc_intervals(posteriorpool, regex_pars = "a_prov") + ggtitle("intercept effect provenance")
+
+# betas
+
+betas <- postext$b + postext$b_prov[,1] + postext$b_sex
+mcmc_intervals(betas)
+
+# prov threshold effect
+h50p1 <- (postext$kappa[,1] + postext$a_prov)/postext$b_prov
+colnames(h50p1) <- unique(phen$SPU_Name)
+
+h50p2 <- (postext$kappa[,2] + postext$a_prov)/postext$b_prov
+colnames(h50p2) <- unique(phen$SPU_Name)
+
+mcmc_intervals(h50p1)
+mcmc_intervals(h50p2)
+
+#sex threshold effects
+h50sex1 <- (postext$kappa[,1] + postext$a_sex)/postext$b_sex
+colnames(h50sex1) <- unique(phen$Sex)
+
+h50sex2 <- (postext$kappa[,2] + postext$a_sex)/postext$b_sex
+colnames(h50sex2) <- unique(phen$Sex)
+
+mcmc_intervals(h50sex1)
+mcmc_intervals(h50sex2)
+
+
+```
+
+
