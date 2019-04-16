@@ -1,8 +1,10 @@
 ---
 title: "A multilevel Bayesian model of pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "April 14, 2019"
+date: "April 15, 2019"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +16,8 @@ library(rethinking)
 library(dplyr)
 library(bayesplot)
 library(tidyr)
-library(summarytools)
+#library(summarytools)
+library(ellipse)
 
 ```
 
@@ -34,17 +37,19 @@ rstan_options(auto_write=TRUE)
 phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
     filter(daily_forcing_type=="ristos")
 
-SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-    dplyr::select(SPU_Name, Orchard)
+#SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+   # dplyr::select(SPU_Name, Orchard)
 # SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
 #   dplyr::select(SPU_Name, Orchard) #add provenance information
+ SPU_dat <- read.csv("~/Documents/phd_sus//data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+   dplyr::select(SPU_Name, Orchard) #add provenance information
 
 phendf <- phenology_data %>%
     na.omit()
 phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
     unique()
-
-view(dfSummary(phendf))
+summary(phendf)
+#view(dfSummary(phendf))
 ```
 
 ```{r stanindexing}
