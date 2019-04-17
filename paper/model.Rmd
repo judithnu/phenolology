@@ -625,7 +625,7 @@ mcmc_intervals(h50sex2)
 
 ### Separate male and female models with no correlation
 
-#### female
+
 ```{r ulam draft, eval=FALSE}
 
 stancleaner <- function(df) {
@@ -634,7 +634,7 @@ stancleaner <- function(df) {
 }
 
 fdf <- stancleaner(fdf)
-#fdf <- select(fdf, Phenophase_Derived, forcing_accum, CloneID, ProvenanceID, SiteID, YearID, Tree)
+mdf <- stancleaner(mdf)
 
 fit_draft <- ulam(
     alist(
@@ -653,11 +653,12 @@ fit_draft <- ulam(
         year_sigma ~ exponential(1.5),
         clone_sigma ~ exponential(1.5)
     ),
-    data=fdf, sample=FALSE, declare_all_data = FALSE)
+    data=fdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
 
 stancode(fit_draft)
 ```
 
+#### female
 ```{r fit female, eval=FALSE}
 fitfem <- stan("../female_intercept_only.stan", 
                chains=8, cores=8, warmup = 1100, iter=1300, 
@@ -668,4 +669,20 @@ saveRDS(fitfem, file = "2019-04-16_fem_intercept_only.rds")
 
 fitfem.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
 ```
+
+
+#### male
+```{r fit male, eval=FALSE}
+
+fitm <- stan("../male_intercept_only.stan", 
+               chains=8, cores=8, warmup = 1100, iter=1300, 
+               data=fdf)
+
+msum <- precis(fitfem, depth = 2)
+saveRDS(fitm, file = "2019-04-16_fem_intercept_only.rds")
+
+fitm.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
+
+```
+
 
