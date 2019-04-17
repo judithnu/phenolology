@@ -1,7 +1,7 @@
 ---
 title: "A multilevel Bayesian model of pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "April 15, 2019"
+date: "April 16, 2019"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -11,13 +11,13 @@ editor_options:
 library(knitr)
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
 ```
+
 ```{r depends}
 library(rethinking)
 library(dplyr)
 library(bayesplot)
 library(tidyr)
-#library(summarytools)
-library(ellipse)
+library(summarytools)
 
 ```
 
@@ -29,72 +29,87 @@ options(mc.cores=parallel::detectCores())
 rstan_options(auto_write=TRUE)
 ```
 
-
-```{r data, echo=FALSE}
-
-#phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
- #   filter(daily_forcing_type=="ristos")
-phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(daily_forcing_type=="ristos")
-
-#SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-   # dplyr::select(SPU_Name, Orchard)
-# SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-#   dplyr::select(SPU_Name, Orchard) #add provenance information
- SPU_dat <- read.csv("~/Documents/phd_sus//data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-   dplyr::select(SPU_Name, Orchard) #add provenance information
-
-phendf <- phenology_data %>%
-    na.omit()
-phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
-    unique()
-summary(phendf)
-#view(dfSummary(phendf))
-```
-
-```{r stanindexing}
-#Create indexes that stan will like
-#Create Clone IDs
-phendf$CloneID <- group_indices(phendf, Clone)
-#Create OrchardIDs
-phendf$OrchardID <- group_indices(phendf, Orchard)
-#Create ProvenanceIDs
-phendf$ProvenanceID <- group_indices(phendf, SPU_Name)
-#Create SiteIDs
-phendf$SiteID <- group_indices(phendf, Site)
-#Create SexIDs
-phendf$SexID <- group_indices(phendf, Sex)
-#Create TreeIDs
-phendf$TreeID_new <- group_indices(phendf, TreeID)
-#Create YearIDs
-phendf$YearID <- group_indices(phendf, Year)
-
-phen <- phendf #make a copy that will let me translate between ids and values
-phen$Phenophase_Derived <- as.factor(phen$Phenophase_Derived)
-
-#drop "non-numeric" cols to make stan quit complaining
-phendf <- dplyr::select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -TreeID_new, -daily_forcing_type)
-
-```
 ## Conceptual Analysis
 
 Pollination phenology in lodgepole pine refers to the timing of two events - pollen shed and cone receptivity. I want to estimate the beginning, end, and length of both events. 
 
 ### Phenology data summary
 
+```{r data, echo=FALSE, results="asis"}
+
+phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+    filter(daily_forcing_type=="ristos")
+# phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+#     filter(daily_forcing_type=="ristos")
+
+SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+   dplyr::select(SPU_Name, Orchard) #add provenance information
+#SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+   # dplyr::select(SPU_Name, Orchard)
+ # SPU_dat <- read.csv("~/Documents/phd_sus//data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+ #   dplyr::select(SPU_Name, Orchard) #add provenance information
+
+phendf <- phenology_data %>%
+    na.omit()
+phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+    unique()
+
+view(dfSummary(phendf))
+# summary(phendf)
+
+```
+
+```{r stanindexing}
+#Create indexes that stan will like
+stanindexer <- function(df) {
+    df$CloneID <- group_indices(df, Clone)
+    df$OrchardID <- group_indices(df, Orchard)
+    df$ProvenanceID <- group_indices(df, SPU_Name)
+    df$SiteID <- group_indices(df, Site)
+    df$YearID <- group_indices(df, Year)
+    df$Tree <- group_indices(df,TreeID)
+    return(df)
+}
+
+fdf <- filter(phendf, Sex == "FEMALE")
+fdf <- stanindexer(fdf)
+mdf <- filter(phendf, Sex == "MALE")
+mdf <- stanindexer(mdf)
+
+#test
+nrow(fdf) + nrow(mdf) == nrow(phendf)
+
+#drop "non-numeric" cols to make stan quit complaining
+#phendf <- dplyr::select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -daily_forcing_type)
+
+
+
+
+
+```
+
+```{r data}
+view(dfSummary(fdf))
+view(dfSummary(mdf))
+
+ggplot(phendf, aes(x=Sex, y=forcing_accum, fill=as.factor(Phenophase_Derived))) +
+    geom_violin() +
+    scale_fill_viridis_d() + 
+    ggtitle("range of heatsums at each stage")
+
+```
+
+
 Pollen shed almost always begins prior to or simultaneously with cone receptivity. Pollen shed finishes before the receptive period is over less than half the time and sometimes finishes after the receptivity period is done. 
 
 ```{r dataviz, fig.width=11, fig.height=9}
-ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
+ggplot(phendf, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
     stat_ecdf() +
     theme_bw(base_size=16) +
     facet_grid(SPU_Name ~ Site) +
     scale_color_viridis_d(direction =-1) +
     ggtitle("Phenophase accumulation as heatsum increases\n by Site and Provenance") +
     theme(legend.position = "bottom")
-
-
-
 
 ```
 
