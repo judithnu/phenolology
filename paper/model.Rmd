@@ -22,8 +22,7 @@ library(summarytools)
 ```
 
 ```{r stan setup}
-util <- new.env()
-source('~/Documents/classes/STANworkshop/material/1 - workflow/stan_utility.R', local=util)
+
 
 options(mc.cores=parallel::detectCores())
 rstan_options(auto_write=TRUE)
@@ -660,14 +659,14 @@ stancode(fit_draft)
 
 #### female
 ```{r fit female, eval=FALSE}
-fitfem <- stan("../female_intercept_only.stan", 
+#fitfem <- stan("../female_intercept_only.stan", 
                chains=8, cores=8, warmup = 1100, iter=1300, 
                data=fdf)
 
-femsum <- precis(fitfem, depth = 2)
-saveRDS(fitfem, file = "2019-04-16_fem_intercept_only.rds")
+#femsum <- precis(fitfem, depth = 2)
+#saveRDS(fitfem, file = "2019-04-16_fem_intercept_only.rds")
 
-fitfem.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
+
 ```
 
 
