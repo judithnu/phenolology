@@ -416,16 +416,16 @@ Also want to try
 ```{r dataprep real, eval=FALSE}
 N <- nrow(phendf)
 K <- length(unique(phendf$Phenophase_Derived))
-Nsex <- length(unique(phendf$SexID))
 Nclone <- length(unique(phendf$CloneID))
 Nprovenance <- length(unique(phendf$ProvenanceID))
 Nsite <- length(unique(phendf$SiteID))
+Nyear <- length(unique(phendf$YearID))
 
-SexID <- phendf$SexID
-OrchardID <- phendf$OrchardID
-SiteID <- phendf$SiteID
+
 CloneID <- phendf$CloneID
 ProvenanceID <- phendf$ProvenanceID
+SiteID <- phendf$SiteID
+YearID <- phendf$YearID
 
 forcing <- phendf$forcing_accum
 state <- phendf$Phenophase_Derived
@@ -452,31 +452,7 @@ posterior_cp <- as.array(fit)
 
 ### Model version with correlation
 
-#### Simplest - sex only
 
-```{r dataprep}
-head(phendf)
-```
-
-
-``` {r ulam version sex with corr, eval=FALSE}
-
-sexonly <- ulam(
-    alist(
-        Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- a_sex[SexID] + b_sex[SexID]*forcing_accum,
-        c(a_sex, b_sex)[SexID] ~ multi_normal(c(a, b), Rho, sigma_sex),
-        a ~ dnorm(0,1),
-        b ~ dbeta(.5,5),
-        sigma_sex ~ exponential(1),
-        kappa ~ dnorm(10,2),
-        Rho ~ lkj_corr(2)
-    ),
-    data=phendf, sample=FALSE, declare_all_data= FALSE, iter = 10
-)
-stancode(draft)
-
-```
 
 ```{r sex and prov with corr, eval=FALSE}
 
@@ -651,4 +627,44 @@ mcmc_intervals(h50sex2)
 
 ```
 
+### Separate male and female models with no correlation
+
+#### female
+```{r ulam draft, eval=FALSE}
+
+stancleaner <- function(df) {
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -daily_forcing_type)
+    return(df)
+}
+
+fdf <- stancleaner(fdf)
+#fdf <- select(fdf, Phenophase_Derived, forcing_accum, CloneID, ProvenanceID, SiteID, YearID, Tree)
+
+fit_draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID] + beta*forcing_accum,
+        #priors
+        beta ~ dbeta(.5,5),
+        kappa ~ dnorm(10,2), # change to gamma in stan
+        a_prov[ProvenanceID] ~ dnorm(0, prov_sigma),
+        a_site[SiteID] ~ dnorm(0,site_sigma),
+        a_year[YearID] ~ dnorm(0,year_sigma),
+        a_clone[CloneID] ~ dnorm(0,clone_sigma),
+        # hyperpriors
+        prov_sigma ~ exponential(1.5),
+        site_sigma ~ exponential(1.5),
+        year_sigma ~ exponential(1.5),
+        clone_sigma ~ exponential(1.5)
+    ),
+    data=fdf, sample=FALSE, declare_all_data = FALSE)
+
+stancode(fit_draft)
+```
+=
+```{r fit correlation with pooling, eval=FALSE}
+fitfem <- stan("female_intercept_only.stan", 
+               chains=1, cores=1, warmup = 10, iter=20, 
+               data=fdf)
+```
 
