@@ -37,8 +37,8 @@ Pollination phenology in lodgepole pine refers to the timing of two events - pol
 
 ```{r data, echo=FALSE, results="asis"}
 
-#phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(daily_forcing_type=="ristos")
+# phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+#     filter(daily_forcing_type=="ristos")
 phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
     filter(daily_forcing_type=="ristos")
 
@@ -46,7 +46,7 @@ phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAs
 #    dplyr::select(SPU_Name, Orchard) #add provenance information
 SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
 dplyr::select(SPU_Name, Orchard)
- # SPU_dat <- read.csv("~/Documents/phd_sus//data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+ # SPU_dat <- read.csv("~/Documents/phd_sus/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
  #   dplyr::select(SPU_Name, Orchard) #add provenance information
 
 phendf <- phenology_data %>%
