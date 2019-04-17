@@ -110,19 +110,21 @@ ggplot(phendf, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
 The order of development and the forcing accumulation required is much more consistent across sites than provenances, suggesting stronger site than provenance effects. The proportion of each phenophase at different forcing amounts is much more consistent within a site than within provenances, suggesting strong site effects/limited provenance effects.
 
 ```{r fig.width=11, fig.height=9}
-ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived)) +
+ggplot(phendf, aes(x=forcing_accum, color=as.factor(Phenophase_Derived))) +
     geom_density() +
     theme_bw(base_size=16) +
     facet_grid(Site ~ SPU_Name, scales="free_y") +
     scale_color_viridis_d(direction=-1) +
-    ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance")
+    ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance") +
+    theme(legend.position = "bottom")
 
-ggplot(phen, aes(x=forcing_accum, color=Phenophase_Derived)) +
+ggplot(phendf, aes(x=forcing_accum, color=as.factor(Phenophase_Derived))) +
     geom_density() +
     theme_bw(base_size=16) +
     facet_grid(SPU_Name ~ Site, scales="free_y") +
     scale_color_viridis_d(direction=-1) +
-    ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance")
+    ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance") +
+    theme(legend.position = "bottom")
 ```
 
 <!--![Site x Provenance](../graphsforsally/phenophase_prop_sitexprov.png)
