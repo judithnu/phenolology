@@ -37,15 +37,15 @@ Pollination phenology in lodgepole pine refers to the timing of two events - pol
 
 ```{r data, echo=FALSE, results="asis"}
 
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+#phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
     filter(daily_forcing_type=="ristos")
-# phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-#     filter(daily_forcing_type=="ristos")
+phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+    filter(daily_forcing_type=="ristos")
 
-SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-   dplyr::select(SPU_Name, Orchard) #add provenance information
-#SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-   # dplyr::select(SPU_Name, Orchard)
+# SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+#    dplyr::select(SPU_Name, Orchard) #add provenance information
+SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+dplyr::select(SPU_Name, Orchard)
  # SPU_dat <- read.csv("~/Documents/phd_sus//data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
  #   dplyr::select(SPU_Name, Orchard) #add provenance information
 
@@ -78,12 +78,6 @@ mdf <- stanindexer(mdf)
 
 #test
 nrow(fdf) + nrow(mdf) == nrow(phendf)
-
-#drop "non-numeric" cols to make stan quit complaining
-#phendf <- dplyr::select(phendf, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -daily_forcing_type)
-
-
-
 
 
 ```
@@ -661,10 +655,15 @@ fit_draft <- ulam(
 
 stancode(fit_draft)
 ```
-=
-```{r fit correlation with pooling, eval=FALSE}
-fitfem <- stan("female_intercept_only.stan", 
-               chains=1, cores=1, warmup = 10, iter=20, 
+
+```{r fit female, eval=FALSE}
+fitfem <- stan("../female_intercept_only.stan", 
+               chains=8, cores=8, warmup = 1100, iter=1300, 
                data=fdf)
+
+femsum <- precis(fitfem, depth = 2)
+saveRDS(fitfem, file = "2019-04-16_fem_intercept_only.rds")
+
+fitfem.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
 ```
 
