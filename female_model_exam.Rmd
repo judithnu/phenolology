@@ -3,6 +3,8 @@ title: "female strobili model examination"
 author: "Susannah Tysor"
 date: "April 17, 2019"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -13,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(rstan)
 library(bayesplot)
 library(ggplot2)
+library(rethinking)
 ```
 
 ```{r model data}
@@ -44,6 +47,8 @@ mcmc_pairs(post, np=np, regex_pars = c("beta", "kappa"))
 mcmc_pairs(post, np=np, regex_pars = c("prov"))
 mcmc_pairs(post, np=np, regex_pars = c("site"))
 
+mcmc_pairs(post, np=np, pars = c("a_prov[1]", "a_prov[2]", "a_site[1]", "a_site[2]" ))
+
 color_scheme_set("mix-brightblue-gray")
 mcmc_trace(post, regex_pars="kappa")
 
@@ -60,8 +65,8 @@ mcmc_rhat(rhats)
 mcmc_rhat_hist(rhats)
 
 #effective sample size
-ratios <- neff_ratio(fitfem.stan)
-mcmc_neff(ratios, regex_pars="sigma")
+#ratios <- neff_ratio(postsamples)
+#mcmc_neff(ratios, regex_pars="sigma")
 
 #autocorrelation
 mcmc_acf(post, regex_pars = "kappa", lags=10)
@@ -70,10 +75,11 @@ mcmc_acf(post, regex_pars = "sigma")
 ```
 
 ```{r plot draws}
-mcmc_intervals(post, regex_pars = c("sigma"))
-mcmc_intervals(post, regex_pars = c("a_prov", "a_site", "a_year"))
-mcmc_intervals(post, regex_pars = c("a_clone"))
+mcmc_intervals(post, regex_pars = c("sigma")) + ggtitle("sigmas")
+mcmc_areas(post, regex_pars="sigma") + ggtitle("sigmas")
+mcmc_intervals(post, regex_pars = c("a_prov", "a_site", "a_year")) + ggtitle("intercepts")
+mcmc_intervals(post, regex_pars = c("a_clone")) + ggtitle("clone intercepts")
 mcmc_areas(post, regex_pars = "kappa") + ggtitle("cutpoints")
-mcmc_areas(post, pars="beta") + ggtitle("transition speed")
-mcmc_areas(post, regex_pars="sigma")
+mcmc_areas(post, pars="beta") + ggtitle("transition speed") 
+
 ```
