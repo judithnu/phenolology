@@ -61,9 +61,7 @@ While lodgepole pine has four subspecies, this work concerns only *Pinus contort
 
 ### Data
 
-#### Weather data
 
-[build model with local data from orchards and weather stations, apply across landscape with [PCIC daily gridded data](https://pacificclimate.org/data/daily-gridded-meteorological-datasets)
 
 #### Phenology Data
 
@@ -133,17 +131,23 @@ phenophase_legend <- data.frame(Phenophase = derived_phenophase, Symbols = recor
 kable(phenophase_legend, padding = 0)
 ```
 
+#### Weather data
+
+Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet was used for each station. Mean daily temperature was calculated from the minimum and maximum daily temperatures.
+
+[Map of Sites with nearest gridpoints]
+
+#### Forcing units
+
+Forcing units were calculated according the ForcStar method
 
 ## Modeling
 
 ## Phenology Modeling 
 
 
-
-
-
 ### Actual methods
-I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan [@standevelopmentteamRStanInterfaceStan2018].
+I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018].
 
 For phenological states $k \in \{1,2,3\}$, the probability of 
 
