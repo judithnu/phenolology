@@ -1,0 +1,253 @@
+---
+title: "Phenology data - visualization and simple models"
+author: "Susannah Tysor"
+date: "April 16, 2019"
+output: html_document
+editor_options:
+    chunk_output_type: console
+---
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
+```
+
+```{r depends}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(summarytools)
+library(arm)
+
+```
+This document explores the phenology data and forcing in a simple way in order to clarify modelling decisions in stan.
+
+1) Should I use ristos or 5 degree heatsum threshold?
+2) Does slope vary by transition state?
+3) Do I need to include slope effects in addition to intercept effects?
+
+
+```{r data, echo=FALSE, results="asis"}
+
+
+phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) 
+
+SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+    dplyr::select(SPU_Name, Orchard) #add provenance information
+
+phendf <- phenology_data %>%
+    na.omit()
+phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+    unique() %>%
+    mutate(state = as.factor(Phenophase_Derived))
+
+view(dfSummary(phendf))
+# summary(phendf)
+
+```
+
+```{r stanindexing}
+#Create indexes that stan will like
+stanindexer <- function(df) {
+    df$CloneID <- group_indices(df, Clone)
+    df$OrchardID <- group_indices(df, Orchard)
+    df$ProvenanceID <- group_indices(df, SPU_Name)
+    df$SiteID <- group_indices(df, Site)
+    df$YearID <- group_indices(df, Year)
+    df$Tree <- group_indices(df,TreeID)
+    return(df)
+}
+
+fdf <- filter(phendf, Sex == "FEMALE")
+#fdf <- stanindexer(fdf)
+mdf <- filter(phendf, Sex == "MALE")
+#mdf <- stanindexer(mdf)
+
+#test
+nrow(fdf) + nrow(mdf) == nrow(phendf)
+
+```
+
+## Ristos or heatsum?
+
+To answer this question, I can build models of each transition using ristos and using GDD.
+
+Looking at the data, I don't really have a good sense of which is better.
+
+```{r ristos and heatsum}
+ggplot(phendf, aes(x=forcing_accum, fill=state)) +
+    geom_histogram(alpha=0.5, binwidth = 10, position = "identity") +
+    facet_grid(daily_forcing_type ~ Sex) +
+    ggtitle("Histogram of forcing in each stage")
+
+ggplot(phendf, aes(x=forcing_accum, color=state)) +
+    stat_ecdf()+
+    facet_grid(daily_forcing_type ~ Sex) +
+    ggtitle("Cumulative forcing in each stage")
+
+
+
+
+# ggplot(phendf, aes(x=forcing_accum, fill=state)) +
+#     geom_density(alpha=0.5) +
+#     facet_grid(daily_forcing_type ~ Sex) +
+#     ggtitle("Forcing accummulations in each stage")
+# 
+# ggplot(mdf, aes(x=forcing_accum, fill=daily_forcing_type)) +
+#     geom_density(alpha=0.5) +
+#     facet_grid(SPU_Name ~ Site) + 
+#     ggtitle("Phenophase Stage 2, Male")
+
+```
+Comparing the range of values each phase occurs over for ristos and GDD, ristos are generally higher. I believe there's more separation between phase 1 and 2 for GDD than ristos. For the transition from 2 to 3 I believe they are quite similar, though ristos may have more separation. Unclear what will happen with modelling.
+
+```{r ristos and gdd}
+ggplot(phendf, aes(x=state, y=forcing_accum, fill=daily_forcing_type)) +
+    geom_violin()+
+    facet_wrap(. ~ Sex) +
+    ggtitle("Compare ristos and GDD required for each state")
+```
+
+
+
+```{r ristos v gdd}
+
+#male
+mgdd <- dplyr::filter(mdf, daily_forcing_type=="Heat")
+mristo <- dplyr::filter(mdf, daily_forcing_type=="ristos")
+
+fitmgdd <- bayespolr(factor(state) ~ forcing_accum, data = mgdd)
+fitmristo <- bayespolr(state ~ forcing_accum, data=mristo)
+AIC(fitmgdd, fitmristo)
+
+
+#female
+fgdd <- dplyr::filter(fdf, daily_forcing_type=="Heat")
+fristo <- dplyr::filter(fdf, daily_forcing_type=="ristos")
+
+fitfgdd <- bayespolr(factor(state) ~ forcing_accum, data = fgdd)
+fitfristo <- bayespolr(state ~ forcing_accum, data=fristo)
+AIC(fitfgdd, fitfristo)
+```
+
+It looks like growing degree days actually do a better job for the males and females. 
+
+Is that true even after accounting for the largest effects? No! After accounting for effects of site and/or provenance and/or orchard, ristos are better. Clone and TreeID leave GDD doing better, but site and prov are the big effects.
+
+```{r }
+fitmgdd_sp <- bayespolr(state ~ forcing_accum + Site + SPU_Name, data=mgdd)
+fitmristo_sp <- bayespolr(state ~ forcing_accum + Site + SPU_Name, data=mristo)
+AIC(fitmgdd_sp, fitmristo_sp)
+
+fitmgdd_sp <- bayespolr(state ~ forcing_accum + Site + SPU_Name, data=mgdd)
+fitmristo_sp <- bayespolr(state ~ forcing_accum + Site + SPU_Name, data=mristo)
+AIC(fitmgdd_sp, fitmristo_sp)
+```
+
+Sticking with ristos! Which is unfortunate because they are hard to explain.
+
+
+
+## Varying slopes - transition state
+Next question! Do slopes vary by transition state?
+
+For this I will use logistic models for each transition in each sex.
+
+
+```{r data prep do slopes vary}
+#male
+mdf <- filter(mdf, daily_forcing_type == "ristos")
+mt1 <- filter(mdf, state %in% c(1,2)) %>% #male transition 1
+    mutate(state = case_when(state==1 ~ 0,
+                             state==2 ~ 1))
+
+mt2 <- filter(mdf, state %in% c(2,3)) %>% #male transition 2
+    mutate(state = case_when(state==2 ~ 0,
+                             state==3 ~ 1))
+
+#female
+
+fdf <- dplyr::filter(fdf, daily_forcing_type == "ristos")
+ft1 <- filter(fdf, state %in% c(1,2)) %>% #male transition 1
+    mutate(state = case_when(state==1 ~ 0,
+                             state==2 ~ 1))
+
+ft2 <- filter(fdf, state %in% c(2,3)) %>% #male transition 2
+    mutate(state = case_when(state==2 ~ 0,
+                             state==3 ~ 1))
+```
+
+Model with logit glm.
+
+```{r do slopes vary logits}
+#male
+fit_mt1 <- glm(state ~ forcing_accum, family = binomial(link = 'logit'), data = mt1)
+fit_mt2 <- glm(state ~ forcing_accum, family = binomial(link = 'logit'), data = mt2)
+
+fit_mt1$coefficients
+fit_mt2$coefficients
+
+get_slope_range <- function(fit, name) {
+    low <- fit$coefficients[2] - se.coef(fit)[2]
+    high <- fit$coefficients[2] + se.coef(fit)[2]
+    return(c(model=name, lower=low, upper=high))
+}
+
+maleslopes <- rbind(get_slope_range(fit_mt1, "m1"),
+                    get_slope_range(fit_mt2, "m2"))
+
+#female
+fit_ft1 <- glm(state ~ forcing_accum, family = binomial(link = 'logit'), data = ft1)
+fit_ft2 <- glm(state ~ forcing_accum, family = binomial(link = 'logit'), data = ft2)
+
+fit_ft1$coefficients
+fit_ft2$coefficients
+
+femaleslopes <- rbind(get_slope_range(fit_ft1, "f1"),
+                      get_slope_range(fit_ft2, "f2"))
+
+```
+
+With the simplest version of the model, the slopes for the different transitions are definitely different.
+
+`r maleslopes`
+`r femaleslopes`
+
+The first transition is slower than the second transition.
+
+What if I include effects on the slope?
+
+```{r }
+#male
+fit_met1 <- glm(state ~ forcing_accum*(Site+Clone+SPU_Name), family = binomial(link = 'logit'), data = mt1)
+fit_met2 <- glm(state ~ forcing_accum*(Site+Clone+SPU_Name), family = binomial(link = 'logit'), data = mt2)
+
+fit_met1$coefficients
+fit_met2$coefficients
+
+maleslopes <- rbind(get_slope_range(fit_met1, "m1"),
+                    get_slope_range(fit_met2, "m2"))
+
+AIC(fit_mt1, fit_met1)
+AIC(fit_mt2, fit_met2)
+
+#female
+fit_fet1 <- glm(state ~ forcing_accum*(Clone), family = binomial(link = 'logit'), data = ft1)
+fit_fet2 <- glm(state ~ forcing_accum*(Clone), family = binomial(link = 'logit'), data = ft2)
+
+fit_fet1$coefficients
+fit_fet2$coefficients
+
+femaleslopes <- rbind(get_slope_range(fit_fet1, "f1"),
+                      get_slope_range(fit_fet2, "f2"))
+
+AIC(fit_ft1, fit_fet1)
+AIC(fit_ft2, fit_fet2)
+```
+
+If I include a Site effect on the slope, the second transition is MUCH faster than the first transition.
+
+Including Site, Clone, and Prov effects on slope brings them much closer together. True?
+
+I don't know how to deal with an ordered logistic model where the transitions can have different slopes. Is that even an ordered logistic model anymore? I don't think so. Maybe I should just fit 4 models - each sex and each transition.
+
+However, if I include Clone in the effect then 
