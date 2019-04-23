@@ -36,15 +36,15 @@ Pollination phenology in lodgepole pine refers to the timing of two events - pol
 
 ```{r data, echo=FALSE, results="asis"}
 
-# phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-#     filter(daily_forcing_type=="ristos")
-phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(daily_forcing_type=="ristos")
+phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+    filter(forcing_type=="ristos")
+#phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+ #   dplyr::filter(forcing_type=="ristos")
 
-# SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-#    dplyr::select(SPU_Name, Orchard) #add provenance information
-SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-dplyr::select(SPU_Name, Orchard)
+SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+   dplyr::select(SPU_Name, Orchard) #add provenance information
+# SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+# dplyr::select(SPU_Name, Orchard)
  # SPU_dat <- read.csv("~/Documents/phd_sus/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
  #   dplyr::select(SPU_Name, Orchard) #add provenance information
 
@@ -85,7 +85,7 @@ nrow(fdf) + nrow(mdf) == nrow(phendf)
 view(dfSummary(fdf))
 view(dfSummary(mdf))
 
-ggplot(phendf, aes(x=Sex, y=forcing_accum, fill=as.factor(Phenophase_Derived))) +
+ggplot(phendf, aes(x=Sex, y=sum_forcing, fill=as.factor(Phenophase_Derived))) +
     geom_violin() +
     scale_fill_viridis_d() + 
     ggtitle("range of heatsums at each stage")
@@ -96,7 +96,7 @@ ggplot(phendf, aes(x=Sex, y=forcing_accum, fill=as.factor(Phenophase_Derived))) 
 Pollen shed almost always begins prior to or simultaneously with cone receptivity. Pollen shed finishes before the receptive period is over less than half the time and sometimes finishes after the receptivity period is done. 
 
 ```{r dataviz, fig.width=11, fig.height=9}
-ggplot(phendf, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived), linetype=Sex)) +
     stat_ecdf() +
     theme_bw(base_size=16) +
     facet_grid(SPU_Name ~ Site) +
@@ -109,7 +109,7 @@ ggplot(phendf, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
 The order of development and the forcing accumulation required is much more consistent across sites than provenances, suggesting stronger site than provenance effects. The proportion of each phenophase at different forcing amounts is much more consistent within a site than within provenances, suggesting strong site effects/limited provenance effects.
 
 ```{r fig.width=11, fig.height=9}
-ggplot(phendf, aes(x=forcing_accum, color=as.factor(Phenophase_Derived))) +
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived))) +
     geom_density() +
     theme_bw(base_size=16) +
     facet_grid(Site ~ SPU_Name, scales="free_y") +
@@ -117,7 +117,7 @@ ggplot(phendf, aes(x=forcing_accum, color=as.factor(Phenophase_Derived))) +
     ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance") +
     theme(legend.position = "bottom")
 
-ggplot(phendf, aes(x=forcing_accum, color=as.factor(Phenophase_Derived))) +
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived))) +
     geom_density() +
     theme_bw(base_size=16) +
     facet_grid(SPU_Name ~ Site, scales="free_y") +
@@ -422,7 +422,7 @@ ProvenanceID <- phendf$ProvenanceID
 SiteID <- phendf$SiteID
 YearID <- phendf$YearID
 
-forcing <- phendf$forcing_accum
+forcing <- phendf$sum_forcing
 state <- phendf$Phenophase_Derived
 
 L <- 1
@@ -445,190 +445,13 @@ saveRDS(fit, file = "multilevel_phenology.rds")
 posterior_cp <- as.array(fit)
 ```
 
-### Model version with correlation
-
-
-
-```{r sex and prov with corr, eval=FALSE}
-
-### sex, site, prov, clone, year
-#generate stan code for a draft of the stan code
-fit_full_draft <- ulam(
-    alist(
-        Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- alphas + beta*forcing_accum,
-        alphas <- a_sex[SexID] + a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID],
-        beta <- b + b_sex[SexID] + b_prov[ProvenanceID],
-        #priors
-        b ~ dbeta(.5,5),
-        kappa ~ dnorm(10,2), #change to gamma in real model
-        a_site[SiteID] ~ dnorm(0,1),
-        a_clone[CloneID] ~ dnorm(0,1),
-        a_year[YearID] ~ dnorm(0,1),
-        #sex
-        c(a_sex, b_sex)[SexID] ~ multi_normal(c(as, bs), Rhos, sigma_sex),
-        as ~ dnorm(0,1),
-        bs ~ dnorm(0, 0.1),
-        sigma_sex ~ exponential(1),
-        #provenance
-        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
-        ap ~ dnorm(0,1),
-        bp ~ dnorm(0, 0.1),
-        sigma_prov ~ exponential(1),
-        Rhos ~ lkj_corr(2),
-        Rhop ~ lkj_corr(2)
-    ),
-    data=phendf, sample=FALSE, declare_all_data= FALSE, iter = 10
-)
-stancode(fit_full_draft)
-```
-
-
-```{r fit full model, eval=FALSE}
-
-fitful <- stan("../correlation.stan", 
-               chains=8, cores=8, warmup = 1000, iter=1200, 
-
-```
-```{r save model output, eval=FALSE}
-parsum <- precis(fitful, depth = 2)
-saveRDS(fitful, file = "2019-04-14_correlation.rds")
-posterior_cp <- as.array(fit)
-
-```
-```{r with pooling, eval=FALSE}
-#generate stan code for a draft of the stan code
-fit_full_draft <- ulam(
-    alist(
-        Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- alphas + beta*forcing_accum,
-        alphas <- a_sex[SexID] + a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID],
-        beta <- b + b_sex[SexID] + b_prov[ProvenanceID],
-        #priors
-        b ~ dbeta(.5,5),
-        kappa ~ dnorm(10,2), # change to gamma in stan
-        a_site[SiteID] ~ dnorm(0,site_sigma),
-        a_clone[CloneID] ~ dnorm(0,clone_sigma),
-        a_year[YearID] ~ dnorm(0,year_sigma),
-        #sex
-        c(a_sex, b_sex)[SexID] ~ multi_normal(c(as, bs), Rhos, sigma_sex),
-        as ~ dnorm(0,1),
-        bs ~ dnorm(0, 0.1),
-        sigma_sex ~ exponential(1),
-        #provenance
-        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
-        ap ~ dnorm(0,1),
-        bp ~ dnorm(0, 0.1),
-        sigma_prov ~ exponential(1),
-        #pop varying effects
-        Rhos ~ lkj_corr(2),
-        Rhop ~ lkj_corr(2),
-        # hyperpriors
-        site_sigma ~ exponential(2),
-        clone_sigma ~ exponential(2),
-        year_sigma ~ exponential(2)
-    ),
-    data=phendf, sample=FALSE, declare_all_data= FALSE
-)
-stancode(fit_full_draft)
-```
-```{r fit correlation with pooling, eval=FALSE}
-fitfulpool <- stan("../correlation_with_pooling.stan", 
-               chains=8, cores=8, warmup = 1000, iter=1300, 
-               data=phendf)
-```
-
-```{r save pooling model output}
-#parsumpool <- precis(fitfulpool, depth = 2)
-#saveRDS(fitfulpool, file = "2019-04-15_correlation_with_pooling.rds")
-
-fitfulpool.stan <- readRDS("../2019-04-15_correlaton_with_pooling.rds")
-posteriorpool <- as.array(fitfulpool.stan)
-parsumpool <- precis(fitfulpool.stan, depth=2)
-postext <- extract.samples(fitfulpool.stan)
-
-```
-```{r plot some model}
-dens( postext$Rhop[,1,2] )
-dens( postext$Rhos[,1,2] )
-```
-Negative correlation between slopes and intercepts for provenance.
-Unclear correlatoin between slopes and intercepts for sex. This doesn't look well fit. I think I might need separate models for each sex.
-
-```{r pooling}
-# compute unpooled estimates directly from data
-ap_unpooled <- sapply( 1:length(unique(phendf$ProvenanceID)) ,
-        function(i) mean(phendf$forcing_accum[phendf$ProvenanceID==i]) )
-#bp_unpooled <- sapply( 1:length(unique(phendf$ProvenanceID)) ,
-      #  function(i) mean(phendf$forcing_accum[phendf$ProvenanceID==i])) - ap_unpooled
-# extract posterior means of partially pooled estimates
-
-a_prov <- apply( postext$a_prov , 2 , mean )
-b_prov <- apply( postext$b_prov , 2 , mean )
-
-# plot both and connect with lines
-plot( ap_unpooled * b_prov, b_prov , xlab="intercept" , ylab="slope" ,
-    pch=16 , col=rangi2 , ylim=c( min(b_prov)-0.1 , max(b_prov)+0.1 ) ,
-    xlim=c( min(a_prov)-0.1 , max(a_prov)+0.1 ) )
-points( a_prov , b_prov , pch=1 )
-#for ( i in 1:N_cafes ) lines( c(a1[i],a2[i]) , c(b1[i],b2[i]) )
-
-# compute posterior mean bivariate Gaussian
-Mu_est <- c( mean(postext$ap) , mean(postext$bp) )
-rho_est <- mean( postext$Rhop[,1,2] )
-sa_est <- mean( postext$sigma_prov[,1] )
-sb_est <- mean( postext$sigma_prov[,2] )
-cov_ab <- sa_est*sb_est*rho_est
-Sigma_est <- matrix( c(sa_est^2,cov_ab,cov_ab,sb_est^2) , ncol=2 )
-# draw contours
-library(ellipse)
-for ( l in c(0.1,0.3,0.5,0.8,0.99) )
-    lines(ellipse(Sigma_est,centre=Mu_est,level=l),
-        col=col.alpha("black",0.2))
-```
-
-```{r}
-mcmc_intervals(posteriorpool, regex_pars = c("a_prov", "a_site", "a_year", "a_sex"))
-mcmc_intervals(posteriorpool, regex_pars = c("b_prov", "b_site", "b_year", "b_sex", "b"))
-
-mcmc_intervals(posteriorpool, regex_pars = "b_prov") + ggtitle("slope effect provenance")
-mcmc_intervals(posteriorpool, regex_pars = "a_prov") + ggtitle("intercept effect provenance")
-
-# betas
-
-betas <- postext$b + postext$b_prov[,1] + postext$b_sex
-mcmc_intervals(betas)
-
-# prov threshold effect
-h50p1 <- (postext$kappa[,1] + postext$a_prov)/postext$b_prov
-colnames(h50p1) <- unique(phen$SPU_Name)
-
-h50p2 <- (postext$kappa[,2] + postext$a_prov)/postext$b_prov
-colnames(h50p2) <- unique(phen$SPU_Name)
-
-mcmc_intervals(h50p1)
-mcmc_intervals(h50p2)
-
-#sex threshold effects
-h50sex1 <- (postext$kappa[,1] + postext$a_sex)/postext$b_sex
-colnames(h50sex1) <- unique(phen$Sex)
-
-h50sex2 <- (postext$kappa[,2] + postext$a_sex)/postext$b_sex
-colnames(h50sex2) <- unique(phen$Sex)
-
-mcmc_intervals(h50sex1)
-mcmc_intervals(h50sex2)
-
-
-```
-
 ### Separate male and female models with no correlation
 
 
 ```{r ulam draft, eval=FALSE}
 
 stancleaner <- function(df) {
-    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -daily_forcing_type)
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
     return(df)
 }
 
@@ -638,23 +461,35 @@ mdf <- stancleaner(mdf)
 fit_draft <- ulam(
     alist(
         Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID] + beta*forcing_accum,
-        #priors
-        beta ~ dbeta(.5,5),
-        kappa ~ dnorm(10,2), # change to gamma in stan
+        phi <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID] + (beta + beta_site[SiteID] + beta_prov[ProvenanceID])*sum_forcing,
+        #transformed_parameters
+       transpars> kappa_diff <- kappa[2] - kappa[1],
+       transpars> beta_tot <- beta + beta_site[SiteID] + beta_prov[ProvenanceID],
+       transpars> alpha_tot <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID],
+       transpars> h1 <- (kappa[1] + alpha_tot)/beta_tot,
+        #adaptive priors
         a_prov[ProvenanceID] ~ dnorm(0, prov_sigma),
         a_site[SiteID] ~ dnorm(0,site_sigma),
         a_year[YearID] ~ dnorm(0,year_sigma),
         a_clone[CloneID] ~ dnorm(0,clone_sigma),
+       beta_site[SiteID] ~ dnorm(0, site_nu),
+       beta_prov[ProvenanceID] ~ dnorm(0, prov_nu),
+        #fixed priors
+        beta ~ exponential(1.5),
+        kappa ~ dnorm(10,2),
+       kappa_diff ~ dnorm(5,1),
+       beta_tot ~ exponential(1.5),
         # hyperpriors
         prov_sigma ~ exponential(1.5),
         site_sigma ~ exponential(1.5),
         year_sigma ~ exponential(1.5),
-        clone_sigma ~ exponential(1.5)
+        clone_sigma ~ exponential(1.5),
+        site_nu ~ exponential(2),
+        prov_nu ~ exponential(2)
     ),
-    data=fdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
+    data=mdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
 
-stancode(fit_draft)
+write(stancode(fit_draft), file="male.stan")
 ```
 
 #### female
@@ -670,12 +505,13 @@ stancode(fit_draft)
 ```
 
 
-#### male
+#### run male
 ```{r fit male, eval=FALSE}
 
-fitm <- stan("../male_intercept_only.stan", 
-               chains=8, cores=8, warmup = 1100, iter=1300, 
-               data=fdf)
+fitm <- stan("male.stan", 
+               chains=1, cores=1, warmup = 11, iter=22, 
+               data=mdf)
+, init=list(list(beta_site=rep(0.02,7),  beta_prov=rep(0.02,6), beta=5)))
 
 msum <- precis(fitfem, depth = 2)
 saveRDS(fitm, file = "2019-04-16_fem_intercept_only.rds")
