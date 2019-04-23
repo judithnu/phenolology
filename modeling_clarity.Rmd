@@ -1,7 +1,7 @@
 ---
 title: "Phenology data - visualization and simple models"
 author: "Susannah Tysor"
-date: "April 16, 2019"
+date: "April 22, 2019"
 output: html_document
 editor_options:
     chunk_output_type: console
@@ -17,6 +17,7 @@ library(dplyr)
 library(tidyr)
 library(summarytools)
 library(arm)
+library(stringr)
 
 ```
 This document explores the phenology data and forcing in a simple way in order to clarify modelling decisions in stan.
@@ -74,25 +75,22 @@ To answer this question, I can build models of each transition using ristos and 
 Looking at the data, I don't really have a good sense of which is better.
 
 ```{r ristos and heatsum}
-ggplot(phendf, aes(x=forcing_accum, fill=state)) +
+ggplot(phendf, aes(x=sum_forcing, fill=state)) +
     geom_histogram(alpha=0.5, binwidth = 10, position = "identity") +
-    facet_grid(daily_forcing_type ~ Sex) +
+    facet_grid(forcing_type ~ Sex) +
     ggtitle("Histogram of forcing in each stage")
 
-ggplot(phendf, aes(x=forcing_accum, color=state)) +
+ggplot(phendf, aes(x=sum_forcing, color=state)) +
     stat_ecdf()+
-    facet_grid(daily_forcing_type ~ Sex) +
+    facet_grid(forcing_type ~ Sex) +
     ggtitle("Cumulative forcing in each stage")
 
-
-
-
-# ggplot(phendf, aes(x=forcing_accum, fill=state)) +
+# ggplot(phendf, aes(x=sum_forcing, fill=state)) +
 #     geom_density(alpha=0.5) +
-#     facet_grid(daily_forcing_type ~ Sex) +
+#     facet_grid(forcing_type ~ Sex) +
 #     ggtitle("Forcing accummulations in each stage")
 # 
-# ggplot(mdf, aes(x=forcing_accum, fill=daily_forcing_type)) +
+# ggplot(mdf, aes(x=sum_forcing, fill=forcing_type)) +
 #     geom_density(alpha=0.5) +
 #     facet_grid(SPU_Name ~ Site) + 
 #     ggtitle("Phenophase Stage 2, Male")
@@ -101,10 +99,11 @@ ggplot(phendf, aes(x=forcing_accum, color=state)) +
 Comparing the range of values each phase occurs over for ristos and GDD, ristos are generally higher. I believe there's more separation between phase 1 and 2 for GDD than ristos. For the transition from 2 to 3 I believe they are quite similar, though ristos may have more separation. Unclear what will happen with modelling.
 
 ```{r ristos and gdd}
-ggplot(phendf, aes(x=state, y=forcing_accum, fill=daily_forcing_type)) +
+ggplot(phendf, aes(x=state, y=sum_forcing, fill=forcing_type)) +
     geom_violin()+
     facet_wrap(. ~ Sex) +
     ggtitle("Compare ristos and GDD required for each state")
+
 ```
 
 
@@ -112,21 +111,25 @@ ggplot(phendf, aes(x=state, y=forcing_accum, fill=daily_forcing_type)) +
 ```{r ristos v gdd}
 
 #male
-mgdd <- dplyr::filter(mdf, daily_forcing_type=="Heat")
-mristo <- dplyr::filter(mdf, daily_forcing_type=="ristos")
+mgdd <- dplyr::filter(mdf, forcing_type=="gdd")
+mristo <- dplyr::filter(mdf, forcing_type=="ristos")
+mristoscaled <- dplyr::filter(mdf, forcing_type=="scaled_ristos")
 
-fitmgdd <- bayespolr(factor(state) ~ forcing_accum, data = mgdd)
-fitmristo <- bayespolr(state ~ forcing_accum, data=mristo)
-AIC(fitmgdd, fitmristo)
+fitmgdd <- bayespolr(state ~ sum_forcing, data = mgdd)
+fitmristo <- bayespolr(state ~ sum_forcing, data=mristo)
+fitmristoscaled <- bayespolr(state ~ sum_forcing, data=mristoscaled)
+AIC(fitmgdd, fitmristo, fitmristoscaled)
 
 
 #female
-fgdd <- dplyr::filter(fdf, daily_forcing_type=="Heat")
-fristo <- dplyr::filter(fdf, daily_forcing_type=="ristos")
+fgdd <- dplyr::filter(fdf, forcing_type=="gdd")
+fristo <- dplyr::filter(fdf, forcing_type=="ristos")
+fristoscaled <- dplyr::filter(fdf, forcing_type=="scaled_ristos")
 
-fitfgdd <- bayespolr(factor(state) ~ forcing_accum, data = fgdd)
-fitfristo <- bayespolr(state ~ forcing_accum, data=fristo)
-AIC(fitfgdd, fitfristo)
+fitfgdd <- bayespolr(factor(state) ~ sum_forcing, data = fgdd)
+fitfristo <- bayespolr(state ~ sum_forcing, data=fristo)
+fitfristoscaled <- bayespolr(state ~ sum_forcing, data=fristoscaled)
+AIC(fitfgdd, fitfristo, fitfristoscaled)
 ```
 
 It looks like growing degree days actually do a better job for the males and females. 
@@ -134,16 +137,18 @@ It looks like growing degree days actually do a better job for the males and fem
 Is that true even after accounting for the largest effects? No! After accounting for effects of site and/or provenance and/or orchard, ristos are better. Clone and TreeID leave GDD doing better, but site and prov are the big effects.
 
 ```{r }
-fitmgdd_sp <- bayespolr(state ~ forcing_accum + Site + SPU_Name, data=mgdd)
-fitmristo_sp <- bayespolr(state ~ forcing_accum + Site + SPU_Name, data=mristo)
-AIC(fitmgdd_sp, fitmristo_sp)
+fitmgdd_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mgdd)
+fitmristo_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mristo)
+fitmristoscaled_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mristoscaled)
+AIC(fitmgdd_sp, fitmristo_sp, fitmristoscaled_sp)
 
-fitmgdd_sp <- bayespolr(state ~ forcing_accum + Site + SPU_Name, data=mgdd)
-fitmristo_sp <- bayespolr(state ~ forcing_accum + Site + SPU_Name, data=mristo)
-AIC(fitmgdd_sp, fitmristo_sp)
+fitfgdd_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fgdd)
+fitfristo_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fristo)
+fitfristoscaled_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fristoscaled)
+AIC(fitmgdd_sp, fitmristo_sp, fitfristoscaled_sp)
 ```
 
-Sticking with ristos! Which is unfortunate because they are hard to explain.
+Sticking with ristos! Which is a bit annoying because they are hard to explain.
 
 
 
@@ -152,10 +157,16 @@ Next question! Do slopes vary by transition state?
 
 For this I will use logistic models for each transition in each sex.
 
+First let's have a look at the data.
+
+
+
 
 ```{r data prep do slopes vary}
+
+phendf <- filter(phendf, forcing_type=="ristos")
 #male
-mdf <- filter(mdf, daily_forcing_type == "ristos")
+mdf <- filter(mdf, forcing_type == "ristos")
 mt1 <- filter(mdf, state %in% c(1,2)) %>% #male transition 1
     mutate(state = case_when(state==1 ~ 0,
                              state==2 ~ 1))
@@ -166,7 +177,7 @@ mt2 <- filter(mdf, state %in% c(2,3)) %>% #male transition 2
 
 #female
 
-fdf <- dplyr::filter(fdf, daily_forcing_type == "ristos")
+fdf <- dplyr::filter(fdf, forcing_type == "ristos")
 ft1 <- filter(fdf, state %in% c(1,2)) %>% #male transition 1
     mutate(state = case_when(state==1 ~ 0,
                              state==2 ~ 1))
@@ -176,12 +187,43 @@ ft2 <- filter(fdf, state %in% c(2,3)) %>% #male transition 2
                              state==3 ~ 1))
 ```
 
+```{r eyeballing slope diffs}
+ggplot(fdf, aes(x=sum_forcing, colour=state)) +
+    stat_ecdf() +
+    ggtitle("females")
+
+ggplot(mdf, aes(x=sum_forcing, colour=state)) +
+    stat_ecdf() +
+    ggtitle("males")
+
+```
+
+The slope doesn't look very different overall.
+
+What about when broken down by site?
+
+```{r eyeballing slopes site}
+ggplot(phendf, aes(x=sum_forcing, color=state)) +
+    stat_ecdf() +
+    facet_grid(Site ~ Sex)
+```
+
+Slope for different transitions does look a bit different at some sites, but only at ones with not-as-good data collection.
+
+```{r eyeballing slopes provenance}
+ggplot(phendf, aes(x=sum_forcing, color=state)) +
+    stat_ecdf() +
+    facet_grid(SPU_Name ~ Sex)
+```
+
+In a lot of these graphs, it kind of looks like the first transition is a Gompertz curve and the 2nd is a logistic. Not sure what to do about that.
+
 Model with logit glm.
 
 ```{r do slopes vary logits}
 #male
-fit_mt1 <- glm(state ~ forcing_accum, family = binomial(link = 'logit'), data = mt1)
-fit_mt2 <- glm(state ~ forcing_accum, family = binomial(link = 'logit'), data = mt2)
+fit_mt1 <- glm(state ~ sum_forcing, family = binomial(link = 'logit'), data = mt1)
+fit_mt2 <- glm(state ~ sum_forcing, family = binomial(link = 'logit'), data = mt2)
 
 fit_mt1$coefficients
 fit_mt2$coefficients
@@ -196,8 +238,8 @@ maleslopes <- rbind(get_slope_range(fit_mt1, "m1"),
                     get_slope_range(fit_mt2, "m2"))
 
 #female
-fit_ft1 <- glm(state ~ forcing_accum, family = binomial(link = 'logit'), data = ft1)
-fit_ft2 <- glm(state ~ forcing_accum, family = binomial(link = 'logit'), data = ft2)
+fit_ft1 <- glm(state ~ sum_forcing, family = binomial(link = 'logit'), data = ft1)
+fit_ft2 <- glm(state ~ sum_forcing, family = binomial(link = 'logit'), data = ft2)
 
 fit_ft1$coefficients
 fit_ft2$coefficients
@@ -207,47 +249,60 @@ femaleslopes <- rbind(get_slope_range(fit_ft1, "f1"),
 
 ```
 
-With the simplest version of the model, the slopes for the different transitions are definitely different.
+With the simplest version of the model, the slopes for the different transitions are different, but are pretty close. Given data censorship, I'd say this is fine.
 
 `r maleslopes`
 `r femaleslopes`
 
 The first transition is slower than the second transition.
 
-What if I include effects on the slope?
-
+What if I include effects on the slope? 
 ```{r }
 #male
-fit_met1 <- glm(state ~ forcing_accum*(Site+Clone+SPU_Name), family = binomial(link = 'logit'), data = mt1)
-fit_met2 <- glm(state ~ forcing_accum*(Site+Clone+SPU_Name), family = binomial(link = 'logit'), data = mt2)
+fit_met1 <- glm(state ~ sum_forcing*(Site+SPU_Name), family = binomial(link = 'logit'), data = mt1)
+fit_met2 <- glm(state ~ sum_forcing*(Site+SPU_Name), family = binomial(link = 'logit'), data = mt2)
 
 fit_met1$coefficients
 fit_met2$coefficients
 
-maleslopes <- rbind(get_slope_range(fit_met1, "m1"),
+maleslopes_effects <- rbind(get_slope_range(fit_met1, "m1"),
                     get_slope_range(fit_met2, "m2"))
 
 AIC(fit_mt1, fit_met1)
 AIC(fit_mt2, fit_met2)
 
 #female
-fit_fet1 <- glm(state ~ forcing_accum*(Clone), family = binomial(link = 'logit'), data = ft1)
-fit_fet2 <- glm(state ~ forcing_accum*(Clone), family = binomial(link = 'logit'), data = ft2)
+fit_fet1 <- glm(state ~ sum_forcing*(Site+SPU_Name), family = binomial(link = 'logit'), data = ft1)
+fit_fet2 <- glm(state ~ sum_forcing*(Site+SPU_Name), family = binomial(link = 'logit'), data = ft2)
 
 fit_fet1$coefficients
 fit_fet2$coefficients
 
-femaleslopes <- rbind(get_slope_range(fit_fet1, "f1"),
+femaleslopes_effects <- rbind(get_slope_range(fit_fet1, "f1"),
                       get_slope_range(fit_fet2, "f2"))
 
 AIC(fit_ft1, fit_fet1)
 AIC(fit_ft2, fit_fet2)
 ```
 
-If I include a Site effect on the slope, the second transition is MUCH faster than the first transition.
+Then I get really different slopes for each transition. If I include effects on slope, the second transition is MUCH faster than the first transition. But this model can't accurately model the slopes- the overall slope is often negative, which is not actually possible biologically!
 
-Including Site, Clone, and Prov effects on slope brings them much closer together. True?
+```{r slope effects}
+m1slope_main <- fit_met1$coefficients[2]
+m1siteslopes <- str_detect(names(fit_met1$coefficients), "forcing:Site")
+m1provslopes <- str_detect(names(fit_met1$coefficients), "forcing:SPU")
 
-I don't know how to deal with an ordered logistic model where the transitions can have different slopes. Is that even an ordered logistic model anymore? I don't think so. Maybe I should just fit 4 models - each sex and each transition.
+m1site <- fit_met1$coefficients[m1siteslopes]
+m1prov <- fit_met1$coefficients[m1provslopes]
 
-However, if I include Clone in the effect then 
+m1slopes <- crossing(m1site, m1prov) %>%
+    drop_na() %>%
+    mutate(m1slope = m1site + m1prov + m1slope_main)
+
+m1slopes
+
+```
+
+
+I wouldn't know how to deal with an ordered logistic model where the transitions can have different slopes. Is that even an ordered logistic model anymore? I think I'd have to switch to an HMM model.
+
