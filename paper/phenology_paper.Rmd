@@ -61,8 +61,6 @@ While lodgepole pine has four subspecies, this work concerns only *Pinus contort
 
 ### Data
 
-
-
 #### Phenology Data
 
 My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, I modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. I then applied the model to weather data across the lodgepole pine distribution to determine the distance between populations with synchronous pollen shed and cone receptivity.
@@ -139,8 +137,15 @@ Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gr
 
 #### Forcing units
 
-Forcing units were calculated according the ForcStar method
+The relative effect of mean daily temperature $t$ on the rate of forcing was calculated with
 
+$$R(t) = \frac{28.4}{1+ e^{-0.185*t-18.4}}$$
+
+Forcing Units on day $d$ ($f_d$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
+
+$$f(d) = \sum_{i=1}^d R_d(x)$$
+
+The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and verified to perform better than growing degree day models by Chuine [@Chuine1999]
 ## Modeling
 
 ## Phenology Modeling 
