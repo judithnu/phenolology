@@ -409,33 +409,36 @@ Also want to try
 
 ## Real data
 ```{r dataprep real, eval=FALSE}
-N <- nrow(phendf)
-K <- length(unique(phendf$Phenophase_Derived))
-Nclone <- length(unique(phendf$CloneID))
-Nprovenance <- length(unique(phendf$ProvenanceID))
-Nsite <- length(unique(phendf$SiteID))
-Nyear <- length(unique(phendf$YearID))
 
+prepforstan <- function(df, file) {
+    N <- nrow(df)
+    K <- length(unique(df$Phenophase_Derived))
+    Nclone <- length(unique(df$CloneID))
+    Nprovenance <- length(unique(df$ProvenanceID))
+    Nsite <- length(unique(df$SiteID))
+    Nyear <- length(unique(df$YearID))
+    
+    CloneID <- df$CloneID
+    ProvenanceID <- df$ProvenanceID
+    SiteID <- df$SiteID
+    YearID <- df$YearID
+    
+    forcing <- df$sum_forcing
+    state <- df$Phenophase_Derived
+    
+    rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
+}
 
-CloneID <- phendf$CloneID
-ProvenanceID <- phendf$ProvenanceID
-SiteID <- phendf$SiteID
-YearID <- phendf$YearID
+prepforstan(fdf, "female.rdump")
 
-forcing <- phendf$sum_forcing
-state <- phendf$Phenophase_Derived
-
-L <- 1
-
-stan_rdump(c("N", "K", "L", "Nsex", "Nclone", "Nprovenance", "Nsite", "SexID", "SiteID", "CloneID", "ProvenanceID", "forcing", "state"), "multilevel_phenology.Rdump")
-standat <- read_rdump("multilevel_phenology.Rdump")
+frdump <- read_rdump("female.rdump")
 ```
 
 ```{r fit model, eval=FALSE}
 
 
-fit <- stan("multilevel_phenology.stan", 
-               chains=5, cores=5, iter=3000, data=standat)
+fit <- stan("female.stan", 
+               chains=1, cores=1, iter=20, data=frdump)
 
 
 ```
@@ -463,10 +466,10 @@ fit_draft <- ulam(
         Phenophase_Derived ~ dordlogit(phi, kappa),
         phi <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID] + (beta + beta_site[SiteID] + beta_prov[ProvenanceID])*sum_forcing,
         #transformed_parameters
-       transpars> kappa_diff <- kappa[2] - kappa[1],
-       transpars> beta_tot <- beta + beta_site[SiteID] + beta_prov[ProvenanceID],
-       transpars> alpha_tot <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID],
-       transpars> h1 <- (kappa[1] + alpha_tot)/beta_tot,
+        transpars> kappa_diff <- kappa[2] - kappa[1],
+       # transpars> beta_tot <- beta + beta_site[SiteID] + beta_prov[ProvenanceID],
+       # transpars> alpha_tot <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID],
+       # transpars> h1 <- (kappa[1] + alpha_tot)/beta_tot,
         #adaptive priors
         a_prov[ProvenanceID] ~ dnorm(0, prov_sigma),
         a_site[SiteID] ~ dnorm(0,site_sigma),
@@ -476,9 +479,9 @@ fit_draft <- ulam(
        beta_prov[ProvenanceID] ~ dnorm(0, prov_nu),
         #fixed priors
         beta ~ exponential(1.5),
-        kappa ~ dnorm(10,2),
-       kappa_diff ~ dnorm(5,1),
-       beta_tot ~ exponential(1.5),
+        kappa[1] ~ dnorm(10,2),
+        kappa_diff ~ dnorm(5,1),
+       # beta_tot ~ exponential(1.5),
         # hyperpriors
         prov_sigma ~ exponential(1.5),
         site_sigma ~ exponential(1.5),
@@ -487,15 +490,15 @@ fit_draft <- ulam(
         site_nu ~ exponential(2),
         prov_nu ~ exponential(2)
     ),
-    data=mdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
+    data=fdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
 
-write(stancode(fit_draft), file="male.stan")
+write(stancode(fit_draft), file="female.stan")
 ```
 
 #### female
 ```{r fit female, eval=FALSE}
-#fitfem <- stan("../female_intercept_only.stan", 
-               chains=8, cores=8, warmup = 1100, iter=1300, 
+fitfem <- stan("female.stan", 
+               chains=1, cores=1, warmup = 11, iter=20, 
                data=fdf)
 
 #femsum <- precis(fitfem, depth = 2)
@@ -509,7 +512,7 @@ write(stancode(fit_draft), file="male.stan")
 ```{r fit male, eval=FALSE}
 
 fitm <- stan("male.stan", 
-               chains=1, cores=1, warmup = 11, iter=22, 
+               chains=1, cores=1, warmup = 11, iter=20, 
                data=mdf)
 , init=list(list(beta_site=rep(0.02,7),  beta_prov=rep(0.02,6), beta=5)))
 
