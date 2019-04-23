@@ -39,13 +39,13 @@ calculate_GDD <- function(climate_df, threshold_temp) {
         dplyr::arrange(Site, Year, DoY) %>%
         dplyr::group_by(Site, Year) %>%
         dplyr::mutate(Heatsum = cumsum(Heat)) %>% # add heatsum
-        select(Site, Year, DoY, Heat, Heatsum)
+        dplyr::select(Site, Year, DoY, Heat, Heatsum)
 
     return(clim)
 }
 
 #calculate forcing units according to Sarvas 1972/4/Hanninen 1990/Chuine ForcSar 1999
-calculate_forcing_units <- function(climate_df) { #climatedf is a dataframe with a column named "mean_temp" containing mean temperatures in Celcius. columns named Site, Year, and DoY must also exist
+calculate_ristos <- function(climate_df) { #climatedf is a dataframe with a column named "mean_temp" containing mean temperatures in Celcius. columns named Site, Year, and DoY must also exist
     #calculate the amount of forcing any mean daily temperature provices
     climate_df$ristos <- 28.4/(1+exp(-0.185*(climate_df$mean_temp-18.4)))
     #sum the forcing units
@@ -53,8 +53,22 @@ calculate_forcing_units <- function(climate_df) { #climatedf is a dataframe with
     clim <- clim %>%
         dplyr::arrange(Site, Year, DoY) %>%
         dplyr::group_by(Site, Year) %>%
-        dplyr::mutate(forcing_units = cumsum(ristos)) %>%
-        select(Site, Year, DoY, mean_temp, ristos, forcing_units)
+        dplyr::mutate(sum_ristos = cumsum(ristos)) %>%
+        dplyr::select(Site, Year, DoY, mean_temp, ristos, sum_ristos)
+    return(clim)
+}
+
+#calculate forcing units according to Sarvas 1972/4/Hanninen 1990/Chuine ForcSar 1999, but with a numerator of 1 since forcing units are arbitrary
+calculate_scaled_ristos <- function(climate_df) {
+    #calculate the amount of forcing any mean daily temperature provices
+    climate_df$ristos_scaled <- 1/(1+exp(-0.185*(climate_df$mean_temp-18.4)))
+    #sum the forcing units
+    clim <- climate_df
+    clim <- clim %>%
+        dplyr::arrange(Site, Year, DoY) %>%
+        dplyr::group_by(Site, Year) %>%
+        dplyr::mutate(sum_scaled_ristos = cumsum(ristos_scaled)) %>%
+        dplyr::select(Site, Year, DoY, mean_temp, ristos_scaled, sum_scaled_ristos)
     return(clim)
 }
 
@@ -70,10 +84,13 @@ clim <- subset(clim, Year %in% unique(phendat$Year)) # drop climate data not in 
 
 # Calculate Forcing Units and Forcing sums
 
-risto <- calculate_forcing_units(climate_df = clim)
+risto <- calculate_ristos(climate_df = clim)
 clim5 <- calculate_GDD(clim, threshold_temp = 5)
+#clim4.3 <- calculate_GDD(clim, threshold_temp = 4.3)
+risto_scaled <- calculate_scaled_ristos(climate_df = clim)
 
-clim <- dplyr::full_join(risto, clim5)
+clim <- dplyr::full_join(risto, clim5) %>%
+    dplyr::full_join(risto_scaled)
 
 #check nothing weird happened
 ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
@@ -81,41 +98,72 @@ ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
     facet_wrap("Site") +
     theme_bw(base_size=18)
 
-ggplot(clim, aes(x=DoY, y=forcing_units, color=Year)) +
+ggplot(clim, aes(x=DoY, y=sum_ristos, color=Year)) +
+    geom_point() +
+    facet_wrap("Site") +
+    theme_bw(base_size=18)
+
+ggplot(clim, aes(x=DoY, y=sum_scaled_ristos, color=Year)) +
     geom_point() +
     facet_wrap("Site") +
     theme_bw(base_size=18)
 
 # Visualizations that should be moved somewhere else ##################
-activeperiod <- filter(clim, DoY < 181) #Jan thru June only
-ggplot(activeperiod, aes(x=Heatsum, y=forcing_units, color=Year)) +
-    geom_point() +
-    facet_wrap("Site") +
-    theme_bw(base_size=18)
-
-# Forcing units begin to accumulate before heatsum does
-
-activeperiod <- filter(clim, DoY < 181) #Jan thru June only
-ggplot(activeperiod, aes(x=Heat, y=ristos)) +
-    geom_point() +
-    #facet_wrap("Site") +
-    theme_bw(base_size=18) +
-    geom_abline()
-
-
-ggplot(activeperiod_g, aes(x=mean_temp, y=daily_forcing, color=daily_forcing_type)) +
-    geom_line(lwd=1.2) +
-    facet_wrap("Site") +
-    theme_bw(base_size=14) +
-    geom_abline()
+# activeperiod <- filter(clim, DoY < 181) #Jan thru June only
+# ggplot(activeperiod, aes(x=Heatsum, y=forcing_units, color=Year)) +
+#     geom_point() +
+#     facet_wrap("Site") +
+#     theme_bw(base_size=18)
+#
+# # Forcing units begin to accumulate before heatsum does
+#
+# activeperiod <- filter(clim, DoY < 181) #Jan thru June only
+# ggplot(activeperiod, aes(x=Heat, y=ristos)) +
+#     geom_point() +
+#     #facet_wrap("Site") +
+#     theme_bw(base_size=18) +
+#     geom_abline()
+#
+#
+# ggplot(activeperiod_g, aes(x=mean_temp, y=daily_forcing, color=daily_forcing_type)) +
+#     geom_line(lwd=1.2) +
+#     facet_wrap("Site") +
+#     theme_bw(base_size=14) +
+#     geom_abline()
 
 
 # Tidy forcing unit df ##########
-gclim <- clim %>%
-    gather(key=daily_forcing_type, value=daily_forcing, ristos, Heat) %>%
-    tidyr::gather(key=cummulation_type, value=forcing_accum, forcing_units, Heatsum) %>%
-    dplyr::filter(!(daily_forcing_type == "ristos" & cummulation_type == "Heatsum")) %>%
-    dplyr::filter(!(daily_forcing_type == "Heat" & cummulation_type == "forcing_units"))
+
+#first split into three data frames
+
+ristoframe <- clim %>%
+    dplyr::select(-Heat, -Heatsum, -ristos_scaled, -sum_scaled_ristos) %>%
+    mutate(forcing_type = "ristos")
+colnames(ristoframe)[c(5,6)] <- c("forcing", "sum_forcing")
+
+scaledristoframe <- clim %>%
+    dplyr::select(-Heat, -Heatsum, -ristos, -sum_ristos) %>%
+    mutate(forcing_type = "scaled_ristos")
+colnames(scaledristoframe)[c(5,6)] <- c("forcing", "sum_forcing")
+
+gddframe <- clim %>%
+    dplyr::select(-contains("ristos")) %>%
+    mutate(forcing_type = "gdd")
+colnames(gddframe)[c(5,6)] <- c("forcing", "sum_forcing")
+
+#recombine
+
+gclim <- rbind(ristoframe, scaledristoframe)
+gclim <- rbind(gclim, gddframe)
+
+#test
+nrow(gclim) == nrow(ristoframe) + nrow(scaledristoframe) + nrow(gddframe)
+# gclim <- clim %>%
+#     gather(key=daily_forcing_type, value=daily_forcing, ristos, Heat, ristos_scaled) %>%
+#     tidyr::gather(key=cummulation_type, value=forcing_accum, sum_ristos, sum_scaled_ristos, Heatsum) #%>%
+#     dplyr::filter(!(daily_forcing_type == "ristos" & cummulation_type == "Heatsum")) %>%
+#     dplyr::filter(!(daily_forcing_type == "ristos" & cummulation))
+#     dplyr::filter(!(daily_forcing_type == "Heat" & cummulation_type == "forcing_units"))
 
 
 # More stuff that should be moved out of this file ##########
@@ -123,7 +171,7 @@ earliest_accummulation <- gclim %>% group_by(Site, Year, daily_forcing_type) %>%
     filter(forcing_accum > 5) %>%
     dplyr::summarize(earliest_accummulation = min(DoY))
 
-gclim <- full_join(gclim, earliest_accummulation)
+#gclim <- full_join(gclim, earliest_accummulation)
 
 ggplot(gclim, aes(x=DoY, y=forcing_accum, color=daily_forcing_type, line_type=as.factor(Year))) +
     geom_line(alpha=0.7) +
@@ -162,9 +210,9 @@ phen <- phendat
 
 
 phendf <- merge(phen, gclim) %>%
-    select(-Tree, -X, -Y, -Source, -First_RF, -Last_RF, -cummulation_type) %>%
+    dplyr::select(-Tree, -X, -Y, -Source, -First_RF, -Last_RF) %>%
     #select(Site, Sex, Year, DoY, Index, Clone, TreeID, Phenophase_Derived, Heat, Heatsum, Orchard) %>%
-    arrange(daily_forcing_type, Site, Year, Sex, Index, Clone, DoY) %>%
+    arrange(forcing_type, Site, Year, Sex, Index, Clone, DoY) %>%
     filter(!Phenophase_Derived==0) # drop trees that didn't flower
 
 phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)

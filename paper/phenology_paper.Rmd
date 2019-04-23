@@ -61,10 +61,6 @@ While lodgepole pine has four subspecies, this work concerns only *Pinus contort
 
 ### Data
 
-#### Weather data
-
-[build model with local data from orchards and weather stations, apply across landscape with [PCIC daily gridded data](https://pacificclimate.org/data/daily-gridded-meteorological-datasets)
-
 #### Phenology Data
 
 My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, I modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. I then applied the model to weather data across the lodgepole pine distribution to determine the distance between populations with synchronous pollen shed and cone receptivity.
@@ -133,17 +129,30 @@ phenophase_legend <- data.frame(Phenophase = derived_phenophase, Symbols = recor
 kable(phenophase_legend, padding = 0)
 ```
 
+#### Weather data
 
+Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet was used for each station. Mean daily temperature was calculated from the minimum and maximum daily temperatures.
+
+[Map of Sites with nearest gridpoints]
+
+#### Forcing units
+
+The relative effect of mean daily temperature $t$ on the rate of forcing was calculated with
+
+$$R(t) = \frac{28.4}{1+ e^{-0.185*t-18.4}}$$
+
+Forcing Units on day $d$ ($f_d$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
+
+$$f(d) = \sum_{i=1}^d R_d(x)$$
+
+The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and verified to perform better than growing degree day models by Chuine [@Chuine1999]
 ## Modeling
 
 ## Phenology Modeling 
 
 
-
-
-
 ### Actual methods
-I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan [@standevelopmentteamRStanInterfaceStan2018].
+I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018].
 
 For phenological states $k \in \{1,2,3\}$, the probability of 
 
