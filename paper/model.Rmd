@@ -674,12 +674,12 @@ fitfem.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
 #### male
 ```{r fit male, eval=FALSE}
 
-fitm <- stan("../male_intercept_only.stan", 
+fitm <- stan("male_intercept_only.stan", 
                chains=8, cores=8, warmup = 1100, iter=1300, 
-               data=fdf)
+               data=mdf)
 
 msum <- precis(fitfem, depth = 2)
-saveRDS(fitm, file = "2019-04-16_fem_intercept_only.rds")
+saveRDS(fitm, file = "2019-04-17_male_intercept_only.rds")
 
 fitm.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
 
