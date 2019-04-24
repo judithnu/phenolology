@@ -48,15 +48,6 @@ view(dfSummary(phendf))
 
 ```{r stanindexing}
 #Create indexes that stan will like
-stanindexer <- function(df) {
-    df$CloneID <- group_indices(df, Clone)
-    df$OrchardID <- group_indices(df, Orchard)
-    df$ProvenanceID <- group_indices(df, SPU_Name)
-    df$SiteID <- group_indices(df, Site)
-    df$YearID <- group_indices(df, Year)
-    df$Tree <- group_indices(df,TreeID)
-    return(df)
-}
 
 fdf <- filter(phendf, Sex == "FEMALE")
 #fdf <- stanindexer(fdf)
