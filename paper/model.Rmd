@@ -37,7 +37,7 @@ Pollination phenology in lodgepole pine refers to the timing of two events - pol
 ```{r data, echo=FALSE, results="asis"}
 
 phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(forcing_type=="ristos")
+    filter(forcing_type=="scaled_ristos")
 #phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
  #   dplyr::filter(forcing_type=="ristos")
 
