@@ -437,15 +437,39 @@ frdump <- read_rdump("female.rdump")
 ```{r fit model, eval=FALSE}
 
 
-fit <- stan("female.stan", 
-               chains=1, cores=1, iter=20, data=frdump)
+femfit <- stan("phenology.stan", 
+               chains=4, cores=4, warmup=1000, iter=1300, data=frdump)
+femtest <- stan("phenology.stan",
+                chains=1, warmup=20, iter=25, data=frdump)
 
 
 ```
 
 ```{r save model, eval=FALSE}
-saveRDS(fit, file = "multilevel_phenology.rds")
-posterior_cp <- as.array(fit)
+saveRDS(femfit, file = "female_scaled_phenology.rds")
+posterior <- as.array(femfit)
+post_re <- extract.samples(femfit)
+prior_re <- extract.prior(femfit)
+posterior <- as.array(femfit)
+np <- nuts_params(femfit)
+fempars1 <- precis(femfit)
+
+hist(post_re$h50[,,1])
+hist(post_re$h50[,,2])
+
+betas <- fempars[str_detect(rownames(fempars), "beta"),]
+alphas <- fempars[str_detect(rownames(fempars), "^a_"),]
+divergences <- filter(np, Parameter=="divergent__")
+
+mcmc_areas(posterior, regex_pars = c("beta_s", "beta_p", "beta$", "nu"))
+mcmc_areas(posterior, regex_pars = c("^a_s", "^a_p"))
+mcmc_areas(posterior, regex_pars = c("sigma"))
+mcmc_areas(posterior, regex_pars = c("kappa"))
+
+mcmc_areas(posterior, regex_pars=c("h50"))
+mcmc_parcoord(posterior, np=np, pars=c("beta", "prov_sigma", "site_sigma", "clone_sigma", "site_nu", "prov_nu", "kappa[1]", "kappa[2]"))
+
+mcmc_pairs(posterior, np=np, pars=c("beta", "prov_sigma", "site_sigma", "clone_sigma", "site_nu", "prov_nu", "kappa[1]", "kappa[2]"))
 ```
 
 ### Separate male and female models with no correlation
@@ -522,5 +546,53 @@ saveRDS(fitm, file = "2019-04-16_fem_intercept_only.rds")
 fitm.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
 
 ```
+### Separate male and female models with correlations
+
+```{r draft corr model with ulam}
+
+stancleaner <- function(df) {
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
+    return(df)
+}
+
+fdf <- stancleaner(fdf)
+mdf <- stancleaner(mdf)
 
 
+fit_full_draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID] + (beta + b_site[SiteID] + b_prov[ProvenanceID]) * sum_forcing,
+        # priors
+        beta ~ exponential(2),
+        kappa ~ dnorm(10,2), # change to gamma in stan
+        #adaptive_priors
+        a_clone[CloneID] ~ dnorm(0, clone_sigma),
+        a_year[YearID] ~ dnorm(0, year_sigma),
+        #site
+        c(a_site, b_site)[SiteID] ~ multi_normal(c(as, bs), Rhos, sigma_site),
+        as ~ dnorm(0, 1),
+        bs ~ dnorm(0, 0.5),
+        sigma_site ~ exponential(1.5),
+        #provenance
+        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
+        ap ~ dnorm(0, 1),
+        bp ~ dnorm(0, 0.5),
+        sigma_prov ~ exponential(1.5),
+        #pop varying effects
+        Rhos ~ lkj_corr(2),
+        Rhop ~ lkj_corr(2),
+        # hyperpriors
+        clone_sigma ~ exponential(2),
+        year_sigma ~ exponential(2)
+    ), data=fdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
+
+write(stancode(fit_full_draft), file="phenology_corr.stan")
+```
+
+```{r fit female model}
+
+femtest <- stan("phenology_corr.stan",
+                chains=1, warmup=20, iter=25, data=fdf)
+
+```

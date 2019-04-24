@@ -38,8 +38,8 @@ transformed parameters{
     real kappa_diff; //difference between cutpoints
     vector[N] alpha_tot; //all intercept effects
     vector[N] beta_tot; //total slope
-    matrix<lower=0>[N,K-1] h50; //inflection points
-    vector<lower=0>[N] h50diff; //difference between inflection points
+    matrix[N,K-1] h50; //inflection points
+    vector[N] h50diff; //difference between inflection points
 
     kappa_diff = kappa[K-1] - kappa[K-2];
     alpha_tot = a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID];
@@ -55,7 +55,6 @@ transformed parameters{
     h50diff = h50[,K-1] - h50[,K-2];
 }
 
-
 model{
     vector[N] phi; //outcomes
     //hyper priors
@@ -66,9 +65,9 @@ model{
     site_sigma ~ exponential( 1.5 );
     prov_sigma ~ exponential( 1.5 );
     //fixed priors
-    kappa_diff ~ gamma( 7.5 , 1 );
-    kappa[K-2] ~ gamma( 5 , 1 );
-    beta ~ exponential( 1.5 );
+    kappa_diff ~ normal( 10 , 5 );
+    kappa[K-2] ~ gamma( 7 , 1 );
+    beta ~ exponential(1.5 );
     //adaptive priors
     beta_prov ~ normal( 0 , prov_nu );
     beta_site ~ normal( 0 , site_nu );
@@ -83,5 +82,4 @@ model{
     //likelihood
     for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );
 }
-
 
