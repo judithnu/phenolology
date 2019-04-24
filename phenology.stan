@@ -23,7 +23,7 @@ parameters{
     //slope effects
     vector[Nsite] beta_site;
     vector[Nprovenance] beta_prov;
-    real<lower=0> beta;
+    real<lower=0, upper=1> beta;
     //cutpoints
     positive_ordered[K-1] kappa;
     //variance for adaptive priors
@@ -38,8 +38,8 @@ transformed parameters{
     real kappa_diff; //difference between cutpoints
     vector[N] alpha_tot; //all intercept effects
     vector[N] beta_tot; //total slope
-    matrix<lower=0>[N,K-1] h50; //inflection points
-    vector<lower=0>[N] h50diff; //difference between inflection points
+    matrix[N,K-1] h50; //inflection points
+    vector[N] h50diff; //difference between inflection points
 
     kappa_diff = kappa[K-1] - kappa[K-2];
     alpha_tot = a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID];
@@ -59,8 +59,8 @@ transformed parameters{
 model{
     vector[N] phi; //outcomes
     //hyper priors
-    prov_nu ~ exponential( 2 );
-    site_nu ~ exponential( 2 );
+    prov_nu ~ exponential( 6 );
+    site_nu ~ exponential( 6 );
     clone_sigma ~ exponential( 1.5 );
     year_sigma ~ exponential( 1.5 );
     site_sigma ~ exponential( 1.5 );
@@ -68,7 +68,7 @@ model{
     //fixed priors
     kappa_diff ~ gamma( 7.5 , 1 );
     kappa[K-2] ~ gamma( 5 , 1 );
-    beta ~ exponential( 1.5 );
+    beta ~ beta(.5, 5 );
     //adaptive priors
     beta_prov ~ normal( 0 , prov_nu );
     beta_site ~ normal( 0 , site_nu );
