@@ -38,3 +38,4 @@ vignettes/*.pdf
 #other stuff
 .sync/*
 
+.Rproj.user
