@@ -48,15 +48,6 @@ view(dfSummary(phendf))
 
 ```{r stanindexing}
 #Create indexes that stan will like
-stanindexer <- function(df) {
-    df$CloneID <- group_indices(df, Clone)
-    df$OrchardID <- group_indices(df, Orchard)
-    df$ProvenanceID <- group_indices(df, SPU_Name)
-    df$SiteID <- group_indices(df, Site)
-    df$YearID <- group_indices(df, Year)
-    df$Tree <- group_indices(df,TreeID)
-    return(df)
-}
 
 fdf <- filter(phendf, Sex == "FEMALE")
 #fdf <- stanindexer(fdf)
@@ -192,6 +183,7 @@ ggplot(fdf, aes(x=sum_forcing, colour=state)) +
     stat_ecdf() +
     ggtitle("females")
 
+
 ggplot(mdf, aes(x=sum_forcing, colour=state)) +
     stat_ecdf() +
     ggtitle("males")
@@ -306,3 +298,53 @@ m1slopes
 
 I wouldn't know how to deal with an ordered logistic model where the transitions can have different slopes. Is that even an ordered logistic model anymore? I think I'd have to switch to an HMM model.
 
+## Which variables to include in slope?
+
+I think clone and provenance only because they are biological.
+
+```{r}
+
+
+fitmristoscaled <- bayespolr(state ~ sum_forcing, data=mristoscaled)
+fitfristoscaled <- bayespolr(state ~ sum_forcing, data=fristoscaled)
+
+mristoscaled$SPU_Name <- as.factor(mristoscaled$SPU_Name)
+mristoscaled$Site <- as.factor(mristoscaled$Site)
+mristoscaled$SPU_Name <- as.factor(mristoscaled$SPU_Name)
+mristoscaled$Clone <- as.factor(mristoscaled$Clone)
+mristoscaled$Year <- as.factor(mristoscaled$Year)
+mristoscaled$Tree <- as.factor(mristoscaled$TreeID)
+
+#fit prov as intercepts only
+fit_provi <- bayespolr(state ~ sum_forcing + SPU_Name, data=mristoscaled)
+fit_provs <- bayespolr(state ~ SPU_Name*sum_forcing, data=mristoscaled)
+fit_provis <- bayespolr(state ~ SPU_Name*sum_forcing + SPU_Name, data=mristoscaled)
+AIC(fitmristoscaled, fit_provi, fit_provs, fit_provis)
+
+fit_sitei <- bayespolr(state ~ sum_forcing + Site, data=mristoscaled)
+fit_sites <- bayespolr(state ~ Site*sum_forcing, data=mristoscaled)
+fit_siteis <- bayespolr(state ~ Site*sum_forcing + Site, data=mristoscaled)
+AIC(fitmristoscaled, fit_sitei, fit_sites, fit_siteis)
+
+fit_clonei <- bayespolr(state ~ sum_forcing + Clone, data=mristoscaled)
+fit_clones <- bayespolr(state ~ Clone*sum_forcing, data=mristoscaled)
+#fit_cloneis <- bayespolr(state ~ Clone*sum_forcing + Clone, data=mristoscaled)
+AIC(fitmristoscaled, fit_clonei, fit_clones, fit_cloneis)
+
+fit_treei <- bayespolr(state ~ sum_forcing + TreeID, data=mristoscaled)
+fit_trees <- bayespolr(state ~ TreeID*sum_forcing, data=mristoscaled)
+fit_treeis <- bayespolr(state ~ TreeID*sum_forcing + TreeID, data=mristoscaled)
+AIC(fitmristoscaled, fit_treei, fit_trees, fit_treeis)
+
+fit_tc <- bayespolr(state ~ sum_forcing + Clone + TreeID, data=mristoscaled)
+AIC(fitmristoscaled, fit_tc, fit_treei, fit_clonei)
+
+fit_yr <- bayespolr(state ~ sum_forcing + Year, data=mristoscaled)
+AIC(fitmristoscaled, fit_yr)
+
+
+fit_all <- bayespolr(state ~ (SPU_Name + Site)*sum_forcing + Clone + Year, data=mristoscaled)
+
+
+AIC(fitmristoscaled, fit_provis, fit_siteis, fit_clonei, fit_treei, fit_yr, fit_tc, fit_all)
+```

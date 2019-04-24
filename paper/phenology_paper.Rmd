@@ -139,8 +139,8 @@ Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gr
 
 The relative effect of mean daily temperature $t$ on the rate of forcing was calculated with
 
-$$R(t) = \frac{28.4}{1+ e^{-0.185*t-18.4}}$$
-
+$$R(t) = \frac{1}{1+ e^{-0.185*t-18.4}}$$
+which describes the relationship between temperature and development rate. This equation for forcing units is based on experimental work from Risto Sarvas with in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990]. @Chuine1999 found this calculation of forcing units superior to degree day calculations. The equation was rescaled to have a numerator of one as the units are arbitrary (@Chuine) 
 Forcing Units on day $d$ ($f_d$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
 
 $$f(d) = \sum_{i=1}^d R_d(x)$$
@@ -201,7 +201,10 @@ logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
 
 To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions
 
-### Results
+#### Assumptions 
+Chilling requirements are met and chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Both phases occur at the same rate.
+
+## Results
 
 1) How strong are the genetic vs. environmental effects on pollination phenology?
 

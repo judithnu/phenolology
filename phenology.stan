@@ -55,7 +55,6 @@ transformed parameters{
     h50diff = h50[,K-1] - h50[,K-2];
 }
 
-
 model{
     vector[N] phi; //outcomes
     //hyper priors
@@ -66,9 +65,11 @@ model{
     site_sigma ~ exponential( 1.5 );
     prov_sigma ~ exponential( 1.5 );
     //fixed priors
+
     kappa_diff ~ gamma( 7.5 , 1 );
     kappa[K-2] ~ gamma( 5 , 1 );
     beta ~ beta(.5, 5 );
+
     //adaptive priors
     beta_prov ~ normal( 0 , prov_nu );
     beta_site ~ normal( 0 , site_nu );
@@ -83,5 +84,4 @@ model{
     //likelihood
     for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );
 }
-
 
