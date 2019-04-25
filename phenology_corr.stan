@@ -1,10 +1,4 @@
 data{
-    int N;
-    int K;
-    int Nsite;
-    int Nprovenance;
-    int Nclone;
-    int Nyear;
     int Phenophase_Derived[10891];
     vector[10891] sum_forcing;
     int YearID[10891];
@@ -14,7 +8,7 @@ data{
 }
 parameters{
     real<lower=0> beta;
-    ordered[2] kappa;
+    positive_ordered[2] kappa;
     vector[260] a_clone;
     vector[15] a_year;
     vector[7] b_site;
@@ -39,7 +33,7 @@ model{
     Rhop ~ lkj_corr( 2 );
     Rhos ~ lkj_corr( 2 );
     sigma_prov ~ exponential( 1.5 );
-    bp ~ normal( 0 , 0.5 );
+    bp ~ normal( 0 , 0.5);
     ap ~ normal( 0 , 1 );
     {
     vector[2] YY[6];
@@ -49,7 +43,7 @@ model{
     YY ~ multi_normal( MU , quad_form_diag(Rhop , sigma_prov) );
     }
     sigma_site ~ exponential( 1.5 );
-    bs ~ normal( 0 , 0.5 );
+    bs ~ normal( 0, 0.5) ;
     as ~ normal( 0 , 1 );
     {
     vector[2] YY[7];
@@ -60,7 +54,7 @@ model{
     }
     a_year ~ normal( 0 , year_sigma );
     a_clone ~ normal( 0 , clone_sigma );
-    kappa ~ normal( 10 , 2 );
+    kappa ~ gamma( 7.5 , 2 ); //positive and over entire distribution of forcing temperatures
     beta ~ exponential( 2 );
     for ( i in 1:10891 ) {
         phi[i] = a_site[SiteID[i]] + a_prov[ProvenanceID[i]] + a_clone[CloneID[i]] + a_year[YearID[i]] + (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]]) * sum_forcing[i];
