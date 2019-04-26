@@ -1,14 +1,15 @@
 data{
     int Phenophase_Derived[10891];
-    vector[10891] sum_forcing;
     int YearID[10891];
     int CloneID[10891];
     int ProvenanceID[10891];
     int SiteID[10891];
+    vector<lower=0>[10891] sum_forcing;
 }
 parameters{
+    vector<lower=0>[10891] sum_forcing_true;
     real<lower=0> beta;
-    ordered[2] kappa;
+    positive_ordered[2] kappa;
     vector[260] a_clone;
     vector[15] a_year;
     vector[7] b_site;
@@ -25,6 +26,7 @@ parameters{
     corr_matrix[2] Rhop;
     real<lower=0> clone_sigma;
     real<lower=0> year_sigma;
+    real<lower=0> sigma_err;
 }
 model{
     vector[10891] phi;
@@ -54,10 +56,13 @@ model{
     }
     a_year ~ normal( 0 , year_sigma );
     a_clone ~ normal( 0 , clone_sigma );
-    kappa ~ normal( 10 , 2 );
+    kappa ~ gamma( 7.5 , 1 );
     beta ~ exponential( 2 );
+
     for ( i in 1:10891 ) {
-        phi[i] = a_site[SiteID[i]] + a_prov[ProvenanceID[i]] + a_clone[CloneID[i]] + a_year[YearID[i]] + (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]]) * sum_forcing[i];
+        sum_forcing_true[i] ~ gamma( 7.5, 2 );
+        sum_forcing[i] ~ normal(sum_forcing_true[i],.25);
+        phi[i] = a_site[SiteID[i]] + a_prov[ProvenanceID[i]] + a_clone[CloneID[i]] + a_year[YearID[i]] + (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]]) * sum_forcing_true[i];
     }
     for ( i in 1:10891 ) Phenophase_Derived[i] ~ ordered_logistic( phi[i] , kappa );
 }

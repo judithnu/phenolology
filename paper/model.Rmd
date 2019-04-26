@@ -274,20 +274,6 @@ $f$ accumulated forcing units
 
 ## Woah now let's calm down and do a simpler version. Maybe look back at an old workflow and try again.
 
-## Fit a model to simulated data
-
-Simulate data from an ordered logistic distribution with three states and forcing values from real data. 
-
-```{r simulate simplest data}
-cuts <- c(15,20)
-beta <- 0.05
-forcing <- runif(300, 175, 500)
-eta <- beta * forcing 
-state <- rordlogit(length(eta), phi = eta, a = cuts)
-sim <- data.frame(forcing,state)
-#sim$state <- group_indices(sim, state)
-```
-
 7 sites, 6 provenances, and 10 observations for each of 15 individuals at different forcing temperatures
 ```{r simulate_grouped_data}
 # cutpoints <- c(0)
@@ -593,6 +579,135 @@ write(stancode(fit_full_draft), file="phenology_corr.stan")
 ```{r fit female model}
 
 femtest <- stan("phenology_corr.stan",
-                chains=1, warmup=20, iter=25, data=fdf)
+                chains=4, warmup=2000, iter=2500, data=fdf)
 
 ```
+
+## What about an error model?
+
+```{r error model}
+fit_error_draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID] + (beta + b_site[SiteID] + b_prov[ProvenanceID]) * sum_forcing_true,
+        #error
+        sum_forcing_true ~ normal(11,3),
+        sum_forcing ~ normal(sum_forcing_true, 1),
+        # priors
+        beta ~ exponential(2),
+        kappa ~ dnorm(10,2), # change to gamma in stan
+        #adaptive_priors
+        a_clone[CloneID] ~ dnorm(0, clone_sigma),
+        a_year[YearID] ~ dnorm(0, year_sigma),
+        #site
+        c(a_site, b_site)[SiteID] ~ multi_normal(c(as, bs), Rhos, sigma_site),
+        as ~ dnorm(0, 1),
+        bs ~ dnorm(0, 0.5),
+        sigma_site ~ exponential(1.5),
+        #provenance
+        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
+        ap ~ dnorm(0, 1),
+        bp ~ dnorm(0, 0.5),
+        sigma_prov ~ exponential(1.5),
+        #pop varying effects
+        Rhos ~ lkj_corr(2),
+        Rhop ~ lkj_corr(2),
+        # hyperpriors
+        clone_sigma ~ exponential(2),
+        year_sigma ~ exponential(2), 
+    ), 
+    data=fdf, declare_all_data = FALSE, sample.prior=TRUE) #change data depending on male or female model
+
+write(stancode(fit_error_draft), file="phenology_corr_err.stan")
+```
+
+```{r fit female model}
+
+stancleaner <- function(df) {
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
+    return(df)
+}
+
+fdf <- stancleaner(fdf)
+mdf <- stancleaner(mdf)
+
+femtest <- stan("phenology_corr_err.stan",
+                chains=1, , warmup=20, iter=25, data=fdf)
+femfit <- stan("phenology_corr_err.stan",
+                chains=4, cores=4, warmup=3000, iter=5000, data=fdf)
+
+```
+
+```{r save model, eval=FALSE}
+saveRDS(femfit, file = "female_with_corr_err.rds")
+posterior <- as.array(femfit)
+post_re <- extract.samples(femtest)
+
+
+h50 <- (-post_re$kappa[,2] + post_re$a_site[,1] + post_re$a_prov[,1] + post_re$a_clone[,1])/(post_re$b_prov[,1]+post_re$b_site[,1] + post_re$beta)
+hist(h50)
+
+np <- nuts_params(femtest)
+fempars <- precis(femtest, depth=3)
+
+alphas <- fempars[str_detect(rownames(fempars), "^a_"),]
+divergences <- filter(np, Parameter=="divergent__" & Value==1)
+
+mcmc_areas(posterior, regex_pars = c("beta", "bs", "bp", "b_site", "b_prov", "sigma_site[2]")) + ggtitle("beta params")
+mcmc_areas(posterior, regex_pars = c("^a_s", "^a_p"))
+mcmc_areas(posterior, regex_pars = c("sigma"))
+mcmc_areas(posterior, regex_pars = c("kappa"))
+
+
+mcmc_parcoord(posterior, np=np, regex_pars=c("beta", "sigma_prov", "sigma_site", "clone_sigma", "year_sigma", "kappa[1]", "kappa[2]"))
+
+mcmc_pairs(posterior, np=np, regex_pars=c("beta", "^as", "^ap", "clone_sigma", "year_sigma", "kappa[1]", "kappa[2]"))
+
+```
+
+## Fit a slope only model
+
+```{r ulam draft slope only}
+stancleaner <- function(df) {
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
+    return(df)
+}
+
+fdf <- stancleaner(fdf)
+mdf <- stancleaner(mdf)
+
+slopedraft <- ulam(
+    alist(
+        Phenophase_Derived ~ ordered_logistic(phi, kappa),
+        phi <- sum_forcing * (beta + b_site[SiteID] + b_prov[ProvenanceID] + b_clone[CloneID] + b_year[YearID] + b_orch[OrchardID]),
+        #fixed priors
+        kappa ~ normal(7.5,2), #make gamma in stan
+        beta ~ exponential(3),
+        #adaptive priors
+        b_site[SiteID] ~ normal(0, sigma_site),
+        b_prov[ProvenanceID] ~ normal(0, sigma_prov),
+        b_clone[CloneID] ~ normal(0, sigma_clone),
+        b_year[YearID] ~ normal(0, sigma_year),
+        b_orch[OrchardID] ~ normal(0, sigma_orch),
+        #hyperpriors
+        sigma_site ~ exponential(2),
+        sigma_prov ~ exponential(2),
+        sigma_clone ~ exponential(2),
+        sigma_year ~ exponential(2),
+        sigma_orch ~ exponential(2)
+    ),
+     data=mdf, sample=FALSE, declare_all_data = FALSE)
+
+write(stancode(slopedraft), file="slopes.stan")
+```
+
+```{r fit male slopes}
+mtest <- stan("slopes.stan",
+                chains=1, , warmup=20, iter = 25, data = mdf)
+mfit <- stan("slopes.stan",
+                chains=4, cores=4, warmup=3000, iter=5000, data=mdf)
+```
+
+
+
+
