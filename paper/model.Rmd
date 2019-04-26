@@ -566,9 +566,10 @@ write(stancode(fit_full_draft), file="phenology_corr.stan")
 
 ```{r fit female model}
 
-femtest <- stan("phenology_corr.stan", chains = 1, warmup =20, iter=25, control=list(adapt_delta=0.9), data=fdf)
+femtest <- stan("phenology_corr.stan", chains = 1, warmup =20, iter=25, control=list(adapt_delta=.95, max_treedepth=15), data=fdf)
+
 femfit <- stan("phenology_corr.stan",
-                chains=8, cores=8, warmup=3000, iter=5000, data=fdf)
+                chains=8, cores=8, warmup=3500, iter=4000, control=list(adapt_delta=.95, max_treedepth=15), data=fdf)
 
 ```
 
@@ -581,7 +582,7 @@ post_re <- extract.samples(femfit)
 h50 <- (post_re$kappa[,2] + post_re$a_site[,1] + post_re$a_prov[,1] + post_re$a_clone[,1])/(post_re$b_prov[,1]+post_re$b_site[,1] + beta)
 hist(h50)
 np <- nuts_params(femfit)
-fempars <- precis(femfit, depth=3)
+fempars <- precis(femfit, depth=2)
 
 alphas <- fempars[str_detect(rownames(fempars), "^a_"),]
 divergences <- filter(np, Parameter=="divergent__" & Value==1)
