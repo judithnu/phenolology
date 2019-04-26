@@ -1,7 +1,7 @@
 ---
 title: "A multilevel Bayesian model of pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "April 24, 2019"
+date: "April 25, 2019"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -38,13 +38,13 @@ Pollination phenology in lodgepole pine refers to the timing of two events - pol
 
 phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
     filter(forcing_type=="ristos")
-#phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
- #   dplyr::filter(forcing_type=="ristos")
+# phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+#   dplyr::filter(forcing_type=="ristos")
 
-SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-   dplyr::select(SPU_Name, Orchard) #add provenance information
-# SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-# dplyr::select(SPU_Name, Orchard)
+# SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+#    dplyr::select(SPU_Name, Orchard) #add provenance information
+SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+dplyr::select(SPU_Name, Orchard)
  # SPU_dat <- read.csv("~/Documents/phd_sus/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
  #   dplyr::select(SPU_Name, Orchard) #add provenance information
 
@@ -556,7 +556,7 @@ femtest <- stan("phenology_corr.stan", chains = 1, warmup =20, iter=25, control=
 
 ```
 
-## What about an error model?
+## Error model?
 
 ```{r error model}
 fit_error_draft <- ulam(
@@ -672,16 +672,48 @@ slopedraft <- ulam(
         sigma_year ~ exponential(2),
         sigma_orch ~ exponential(2)
     ),
-     data=mdf, sample=FALSE, declare_all_data = FALSE)
+     data=fdf, sample=FALSE, declare_all_data = FALSE)
 
 write(stancode(slopedraft), file="slopes.stan")
 ```
 
 ```{r fit male slopes}
-mtest <- stan("slopes.stan",
-                chains=1, , warmup=20, iter = 25, data = mdf)
-mfit <- stan("slopes.stan",
-                chains=4, cores=4, warmup=3000, iter=5000, data=mdf)
+ftest <- stan("slopes.stan",
+                chains=1, warmup=20, iter = 25, data = fdf)
+ffit <- stan("slopes.stan",
+                chains=8, cores=8, warmup=2000, iter=3000, data=fdf)
+```
+
+```{r female model summary}
+
+
+saveRDS(ffit, file = "female_slopes.rds")
+ffit.stan <- readRDS("female_slopes.rds")
+util$check_all_diagnostics(mfit)
+
+fpars <- precis(ffit.stan, depth = 2)
+post_re <- extract.samples(ffit.stan)
+post <- as.array(ffit.stan)
+lp <- log_posterior(ffit.stan)
+param_names <- attributes(post)$dimnames$parameters
+np <- nuts_params(ffit.stan) #nuts params
+
+
+
+
+```
+
+```{r diagnose fitting problems}
+sex = "female"
+mcmc_trace(post, regex_pars = "site") + ggtitle(paste(sex, "site"))
+
+divergences <- filter(np, Parameter=="divergent__" & Value==1)
+nrow(divergences)
+
+color_scheme_set("darkgray")
+mcmc_parcoord(post, np = np, pars = param_names[c(3:16, 276:312)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
+mcmc_parcoord(post, np=np, regex_pars = c("clone"))
+
 ```
 
 
