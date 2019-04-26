@@ -1,7 +1,7 @@
 ---
 title: "A multilevel Bayesian model of pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "April 24, 2019"
+date: "April 25, 2019"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -22,7 +22,8 @@ library(summarytools)
 ```
 
 ```{r stan setup}
-
+util <- new.env()
+source('~/Documents/classes/STANworkshop/material/1 - workflow/stan_utility.R', local=util)
 
 options(mc.cores=parallel::detectCores())
 rstan_options(auto_write=TRUE)
@@ -674,7 +675,7 @@ slopedraft <- ulam(
     ),
      data=mdf, sample=FALSE, declare_all_data = FALSE)
 
-write(stancode(slopedraft), file="slopes.stan")
+#write(stancode(slopedraft), file="slopes.stan")
 ```
 
 ```{r fit male slopes}
@@ -682,6 +683,39 @@ mtest <- stan("slopes.stan",
                 chains=1, , warmup=20, iter = 25, data = mdf)
 mfit <- stan("slopes.stan",
                 chains=4, cores=4, warmup=3000, iter=5000, data=mdf)
+```
+```{r male model summary}
+
+util$check_all_diagnostics(mfit)
+
+saveRDS(mfit, file = "male_slopes.rds")
+mfit.stan <- readRDS("male_slopes.rds")
+
+mpars <- precis(mfit.stan, depth = 2)
+post_re <- extract.samples(mfit.stan)
+post <- as.array(mfit.stan)
+lp <- log_posterior(mfit.stan)
+param_names <- attributes(post)$dimnames$parameters
+np <- nuts_params(mfit.stan) #nuts params
+
+mcmc_trace(post, regex_pars = "site") + ggtitle("male site")
+```
+
+```{r diagnose fitting problems}
+
+divergences <- filter(np, Parameter=="divergent__" & Value==1)
+nrow(divergences)
+
+mcmc_trace(post, regex_pars = "site") + ggtitle("male site")
+
+color_scheme_set("darkgray")
+mcmc_parcoord(post, np = np, pars = param_names[c(3:16, 276:312)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
+mcmc_parcoord(post, np=np, regex_pars = c("clone"))
+
+mcmc_pairs(post, np = np, regex_pars = c("beta$", "kappa"))
+# show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
+
+
 ```
 
 
