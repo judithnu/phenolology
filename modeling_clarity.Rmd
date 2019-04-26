@@ -247,12 +247,30 @@ ggplot(sim, aes(x=forcing, color=as.factor(group))) +
     facet_grid(group ~ state)
         
 ```
-This document explores the phenology data and forcing in a simple way in order to clarify modelling decisions in stan.
 
-1) Should I use ristos or 5 degree heatsum threshold?
-2) Does slope vary by transition state?
-3) Do I need to include slope effects in addition to intercept effects?
+```{r varying intercepts}
+simfit <- ulam(
+    alist(
+        #likelihood
+        state ~ ordered_logistic(eta, cuts),
+        # model
+        eta <- beta * forcing + alpha[group],
+        # priors
+        beta ~ exponential(2),
+        alpha[group] ~ normal(xi, lambda),
+        cuts ~ dnorm(10,5),
+        xi ~ normal(0,1),
+        lambda ~ exponential(1.5)
+        #gq>state_exp[group] <- ordered_logistic_rng(b[group]*forcing+alpha[group],cuts),
+    ),
+    data=sim, chains=4, cores=4, iter=500
+)
 
+precis(simfit, depth=2)
+```
+I thought this would be the simplest case, but it actually makes recovery of both the intercepts and cutpoints difficult! I think a model with effects only on beta is likely the best way forward. For ease of interpretation, a main beta effect with differences is preferable. However, for ease of fitting, no main beta effect is easier.
+
+## 2. Ristos or heatsum?
 
 ```{r data, echo=FALSE, results="asis"}
 
@@ -273,8 +291,8 @@ view(dfSummary(phendf))
 
 ```
 
-```{r stanindexing}
-#Create indexes that stan will like
+```{r split}
+
 
 fdf <- filter(phendf, Sex == "FEMALE")
 #fdf <- stanindexer(fdf)
@@ -285,8 +303,6 @@ mdf <- filter(phendf, Sex == "MALE")
 nrow(fdf) + nrow(mdf) == nrow(phendf)
 
 ```
-
-## Ristos or heatsum?
 
 To answer this question, I can build models of each transition using ristos and using GDD.
 
@@ -303,16 +319,6 @@ ggplot(phendf, aes(x=sum_forcing, color=state)) +
     facet_grid(forcing_type ~ Sex) +
     ggtitle("Cumulative forcing in each stage")
 
-# ggplot(phendf, aes(x=sum_forcing, fill=state)) +
-#     geom_density(alpha=0.5) +
-#     facet_grid(forcing_type ~ Sex) +
-#     ggtitle("Forcing accummulations in each stage")
-# 
-# ggplot(mdf, aes(x=sum_forcing, fill=forcing_type)) +
-#     geom_density(alpha=0.5) +
-#     facet_grid(SPU_Name ~ Site) + 
-#     ggtitle("Phenophase Stage 2, Male")
-
 ```
 Comparing the range of values each phase occurs over for ristos and GDD, ristos are generally higher. I believe there's more separation between phase 1 and 2 for GDD than ristos. For the transition from 2 to 3 I believe they are quite similar, though ristos may have more separation. Unclear what will happen with modelling.
 
@@ -323,7 +329,6 @@ ggplot(phendf, aes(x=state, y=sum_forcing, fill=forcing_type)) +
     ggtitle("Compare ristos and GDD required for each state")
 
 ```
-
 
 
 ```{r ristos v gdd}
@@ -352,9 +357,9 @@ AIC(fitfgdd, fitfristo, fitfristoscaled)
 
 It looks like growing degree days actually do a better job for the males and females. 
 
-Is that true even after accounting for the largest effects? No! After accounting for effects of site and/or provenance and/or orchard, ristos are better. Clone and TreeID leave GDD doing better, but site and prov are the big effects.
+Is that true even after accounting for the largest effects? 
 
-```{r }
+```{r site and prov on slope}
 fitmgdd_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mgdd)
 fitmristo_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mristo)
 fitmristoscaled_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mristoscaled)
@@ -363,22 +368,16 @@ AIC(fitmgdd_sp, fitmristo_sp, fitmristoscaled_sp)
 fitfgdd_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fgdd)
 fitfristo_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fristo)
 fitfristoscaled_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fristoscaled)
-AIC(fitmgdd_sp, fitmristo_sp, fitfristoscaled_sp)
+AIC(fitfgdd_sp, fitfristo_sp, fitfristoscaled_sp)
 ```
+When including site and prov effects on slope, ristos perform better than gdd. ristos and scaled ristos are similar - ristos are a bit better.
 
-Sticking with ristos! Which is a bit annoying because they are hard to explain.
-
-
-
-## Varying slopes - transition state
+## 3. Varying slopes - transition state
 Next question! Do slopes vary by transition state?
 
 For this I will use logistic models for each transition in each sex.
 
 First let's have a look at the data.
-
-
-
 
 ```{r data prep do slopes vary}
 
@@ -473,16 +472,18 @@ With the simplest version of the model, the slopes for the different transitions
 `r maleslopes`
 `r femaleslopes`
 
-The first transition is slower than the second transition.
+The first transition is slower than the second transition, however
 
 What if I include effects on the slope? 
 ```{r }
 #male
-fit_met1 <- glm(state ~ sum_forcing*(Site+SPU_Name), family = binomial(link = 'logit'), data = mt1)
-fit_met2 <- glm(state ~ sum_forcing*(Site+SPU_Name), family = binomial(link = 'logit'), data = mt2)
+fit_met1 <- glm(state ~ sum_forcing + Site + SPU_Name, family = binomial(link = 'logit'), data = mt1)
+fit_met2 <- glm(state ~ sum_forcing+ Site+SPU_Name, family = binomial(link = 'logit'), data = mt2)
 
 fit_met1$coefficients
 fit_met2$coefficients
+metcoef <- cbind(trans1 = fit_met1$coefficients, trans2 = fit_met2$coefficients)
+print(metcoef)
 
 maleslopes_effects <- rbind(get_slope_range(fit_met1, "m1"),
                     get_slope_range(fit_met2, "m2"))
@@ -491,87 +492,63 @@ AIC(fit_mt1, fit_met1)
 AIC(fit_mt2, fit_met2)
 
 #female
-fit_fet1 <- glm(state ~ sum_forcing*(Site+SPU_Name), family = binomial(link = 'logit'), data = ft1)
-fit_fet2 <- glm(state ~ sum_forcing*(Site+SPU_Name), family = binomial(link = 'logit'), data = ft2)
+fit_fet1 <- glm(state ~ sum_forcing + Site + SPU_Name, family = binomial(link = 'logit'), data = ft1)
+fit_fet2 <- glm(state ~ sum_forcing+ Site + SPU_Name, family = binomial(link = 'logit'), data = ft2)
 
 fit_fet1$coefficients
 fit_fet2$coefficients
+
 
 femaleslopes_effects <- rbind(get_slope_range(fit_fet1, "f1"),
                       get_slope_range(fit_fet2, "f2"))
 
 AIC(fit_ft1, fit_fet1)
 AIC(fit_ft2, fit_fet2)
+
+fetcoef <- cbind(trans1 = fit_fet1$coefficients, trans2 =fit_fet2$coefficients)
+print(fetcoef)
 ```
 
-Then I get really different slopes for each transition. If I include effects on slope, the second transition is MUCH faster than the first transition. But this model can't accurately model the slopes- the overall slope is often negative, which is not actually possible biologically!
+`r maleslopes_effects`
+`r femaleslopes_effects`
 
-```{r slope effects}
-m1slope_main <- fit_met1$coefficients[2]
-m1siteslopes <- str_detect(names(fit_met1$coefficients), "forcing:Site")
-m1provslopes <- str_detect(names(fit_met1$coefficients), "forcing:SPU")
+The overall slopes are quite similar, but at each transition, but are site effects can be dramatically different for each transition. Prince George and Vernon - where some of my nicest data comes from - are particularly problematic.
 
-m1site <- fit_met1$coefficients[m1siteslopes]
-m1prov <- fit_met1$coefficients[m1provslopes]
-
-m1slopes <- crossing(m1site, m1prov) %>%
-    drop_na() %>%
-    mutate(m1slope = m1site + m1prov + m1slope_main)
-
-m1slopes
-
-```
-
+I'm not sure how this will affect my cutpoints model, but we'll see.
 
 I wouldn't know how to deal with an ordered logistic model where the transitions can have different slopes. Is that even an ordered logistic model anymore? I think I'd have to switch to an HMM model.
 
-## Which variables to include in slope?
+## 4. Which variables to include?
 
-I think clone and provenance only because they are biological.
+I'm not sure which variables to include. Maybe all of them? Let's see if there's anything obvious about Orchard and Tree.
 
-```{r}
+```{r variable selection}
 
+fitmristo <- bayespolr(state ~ sum_forcing, data=mristo)
+fitfristo <- bayespolr(state ~ sum_forcing, data=fristo)
 
-fitmristoscaled <- bayespolr(state ~ sum_forcing, data=mristoscaled)
-fitfristoscaled <- bayespolr(state ~ sum_forcing, data=fristoscaled)
+mristo$SPU_Name <- as.factor(mristo$SPU_Name)
+mristo$Site <- as.factor(mristo$Site)
+mristo$Orchard <- as.factor(mristo$Orchard)
+mristo$Clone <- as.factor(mristo$Clone)
+mristo$Year <- as.factor(mristo$Year)
+mristo$Tree <- as.factor(mristo$TreeID)
 
-mristoscaled$SPU_Name <- as.factor(mristoscaled$SPU_Name)
-mristoscaled$Site <- as.factor(mristoscaled$Site)
-mristoscaled$SPU_Name <- as.factor(mristoscaled$SPU_Name)
-mristoscaled$Clone <- as.factor(mristoscaled$Clone)
-mristoscaled$Year <- as.factor(mristoscaled$Year)
-mristoscaled$Tree <- as.factor(mristoscaled$TreeID)
+fit_prov <- bayespolr(state ~ sum_forcing + SPU_Name, data=mristo)
+fit_site <- bayespolr(state ~ sum_forcing + Site, data=mristo)
+fit_clone <- bayespolr(state ~ sum_forcing + Clone, data=mristo)
+fit_year <- bayespolr(state ~ sum_forcing + Year, data=mristo)
+fit_tree <- bayespolr(state ~ sum_forcing + Tree, data=mristo)
+fit_orchard <- bayespolr(state ~ sum_forcing + Orchard, data=mristo)
 
-#fit prov as intercepts only
-fit_provi <- bayespolr(state ~ sum_forcing + SPU_Name, data=mristoscaled)
-fit_provs <- bayespolr(state ~ SPU_Name*sum_forcing, data=mristoscaled)
-fit_provis <- bayespolr(state ~ SPU_Name*sum_forcing + SPU_Name, data=mristoscaled)
-AIC(fitmristoscaled, fit_provi, fit_provs, fit_provis)
-
-fit_sitei <- bayespolr(state ~ sum_forcing + Site, data=mristoscaled)
-fit_sites <- bayespolr(state ~ Site*sum_forcing, data=mristoscaled)
-fit_siteis <- bayespolr(state ~ Site*sum_forcing + Site, data=mristoscaled)
-AIC(fitmristoscaled, fit_sitei, fit_sites, fit_siteis)
-
-fit_clonei <- bayespolr(state ~ sum_forcing + Clone, data=mristoscaled)
-fit_clones <- bayespolr(state ~ Clone*sum_forcing, data=mristoscaled)
-#fit_cloneis <- bayespolr(state ~ Clone*sum_forcing + Clone, data=mristoscaled)
-AIC(fitmristoscaled, fit_clonei, fit_clones, fit_cloneis)
-
-fit_treei <- bayespolr(state ~ sum_forcing + TreeID, data=mristoscaled)
-fit_trees <- bayespolr(state ~ TreeID*sum_forcing, data=mristoscaled)
-fit_treeis <- bayespolr(state ~ TreeID*sum_forcing + TreeID, data=mristoscaled)
-AIC(fitmristoscaled, fit_treei, fit_trees, fit_treeis)
-
-fit_tc <- bayespolr(state ~ sum_forcing + Clone + TreeID, data=mristoscaled)
-AIC(fitmristoscaled, fit_tc, fit_treei, fit_clonei)
-
-fit_yr <- bayespolr(state ~ sum_forcing + Year, data=mristoscaled)
-AIC(fitmristoscaled, fit_yr)
-
-
-fit_all <- bayespolr(state ~ (SPU_Name + Site)*sum_forcing + Clone + Year, data=mristoscaled)
-
-
-AIC(fitmristoscaled, fit_provis, fit_siteis, fit_clonei, fit_treei, fit_yr, fit_tc, fit_all)
+aicdf <- AIC(fitmristo, fit_prov, fit_site, fit_clone, fit_year, fit_tree, fit_orchard) 
+aicdf$model <- rownames(aicdf)
+aicdf %>%
+    arrange(AIC)
 ```
+
+Year and orchard are most important effects. Adding tree by itself seems to be worse than a model with no effects.
+
+I know looking at these in isolation won't tell me exactly what I want to know. But we'll see how things shake out in the real model.
+
+
