@@ -38,14 +38,15 @@ Pollination phenology in lodgepole pine refers to the timing of two events - pol
 ```{r data, echo=FALSE, results="asis"}
 
 phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(forcing_type=="ristos")
+    filter(forcing_type=="ristos") %>%
+  filter(Site!="Tolko")
 # phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
 #   dplyr::filter(forcing_type=="ristos")
 
- SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-   dplyr::select(SPU_Name, Orchard) #add provenance information
-# SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-# dplyr::select(SPU_Name, Orchard)
+ # SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+ #   dplyr::select(SPU_Name, Orchard) #add provenance information
+SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+dplyr::select(SPU_Name, Orchard)
  # SPU_dat <- read.csv("~/Documents/phd_sus/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
  #   dplyr::select(SPU_Name, Orchard) #add provenance information
 
@@ -678,8 +679,8 @@ prepforstan <- function(df, file) {
     rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
 }
 
-prepforstan(fdf, "female.rdump")
-prepforstan(mdf, "male.rdump")
+# prepforstan(fdf, "female.rdump")
+# prepforstan(mdf, "male.rdump")
 
 frdump <- read_rdump("female.rdump")
 mrdump <- read_rdump("male.rdump")
@@ -687,9 +688,9 @@ mrdump <- read_rdump("male.rdump")
 ### Female model
 ```{r fit female slopes}
 ftest <- stan("slopes.stan",
-                chains=1, warmup=20, iter = 25, data = fdf)
+                chains=1, warmup=20, iter = 25, data = frdump)
 ffit <- stan("slopes.stan",
-                chains=8, cores=8, warmup=2000, iter=3000, data=fdf)
+                chains=8, cores=8, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=frdump)
 ```
 
 ```{r female model summary}
@@ -697,7 +698,7 @@ ffit <- stan("slopes.stan",
 
 saveRDS(ffit, file = "female_slopes.rds")
 ffit.stan <- readRDS("female_slopes.rds")
-util$check_all_diagnostics(ffit.stan)
+util$check_all_diagnostics(ffit)
 
 fpars <- precis(ffit.stan, depth = 2)
 post_re <- extract.samples(ffit.stan)
@@ -714,20 +715,124 @@ mcmc_trace(post, regex_pars = "site") + ggtitle(paste(sex, "site"))
 mcmc_trace(post, regex_pars = "prov") + ggtitle(paste(sex, "prov"))
 mcmc_trace(post, regex_pars = "sigma") + ggtitle(paste(sex, "sigma"))
 mcmc_trace(post, regex_pars = "year") + ggtitle(paste(sex, "year"))
-mcmc_trace(post, regex_pars = "orch") + ggtitle(paste(sex, "orchard"))
+mcmc_trace(post, regex_pars = "kappa") + ggtitle(paste(sex, "kappa"))
+#mcmc_trace(post, regex_pars = "orch") + ggtitle(paste(sex, "orchard"))
 
 divergences <- filter(np, Parameter=="divergent__" & Value==1)
 nrow(divergences)
 
 color_scheme_set("darkgray")
-mcmc_parcoord(post, np = np, pars = param_names[c(3:16, 276:312)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
+mcmc_parcoord(post, np = np, pars = param_names[c(3:16, 276:294)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
 mcmc_parcoord(post, np=np, regex_pars = c("clone"))
 
-mcmc_pairs(post, np = np, regex_pars = c("kappa", "beta")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
-mcmc_pairs(post, np = np, regex_pars = c("beta", "b_site"))
+mcmc_pairs(post, np = np, regex_pars = c("kappa")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
+mcmc_pairs(post, np = np, regex_pars = c("site"))
+mcmc_pairs(post, np=np, regex_pars="prov")
 mcmc_pairs(post, np = np, regex_pars = "sigma")
+mcmc_pairs(post, np= np, pars = c("b_year[1]", "b_year[2]", "b_year[3]", "b_year[4]", "sigma_year"))
+mcmc_pairs(post, np=np, pars=c("b_site[1]", "b_clone[1]", "b_prov[1]"))
+
+
+color_scheme_set("red")
+mcmc_nuts_divergence(np, lp)
+mcmc_nuts_divergence(np, lp, chain = 1) # understand how divergences interact with the model globally. Identify light tails and incomplete exploration of target distribution. use chain argument to overlay the plot for a particular Markov chain on the plot
+mcmc_nuts_divergence(np, lp, chain = 2)
+mcmc_nuts_divergence(np, lp, chain = 3)
+mcmc_nuts_divergence(np, lp, chain = 4)
+mcmc_nuts_divergence(np, lp, chain = 5)
+mcmc_nuts_divergence(np, lp, chain = 6)
+mcmc_nuts_divergence(np, lp, chain = 7)
+mcmc_nuts_divergence(np, lp, chain = 8)
+
+### ENERGY
+color_scheme_set("red")
+mcmc_nuts_energy(np) + ggtitle(paste(sex, "energy plot"))
+# energy plot. shows overlaid histograms of the marginal energy distribution piE and the first-differenced distribution pi_deltaE. id overly heavy tails (also challenging for sampling). the energy diagnostic for HMC (and the related energy-based Bayesian fraction of missing info) quantifies the heaviness of the tails of the posterior. Ideally the two histograms will look the same
+
+#Look at the pairs plot to see which primitive parameters are correlated with the energy__ margin. There should be a negative relationship between lp__ and energy__ in the pairs plot, which is not a concern because lp__ is the logarithm of the posterior kernel rather than a primitive parameter.
+
+energy <- dplyr::filter(np, Parameter== "energy__")
+
+plot(post_re$b_site[,7], energy$Value)
+title(paste(sex, "site 2 energy"))
+
+sites <- data.frame(post_re$b_site)
+sites <- cbind(energy = energy$Value, sites)
+pairs(sites)
+
+provs <- data.frame(post_re$b_prov)
+provs <- cbind(energy = energy$Value, provs)
+pairs(provs)
+
+# Rhat: potential scale reduction statistic
+# compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
+
+rhats_good <- rhat(ffit.stan)#, pars = param_names[1:10])
+color_scheme_set("brightblue")
+mcmc_rhat(rhats_good) +
+    yaxis_text(hjust = 1)
+
+# Effective sample size
+# estimate of the number of independent draws from the posterior dist of the estimand of interest. n_eff in stan is based on ability of draws to estimate the true mean value of the param. because draws are not independent if there is autocorrelation between draws, neff is usually smaller than total N. the larger the ration of n_eff to N, the better. ratios depend not just on the model but on the algorithm used to fit the model
+
+ratios <- neff_ratio(ffit.stan, param_names[270:295])
+print(ratios)
+
+mcmc_neff(ratios, size = 2) +
+    yaxis_text(hjust = 1)
+
+# Autocorrelation
+#n_eff/N decreases as autocorrelation becomes more extreme. Visualize autocorrelation using mcmc_acf or mcmc_acf_bar. Postive autocorrelation is bad because it means the chain gets stuck. Ideally, it drops quickly to zero as lag increasses. negative autocorrelation indicates fast convergence of sample mean towards true
+
+mcmc_acf(post, lags = 10, regex_pars = c("kappa"))
+mcmc_acf(post, lags=10, regex_pars = c('b_site'))
+mcmc_acf(post, lags=10, regex_pars=c('b_prov'))
+mcmc_acf(post, lags=10, regex_pars=c('b_year'))
 
 ```
+
+#### posterior predictive checks
+```{r ppc}
+library(shinystan)
+shinyfit <- as.shinystan(ffit.stan)
+launch_shinystan(shinyfit)
+
+# try to generate states
+
+#index for 1000 random draws from the sample
+draws <- base::sample(1:1200, size=1000, replace = FALSE)
+draws <- 1:1200
+forcing_predictor <- runif(length(draws), min=min(phendf$sum_forcing), max=max(phendf$sum_forcing)) # randomly generated forcing temperatures within range of real forcing temperatures 
+
+phiexp <- (post_re$b_site[draws,1] + mean(post_re$b_clone[draws,1]) + post_re$b_prov[draws,1] + mean(post_re$b_year[draws,1]) + post_re$beta[draws]) * forcing_predictor
+
+cuts <- data.frame(post_re$kappa)[draws,]
+colnames(cuts) <- c("kappa1", "kappa2")
+
+stateexp <- c()
+for (i in 1:length(draws)) {
+    stateexp[i] <- rordlogit(1, phiexp[i], cuts[i,])
+}
+
+expectations <- data.frame(sum_forcing=forcing_predictor, state=stateexp, source="predicted")
+
+data <- filter(mdf, SiteID==1, ProvenanceID==1) %>% 
+    dplyr::select(sum_forcing, state=Phenophase_Derived) %>%
+    mutate(source="data")
+
+de <- rbind(expectations, data)
+
+ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source))) +
+    stat_ecdf()
+
+ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source))) +
+  geom_density()
+
+```
+
+
+
+
 
 ### Male model
 ```{r fit male slopes}
@@ -751,74 +856,3 @@ param_names <- attributes(post)$dimnames$parameters
 np <- nuts_params(mfit.stan) #nuts params
 
 mcmc_trace(post, regex_pars = "site") + ggtitle("male site")
-```
-
-```{r diagnose fitting problems}
-
-divergences <- filter(np, Parameter=="divergent__" & Value==1)
-nrow(divergences)
-
-mcmc_trace(post, regex_pars = "site") + ggtitle("male site")
-
-color_scheme_set("darkgray")
-mcmc_parcoord(post, np = np, pars = param_names[c(3:16, 276:312)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
-mcmc_parcoord(post, np=np, regex_pars = c("clone"))
-
-mcmc_pairs(post, np = np, regex_pars = c("beta$", "kappa"))
-# show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
-
-color_scheme_set("red")
-mcmc_nuts_divergence(np, lp, chain = 1) # understand how divergences interact with the model globally. Identify light tails and incomplete exploration of target distribution. use chain argument to overlay the plot for a particular Markov chain on the plot
-mcmc_nuts_divergence(np, lp, chain = 3)
-mcmc_nuts_divergence(np, lp, chain = 5)
-
-### ENERGY
-color_scheme_set("red")
-mcmc_nuts_energy(np) + ggtitle(paste(sex, "energy plot"))
-# energy plot. shows overlaid histograms of the marginal energy distribution piE and the first-differenced distribution pi_deltaE. id overly heavy tails (also challenging for sampling). the energy diagnostic for HMC (and the related energy-based Bayesian fraction of missing info) quantifies the heaviness of the tails of the posterior. Ideally the two histograms will look the same
-
-#Look at the pairs plot to see which primitive parameters are correlated with the energy__ margin. There should be a negative relationship between lp__ and energy__ in the pairs plot, which is not a concern because lp__ is the logarithm of the posterior kernel rather than a primitive parameter.
-
-energy <- dplyr::filter(np, Parameter== "energy__")
-
-plot(post_re$beta, energy$Value)
-title(paste(sex, "beta energy"))
-
-sites <- data.frame(post_re$b_site)
-sites <- cbind(energy = energy$Value, sites)
-pairs(sites)
-
-provs <- data.frame(post_re$b_prov)
-provs <- cbind(energy = energy$Value, provs)
-pairs(provs)
-
-# Rhat: potential scale reduction statistic
-# compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
-
-rhats_good <- rhat(ffit.stan, pars=param_names[310:314])
-color_scheme_set("brightblue")
-mcmc_rhat(rhats_good) +
-    yaxis_text(hjust = 1)
-
-# Effective sample size
-# estimate of the number of independent draws from the posterior dist of the estimand of interest. n_eff in stan is based on ability of draws to estimate the true mean value of the param. because draws are not independent if there is autocorrelation between draws, neff is usually smaller than total N. the larger the ration of n_eff to N, the better. ratios depend not just on the model but on the algorithm used to fit the model
-
-ratios <- neff_ratio(ffit.stan)
-print(ratios)
-
-mcmc_neff(ratios, size = 2) +
-    yaxis_text(hjust = 1)
-
-# Autocorrelation
-#n_eff/N decreases as autocorrelation becomes more extreme. Visualize autocorrelation using mcmc_acf or mcmc_acf_bar. Postive autocorrelation is bad because it means the chain gets stuck. Ideally, it drops quickly to zero as lag increasses. negative autocorrelation indicates fast convergence of sample mean towards true
-
-mcmc_acf(post, lags = 10, regex_pars = c("beta", "kappa"))
-mcmc_acf(post, lags=10, regex_pars = c('b_site'))
-
-
-```
-
-
-
-
-
