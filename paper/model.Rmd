@@ -837,9 +837,9 @@ ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source)
 ### Male model
 ```{r fit male slopes}
 mtest <- stan("slopes.stan",
-                chains=1, warmup=20, iter = 25, data = mdf)
+                chains=1, warmup=20, iter = 25, data = mrdump)
 mfit <- stan("slopes.stan",
-                chains=8, cores=8, warmup=2000, iter=3000, data=mdf)
+                chains=8, cores=8, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=mrdump)
 ```
 ```{r male model summary}
 
