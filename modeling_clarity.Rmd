@@ -29,7 +29,8 @@ In this document, I
 
 ## 1. Which parameters can be successfully recaptured?
 
-Simulate data from an ordered logistic distribution with three states and forcing values similar to mine. 
+Simulate data from an ordered logistic distribution with three states and forcing values similar to mine. Then fit a variety of models to the data.
+
 
 ### 1 cluster, 3 groups, varying slopes
 ```{r simulate one cluster three groups beta}
@@ -128,7 +129,7 @@ precis(simfit_bb, depth=2)
 The model really has trouble even with relatively large and well differentiated betas (.1,.75, 2) Tons of divergent transitions and max treedepth issues at 500 iter and normal treedepth and adapt_delta.
 With a longer warmup and increased max_treedepth, divergent transitions are resolved, but parameter values are not well recovered.
 With a longer warmup, increased max_treedepth, and increased adapt_delta, parameter values are well recovered.
-Eliminating the overall beta should help my model fit quite a lot. This makes it much harder to interpret parameters though. I can try a run that increases max_treedepth and  
+Eliminating the overall beta should help my model fit quite a lot. This makes it much harder to interpret parameters though. I can try a run that increases max_treedepth and adapt_delta modification to help.
 
 #### slope and an intercept effect of groups
 
@@ -551,4 +552,108 @@ Year and orchard are most important effects. Adding tree by itself seems to be w
 
 I know looking at these in isolation won't tell me exactly what I want to know. But we'll see how things shake out in the real model.
 
+## 5. Cutpoints difference
+## Fit model to simulated data
+
+7 sites, 6 provenances, and 10 observations for each of 15 individuals at different forcing temperatures
+```{r simulate_grouped_data}
+# cutpoints <- c(0)
+# cutpoints[2] <- abs(rnorm(1,5,2))
+# cutpoints[3] <- abs(rnorm(1,20,2))
+# #k <- rbeta(1,.5, 5)
+
+nsite <- 7
+nprov <- 6
+nindiv <- 15
+nobs <- 3
+forcing <- runif(10, 175,500)
+basecut <- c(15,20)
+beta = 0.05
+cut_site <- rnorm(n= nsite, mean=1, sd=1)
+cut_prov <- rnorm(n= nprov, mean=-2, sd=1)
+
+sites <- data.frame(site = 1:nsite, effect = cut_site)
+provs <- data.frame(prov = 1:nprov, effect= cut_prov)
+
+simu_prep <- tidyr::crossing(site = sites$site, prov = provs$prov, nobs, indiv = 1:nindiv, forcing) %>%
+    dplyr::left_join(sites) %>% #add site and prov effects
+    rename(site_effect = effect) %>%
+    left_join(provs) %>%
+    rename(prov_effect = effect) %>%
+    mutate(group_effects = site_effect + prov_effect) 
+
+simu <- simu_prep %>% # calculate cutpoints and eta
+    # cutpoints
+    mutate(cut1 = group_effects + basecut[1])  %>%
+    mutate(cut2 = group_effects + basecut[2]) %>%
+    # linear model eta
+    mutate(eta = beta * forcing) 
+
+#simulate states
+for (i in 1:nrow(simu)) {
+    simu$state[i] <- rordlogit(1, 
+                               phi = simu$eta[i], 
+                               a = c(simu$cut1[i], simu$cut2[i]))
+    }
+```
+
+```{r visualize simulated_data}
+hist(simu$state)
+ggplot(simu, aes(x=forcing, y=state, color=prov)) +
+    geom_jitter() +
+    facet_wrap("site")
+```
+
+
+
+```{r simulated fit, eval=FALSE}
+
+
+# Write simulated data in a format stan can understand
+# simplest data
+K = length(unique(sim$state))
+N = nrow(sim)
+#stan_rdump(c("N", "K", "forcing", "state"), "simulated_nogroups.Rdump")
+simplesimdat <- read_rdump("simulated_nogroups.Rdump")
+
+# 1 group data
+K <- length(unique(sim$state))
+N <- nrow(sim)
+Ngroup = length(unique(sim$group))
+#stan_rdump(c("N", "K", "Ngroup", "forcing", "state", "group"), "simulated_data.Rdump")
+simdat <- read_rdump("simulated_data.Rdump")
+
+# Fit model to simulated data
+simfit <- stan("cutpoints_difference.stan", 
+               chains=5, cores=5, iter=2000, 
+               data=simplesimdat)
+              #control=list(adapt_delta=0.99))#, max_treedepth=11))
+
+# Check diagnostics
+util$check_all_diagnostics(simfit)
+```
+
+### Consider fit of model to simulated data
+```{r precis simulated data fit, eval=FALSE}
+precis(simfit, depth=2)
+```
+
+```{r extract fit, eval=FALSE}
+simpost <- as.matrix(simfit)
+pairs(simpost)
+```
+
+
+```{r plot real params vs posterior, eval=FALSE}
+mcmc_areas(simpost, regex_pars = "cutpoints") + 
+    geom_vline(xintercept = c(15,20))
+mcmc_areas(simpost, pars="beta") +
+    geom_vline(xintercept = 0.05)
+```
+
+If cutpoints prior is a single gamma distribution, cutpoints are not returned well. Neither is beta. Edited model so prior is on the difference between cutpoints rather than the cutpoints as a group. 
+
+Also want to try 
+- modeling cutpoints with separate linear models
+ 
 
