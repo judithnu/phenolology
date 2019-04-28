@@ -728,7 +728,40 @@ mcmc_pairs(post, np = np, regex_pars = c("beta", "b_site"))
 mcmc_pairs(post, np = np, regex_pars = "sigma")
 
 ```
+#### posterior predictive checks
+```{r ppc}
+library(shinystan)
+shinyfit <- as.shinystan(ffit.stan)
+launch_shinystan(shinyfit)
 
+# try to generate states
+
+#index for 1000 random draws from the sample
+draws <- base::sample(1:8000, size=1000, replace = FALSE) 
+forcing_predictor <- runif(length(draws), min=min(phendf$sum_forcing), max=max(phendf$sum_forcing)) # randomly generated forcing temperatures within range of real forcing temperatures 
+
+phiexp <- (post_re$b_site[draws,1] + mean(post_re$b_clone[draws,1]) + post_re$b_prov[draws,1] + mean(post_re$b_year[draws,1]) + post_re$beta[draws]) * forcing_predictor
+
+cuts <- data.frame(post_re$kappa)[draws,]
+colnames(cuts) <- c("kappa1", "kappa2")
+
+stateexp <- c()
+for (i in 1:length(draws)) {
+    stateexp[i] <- rordlogit(1, phiexp[i], cuts[i,])
+}
+
+expectations <- data.frame(sum_forcing=forcing_predictor, state=stateexp, source="predicted")
+
+data <- filter(mdf, SiteID==1, ProvenanceID==1) %>% 
+    dplyr::select(sum_forcing, state=Phenophase_Derived) %>%
+    mutate(source="data")
+
+de <- rbind(expectations, data)
+
+ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source))) +
+    stat_ecdf()
+
+```
 ### Male model
 ```{r fit male slopes}
 mtest <- stan("slopes.stan",
@@ -740,7 +773,7 @@ mfit <- stan("slopes.stan",
 
 util$check_all_diagnostics(mfit)
 
-saveRDS(mfit, file = "male_slopes.rds")
+#saveRDS(mfit, file = "male_slopes.rds")
 mfit.stan <- readRDS("male_slopes.rds")
 
 mpars <- precis(mfit.stan, depth = 2)
