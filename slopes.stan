@@ -15,7 +15,6 @@ data{
     int ProvenanceID[N];
 }
 parameters{
-  vector<lower=0>[N] forcing_true;
     positive_ordered[K-1] kappa;
     real<lower=0> beta;
     vector[Nsite] b_site;
@@ -41,8 +40,6 @@ model{
     b_site ~ normal( 0 , sigma_site );
     kappa ~ gamma( 7.5 , 1 );
     for ( i in 1:N ) {
-      forcing_true[i] ~ normal(300,60);
-      forcing[i] ~ normal(forcing_true[i],5);
         phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]] + b_clone[CloneID[i]] + b_year[YearID[i]]);
     }
     for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );

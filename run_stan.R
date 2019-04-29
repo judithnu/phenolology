@@ -9,13 +9,13 @@ library(dplyr)
 
 # Stan can only take numbers, so turn factors into integers
 stanindexer <- function(df) {
-    df$CloneID <- group_indices(df, Clone)
-    df$OrchardID <- group_indices(df, Orchard)
-    df$ProvenanceID <- group_indices(df, SPU_Name)
-    df$SiteID <- group_indices(df, Site)
-    df$YearID <- group_indices(df, Year)
-    df$Tree <- group_indices(df,TreeID)
-    return(df)
+  df$CloneID <- group_indices(df, Clone)
+  df$OrchardID <- group_indices(df, Orchard)
+  df$ProvenanceID <- group_indices(df, SPU_Name)
+  df$SiteID <- group_indices(df, Site)
+  df$YearID <- group_indices(df, Year)
+  df$Tree <- group_indices(df,TreeID)
+  return(df)
 }
 
 # Drop non-integer columns. Necessary if using rethinking to draft new stan code
@@ -26,24 +26,24 @@ stanindexer <- function(df) {
 
 # write file that stan can actually use
 prepforstan <- function(df, file) {
-    N <- nrow(df)
-    K <- length(unique(df$Phenophase_Derived))
-    Nclone <- length(unique(df$CloneID))
-    Nprovenance <- length(unique(df$ProvenanceID))
-    Nsite <- length(unique(df$SiteID))
-    Nyear <- length(unique(df$YearID))
-    Norchard <- length(unique(df$OrchardID))
-
-    CloneID <- df$CloneID
-    ProvenanceID <- df$ProvenanceID
-    SiteID <- df$SiteID
-    YearID <- df$YearID
-    OrchardID <- df$OrchardID
-
-    forcing <- df$sum_forcing
-    state <- df$Phenophase_Derived
-
-    rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
+  N <- nrow(df)
+  K <- length(unique(df$Phenophase_Derived))
+  Nclone <- length(unique(df$CloneID))
+  Nprovenance <- length(unique(df$ProvenanceID))
+  Nsite <- length(unique(df$SiteID))
+  Nyear <- length(unique(df$YearID))
+  Norchard <- length(unique(df$OrchardID))
+  
+  CloneID <- df$CloneID
+  ProvenanceID <- df$ProvenanceID
+  SiteID <- df$SiteID
+  YearID <- df$YearID
+  OrchardID <- df$OrchardID
+  
+  forcing <- df$sum_forcing
+  state <- df$Phenophase_Derived
+  
+  rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
 }
 
 # Script ###################
@@ -56,21 +56,21 @@ rstan_options(auto_write=TRUE)
 ## phenology
 phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(forcing_type=="ristos") %>%
-    filter(Site!="Tolko") #drop Tolko/TOHigh because it only has one provenance and that provenance isn't represented at any other sites.
+  filter(forcing_type=="ristos") %>%
+  filter(Site!="Tolko") #drop Tolko/TOHigh because it only has one provenance and that provenance isn't represented at any other sites.
 
 ## provenance
-SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
-    dplyr::select(SPU_Name, Orchard)
+  dplyr::select(SPU_Name, Orchard)
 
 # Data Processing ##################
 # join provenance and phenology data
 
 phendf <- phenology_data %>%
-    na.omit()
+  na.omit()
 phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
-    unique()
+  unique()
 
 # separate into male and female dataframes and turn factors into integers
 fdf <- filter(phendf, Sex == "FEMALE")
@@ -113,6 +113,16 @@ mrdump <- read_rdump("male.rdump")
 
 # write(stancode(fit_draft), file="female.stan")
 
+# Female
+```{r fit female, eval=FALSE}
+fitfem <- stan("female.stan",
+               chains=1, cores=1, warmup = 11, iter=20,
+               data=fdf)
+
+#femsum <- precis(fitfem, depth = 2)
+#saveRDS(fitfem, file = "2019-04-16_fem_intercept_only.rds")
+
+
 
 # Fit model for FEMALE strobili #############
 ftest <- stan("slopes.stan",
@@ -121,7 +131,7 @@ ftest <- stan("slopes.stan",
 ffit <- stan("slopes.stan",
              chains=8, cores=8, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=frdump)
 
-saveRDS(ffit, file = "female_slopes_err.rds")
+saveRDS(ffit, file = "female_slopes.rds")
 
 # Fit model for MALE strobili #############
 
