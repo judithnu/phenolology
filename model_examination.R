@@ -18,10 +18,11 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 
 # MODEL DATA #####################
 
+fefit.stan <- readRDS("female_slopes_err.rds")
 ffit.stan <- readRDS("female_slopes.rds")
 mfit.stan <- readRDS("male_slopes.rds")
 
-fshiny <- as.shinystan(ffit.stan)
+fshiny <- as.shinystan(fefit.stan)
 launch_shinystan(fshiny)
 
 mshiny <- as.shinystan(mfit.stan)
