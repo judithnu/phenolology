@@ -167,20 +167,20 @@ nrow(gclim) == nrow(ristoframe) + nrow(scaledristoframe) + nrow(gddframe)
 
 
 # More stuff that should be moved out of this file ##########
-earliest_accummulation <- gclim %>% group_by(Site, Year, daily_forcing_type) %>%
-    filter(forcing_accum > 5) %>%
-    dplyr::summarize(earliest_accummulation = min(DoY))
-
-#gclim <- full_join(gclim, earliest_accummulation)
-
-ggplot(gclim, aes(x=DoY, y=forcing_accum, color=daily_forcing_type, line_type=as.factor(Year))) +
-    geom_line(alpha=0.7) +
-    facet_wrap("Site") +
-    geom_vline(aes(xintercept=earliest_accummulation, color=daily_forcing_type, alpha=0.5)) +
-    theme_bw(base_size = 14) +
-    scale_color_viridis_d(end=.85, option="A") +
-    xlim(0,180) +
-    ylim(0,1000)
+# earliest_accummulation <- gclim %>% group_by(Site, Year, daily_forcing_type) %>%
+#     filter(forcing_accum > 5) %>%
+#     dplyr::summarize(earliest_accummulation = min(DoY))
+#
+# #gclim <- full_join(gclim, earliest_accummulation)
+#
+# ggplot(gclim, aes(x=DoY, y=forcing_accum, color=daily_forcing_type, line_type=as.factor(Year))) +
+#     geom_line(alpha=0.7) +
+#     facet_wrap("Site") +
+#     geom_vline(aes(xintercept=earliest_accummulation, color=daily_forcing_type, alpha=0.5)) +
+#     theme_bw(base_size = 14) +
+#     scale_color_viridis_d(end=.85, option="A") +
+#     xlim(0,180) +
+#     ylim(0,1000)
 
 # Plot climate data ####################
 climdat$Year <- lubridate::year(climdat$Date)
@@ -230,9 +230,9 @@ fdf <- subset(phendf, Sex == "FEMALE")
 nrow(mdf) + nrow(fdf) == nrow(phendf)
 
 # Visualize the data # MOVE
-ggplot(mdf, aes(x = forcing_accum, color=Site)) +
+ggplot(mdf, aes(x = sum_forcing, color=Site)) +
     stat_ecdf() +
-    facet_grid(daily_forcing_type ~ Phenophase_Derived)
+    facet_grid(forcing_type ~ Phenophase_Derived)
 
 ggplot(mdf, aes(x=forcing_accum, fill=Site)) +
     geom_density() +
