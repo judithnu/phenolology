@@ -165,22 +165,29 @@ c_3) - 0  &  \text{if } k = 3. \end{array} \right.$$
 
 
 $$\begin{array}{rlr}
-S_i & \sim OrderedLogistic(\eta,\kappa) & \text{probability of data}\\
-\eta_i & = \beta_{sex} h_i + \alpha_{provenance} + \alpha_{clone} & \text{linear model}\\
-\kappa_k & \sim \mathrm{normal}(5,10) & \text{common prior for cutpoints}\\
-\beta_{clone} & \sim \mathrm{beta}(1,1) & \text{prior for transition speed}\\
-\alpha_{clone} & \sim \mathrm{normal}(0,1) & \text{prior for clone threshold effects}\\
-\alpha_{provenance} & \sim \mathrm{normal}(0,1) & \text{prior for provenance threshold effects}
+S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
+\eta_i & = (\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
+\kappa_k & \sim \mathrm{gamma}(7.5,10) & \text{fixed priors}\\
+\beta & \sim \mathrm{exponential}(2) & \text{}\\
+\beta_{site} & \sim \mathrm{normal}(0,\sigma_{site}) & \text{adaptive priors}\\
+\beta_{prov} & \sim \mathrm{normal}(0,\sigma_{prov}) & \text{}\\
+\beta_{year} & \sim \mathrm{normal}(0, \sigma_{year}) \\
+\beta_{clone} & \sim \mathrm{normal}(0, \sigma_{clone}) \\
+\sigma_{site} & \sim \mathrm{exponential}(3) & \text{hyperpriors}\\
+\sigma_{prov} & \sim \mathrm{exponential}(3) \\
+\sigma_{year} & \sim \mathrm{exponential}(3) \\
+\sigma_{clone} & \sim \mathrm{exponential}(3) \\
 \end{array}$$
 
 
-The overall threshold for for phase transition can be calculated by dividing the slope by the intercept.
+The point at which a tree is 50% likely to have transitioned from one phenophase to another can be calculated by dividing the cutpoint for the transition by the slope.
 
 $$\begin{array}{ll}
-\bf{H}_1 &= \beta_{sex}/(c_1+\alpha_{clone}+\alpha_{provenance})\\
-\bf{H}_2 &= \beta_{sex}/(c_2+\alpha_{clone}+\alpha_{provenance})
+\bf{H}_1 &= \kappa_1/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
+\bf{H}_2 &= \kappa_2/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
 \end{array}$$
 
+Another way to think about the probabilities in this model:
 
 $$\begin{array}{rll}
 S_i&\sim \mathrm{Categorical}(\bf{p}) &\text{probability of data} \\
@@ -188,14 +195,8 @@ p_1 & = q_1 &\text{probabilities of each value of } k\\
 p_2 & = q_2 - q_1 \\
 p_3 & = 1-q_3 \\
 logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
-\eta_i&= \beta_{sex} h_i + \alpha_{provenance} + \alpha_{clone} &\text{linear model}\\
+\eta_i&= (\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model} &\text{linear model}\\
 \\
-\kappa_k&\sim \mathrm{normal}(5,10) &\text{common prior for cutpoints}\\
-\beta_{clone}&\sim \mathrm{beta}(1,1) \\
-\alpha_{clone} &\sim \mathrm{normal}(0,1) \\
-\alpha_{provenance} &\sim \mathrm{normal}(0,1) \\
-\bf{H}_1 &= \beta_{sex}/(c_1+\alpha_{clone}+\alpha_{provenance})\\
-\bf{H}_2 &= \beta_{sex}/(c_2+\alpha_{clone}+\alpha_{provenance})
 \end{array}$$
 
 
