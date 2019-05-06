@@ -10,18 +10,20 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
     bayesplot_grid(
         femplot, mplot,
         grid_args = list(nrow = nrow),
-        subtitles = c("Female strobili",
-                      "Male strobili"),
+        subtitles = c("Error",
+                      "No error"),
+        xlim = c(20,30),
         ...
     )
 }
 
 # MODEL DATA #####################
 
-ffit.stan <- readRDS("female_slopes.rds")
-mfit.stan <- readRDS("male_slopes.rds")
+#ffit.stan <- readRDS("female_slopes.rds")
+ffit.stan <- readRDS("female_slopes_err.rds")
+mfit.stan <- readRDS("female_slopes.rds")
 
-fshiny <- as.shinystan(ffit.stan)
+fshiny <- as.shinystan(ffit.stan_o)
 launch_shinystan(fshiny)
 
 mshiny <- as.shinystan(mfit.stan)
@@ -29,9 +31,10 @@ launch_shinystan(mshiny)
 
 # female model #########################################
 fsum <- rstan::summary(ffit.stan)$summary
+fsum <- as.data.frame(fsum)
 #postlist <- rstan::extract(ffit.stan)
 fpostdf <- as.data.frame(ffit.stan)
-#post_re <- extract.samples(ffit.stan)
+fpost_re <- extract.samples(ffit.stan)
 #post <- as.array(ffit.stan)
 flp <- log_posterior(ffit.stan)
 #param_names <- attributes(postdf)$dimnames$parameters
@@ -41,9 +44,10 @@ fnp <- nuts_params(ffit.stan) #nuts params
 ### Male model ############
 
 msum <- rstan::summary(mfit.stan)$summary
+msum <- as.data.frame(msum)
 #postlist <- rstan::extract(ffit.stan)
 mpostdf <- as.data.frame(mfit.stan)
-#post_re <- extract.samples(ffit.stan)
+mpost_re <- extract.samples(mfit.stan)
 #post <- as.array(ffit.stan)
 mlp <- log_posterior(mfit.stan)
 #param_names <- attributes(postdf)$dimnames$parameters
@@ -52,11 +56,11 @@ mnp <- nuts_params(mfit.stan) #nuts params
 
 # Diagnostics #######################
 sex = "female"
-mcmc_trace(fpostdf, regex_pars = "site") + ggtitle(paste(sex, "site"))
-mcmc_trace(fpostdf, regex_pars = "prov") + ggtitle(paste(sex, "prov"))
-mcmc_trace(fpostdf, regex_pars = "sigma") + ggtitle(paste(sex, "sigma"))
-mcmc_trace(fpostdf, regex_pars = "year") + ggtitle(paste(sex, "year"))
-mcmc_trace(fpostdf, regex_pars = "kappa") + ggtitle(paste(sex, "kappa"))
+mcmc_trace(postdf, regex_pars = "site") + ggtitle(paste(sex, "site"))
+mcmc_trace(postdf, regex_pars = "prov") + ggtitle(paste(sex, "prov"))
+mcmc_trace(postdf, regex_pars = "sigma") + ggtitle(paste(sex, "sigma"))
+mcmc_trace(postdf, regex_pars = "year") + ggtitle(paste(sex, "year"))
+mcmc_trace(postdf, regex_pars = "kappa") + ggtitle(paste(sex, "kappa"))
 #mcmc_trace(post, regex_pars = "orch") + ggtitle(paste(sex, "orchard"))
 
 divergences <- filter(fnp, Parameter=="divergent__" & Value==1)
@@ -87,7 +91,7 @@ mcmc_nuts_divergence(fnp, lp, chain = 8)
 
 ### ENERGY
 color_scheme_set("red")
-mcmc_nuts_energy(fnp) + ggtitle(paste(sex, "energy plot"))
+mcmc_nuts_energy(mnp) + ggtitle(paste(sex, "energy plot"))
 # energy plot. shows overlaid histograms of the marginal energy distribution piE and the first-differenced distribution pi_deltaE. id overly heavy tails (also challenging for sampling). the energy diagnostic for HMC (and the related energy-based Bayesian fraction of missing info) quantifies the heaviness of the tails of the posterior. Ideally the two histograms will look the same
 
 #Look at the pairs plot to see which primitive parameters are correlated with the energy__ margin. There should be a negative relationship between lp__ and energy__ in the pairs plot, which is not a concern because lp__ is the logarithm of the posterior kernel rather than a primitive parameter.
@@ -122,10 +126,21 @@ mcmc_acf(fpostdf, lags=10, regex_pars=c('b_year'))
 
 # Parameter Estimation ##################
 
+#compare m and f
+#modify for plotting
+fsum <- fsum[rownames(fsum) %in% rownames(msum),]
+msum <- msum[rownames(msum) %in% rownames(fsum),]
+fsum <- fsum[!rownames(fsum) %in% c("lp__", "kappa[1]", "kappa[2]", "beta"),]
+msum <- msum[!rownames(msum) %in% c("lp__", "kappa[1]", "kappa[2]", "beta"),]
+plot(fsum[,1], msum[,1], pch=rownames(fsum))
+abline(0,1)
+
+mvf <- lm(fsum$mean ~ msum$mean)
+
 # central posterior uncertainty intervals. by default shows 50% intervals (thick) and 90% intervals (thinner outer). Use point_est to show or hide point estimates
 color_scheme_set("red")
-fint_bsp <- mcmc_intervals(fpostdf, regex_pars = c("beta", "site", "prov"))
-mint_bsp <- mcmc_intervals(mpostdf, regex_pars = c("beta", "site", "prov"))
+fint_bsp <- mcmc_intervals(fpostdf, regex_pars = c("site", "prov"))
+mint_bsp <- mcmc_intervals(mpostdf, regex_pars = c("site", "prov"))
 
 compare_fm(fint_bsp, mint_bsp)
 
@@ -146,42 +161,3 @@ mcmc_intervals(fpostdf, regex_pars = c("beta")) + ggtitle("Female and male trans
 mcmc_intervals(fpostdf, regex_pars = c("provenance")) + ggtitle("Provenance intercepts")
 mcmc_intervals(fpostdf, regex_pars = c("clone")) + ggtitle("Clone intercepts")
 
-#### posterior predictive checks
-
-
-
-# try to generate states
-
-#index for 1000 random draws from the sample
-draws <- base::sample(1:1200, size=1000, replace = FALSE)
-draws <- 1:1200
-forcing_predictor <- runif(length(draws), min=min(phendf$sum_forcing), max=max(phendf$sum_forcing)) # randomly generated forcing temperatures within range of real forcing temperatures
-
-phiexp <- (post_re$b_site[draws,1] + mean(post_re$b_clone[draws,1]) + post_re$b_prov[draws,1] + mean(post_re$b_year[draws,1]) + post_re$beta[draws]) * forcing_predictor
-
-cuts <- data.frame(post_re$kappa)[draws,]
-colnames(cuts) <- c("kappa1", "kappa2")
-
-stateexp <- c()
-for (i in 1:length(draws)) {
-    stateexp[i] <- rordlogit(1, phiexp[i], cuts[i,])
-}
-
-expectations <- data.frame(sum_forcing=forcing_predictor, state=stateexp, source="predicted")
-
-data <- filter(mdf, SiteID==1, ProvenanceID==1) %>%
-    dplyr::select(sum_forcing, state=Phenophase_Derived) %>%
-    mutate(source="data")
-
-de <- rbind(expectations, data)
-
-ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source))) +
-    stat_ecdf()
-
-ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source))) +
-    geom_density()
-
-
-
-
-mcmc_intervals(mpostdf, regex_pars = c("beta", "site", "prov")) + ggtitle("male")
