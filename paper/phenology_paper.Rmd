@@ -112,7 +112,7 @@ There are three phenological stages of interest each for a tree's male and femal
 Phenophases in the field were recorded using different symbol sets and resolutions. I assigned each symbol to one of the phenophases above. Trees that did not produce cones are assigned phenological stage 0.
 
 
-```{r phenophase_derivation}
+```{r phenophase_derivation, echo=FALSE}
 no_flowers <- '0'
 #before_flowering <- c('1', '2.5', '-') #stage 1
 before_flowering <- c("1, 2.5, -")
@@ -133,26 +133,26 @@ kable(phenophase_legend, padding = 0)
 
 Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet was used for each station. Mean daily temperature was calculated from the minimum and maximum daily temperatures.
 
-[Map of Sites with nearest gridpoints]
+![Map of Sites with nearest climate gridpoints](/home/sus/Documents/research_phd/maps/SiteMaps/siteswithclimategrid.png)
 
 #### Forcing units
 
 The relative effect of mean daily temperature $t$ on the rate of forcing was calculated with
 
-$$R(t) = \frac{1}{1+ e^{-0.185*t-18.4}}$$
-which describes the relationship between temperature and development rate. This equation for forcing units is based on experimental work from Risto Sarvas with in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990]. @Chuine1999 found this calculation of forcing units superior to degree day calculations. The equation was rescaled to have a numerator of one as the units are arbitrary (@Chuine) 
+$$R(t) = \frac{28.4}{1+ e^{-0.185*t-18.4}}$$
+which describes the relationship between temperature and development rate. This equation for forcing units is based on experimental work from Risto Sarvas with in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990]. @Chuine1999 found this calculation of forcing units superior to degree day calculations.  
 Forcing Units on day $d$ ($f_d$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
 
 $$f(d) = \sum_{i=1}^d R_d(x)$$
 
 The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and verified to perform better than growing degree day models by Chuine [@Chuine1999]
-## Modeling
+
 
 ## Phenology Modeling 
 
 
 ### Actual methods
-I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018].
+I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. An ordinal logistic model 
 
 For phenological states $k \in \{1,2,3\}$, the probability of 
 
@@ -167,7 +167,7 @@ c_3) - 0  &  \text{if } k = 3. \end{array} \right.$$
 $$\begin{array}{rlr}
 S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \eta_i & = (\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
-\kappa_k & \sim \mathrm{gamma}(7.5,10) & \text{fixed priors}\\
+\kappa_k & \sim \mathrm{gamma}(7.5,1) & \text{fixed priors}\\
 \beta & \sim \mathrm{exponential}(2) & \text{}\\
 \beta_{site} & \sim \mathrm{normal}(0,\sigma_{site}) & \text{adaptive priors}\\
 \beta_{prov} & \sim \mathrm{normal}(0,\sigma_{prov}) & \text{}\\
@@ -201,6 +201,12 @@ logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
 
 
 To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions
+
+#### Differences between provenances
+
+Were calculated according to [@vandermijnsbruggeVariationBudBurst2015] - "difference in days in which half the plants has reached the same score level"
+
+$$\mathrm{H50}_{prov_i} - \mathrm{H50}_{prov_j} = \beta_{prov_j} - \beta_{prov_2}/\beta$$
 
 #### Assumptions 
 Chilling requirements are met and chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Both phases occur at the same rate.
