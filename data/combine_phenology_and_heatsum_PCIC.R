@@ -218,6 +218,7 @@ phendf <- merge(phen, gclim) %>%
 phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
 
 write.csv(phendf, "~/Documents/research_phenolology/data/stan_input/phenology_heatsum.csv", row.names = FALSE)
+write.csv(gclim, "~/Documents/research_phenolology/data/all_clim_PCIC.csv", row.names=FALSE)
 
 ## Visualizations, checks, and threshold test
 
