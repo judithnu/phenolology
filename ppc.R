@@ -20,6 +20,10 @@ phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE) %>%
     filter(forcing_type=="ristos")
 
+clim <- read.csv("data/all_clim_PCIC.csv", stringsAsFactors = FALSE, header=TRUE) %>%
+    filter(forcing_type=="ristos") %>%
+    filter(DoY %in% c(90:190))
+
 ## provenance
 SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
@@ -97,12 +101,11 @@ pardf <- data.frame(ufdf,
 
 # add dates to pardf
 
-dates <- select(fdf, recordID, Date, DoY) %>% distinct()
-
-pardf <- left_join(pardf, dates)
+dates <- select(fdf, recordID, groupID, Date, DoY) %>% distinct()
 
 
-# Now calculate state predictions ##################
+
+# Now simulate state predictions ##################
 
     # calculate slope and phi in columns
 pred_df <- pardf %>%
@@ -163,10 +166,6 @@ flowering <- filter(realpred, state=="2")
 ## calculate transitions #####################
 
 
-
-logistic2 <- function(x,b,c) {
-    1/(1 + exp(-(b * (x-(c/b)))))
-}
 ts <- pardf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
     mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
@@ -236,31 +235,53 @@ pdflogistic <- function(x,b,c) {
 }
 
 # forcing <- seq(from = 175, to=500, length.out=50)
-# index <- unique(parestdf$index)
+index <- unique(parestdf$index)
 # forcingframe <- crossing(index, forcing)
 
-forcing <- fdf %>% select(recordID, groupID, sum_forcing, Date, DoY) %>% distinct()
+
+
+
 
 ts <- parestdf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
-    left_join(forcing) %>%
-    mutate(t1 = logistic2(forcing, betas, kappa1)) %>%
-    mutate(t2 = logistic2(forcing, betas, kappa2)) %>%
-    mutate(p2 = pdflogistic(forcing, betas, kappa1)) %>%
-    mutate(p3 = pdflogistic(forcing, betas, kappa2)) %>%
+    left_join(clim) %>%
+    mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
+    mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
+    mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
+    mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
     distinct()
 
-ts$indextype <- group_indices(ts, index, estimate)
+ts_nc <- parestdf %>%
+    mutate(betas = b_prov + b_site + b_year + beta) %>%
+    left_join(clim) %>%
+    mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
+    mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
+    mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
+    mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
+    distinct()
 
-ggplot(filter(ts, estimate=="mean"), aes(x=forcing, y=t1, group=indextype) ) +
+ts$indexest <- group_indices(ts, groupID, estimate)
+ts_nc$indexest <- group_indices(ts_nc, groupID, estimate)
+
+ggplot(filter(ts, estimate=="mean"), aes(x=sum_forcing, y=t1, group=indexest) ) +
     geom_line() +
     facet_grid(Site ~ SPU_Name) +
-    geom_line(data=filter(ts, estimate=="mean"), aes(x=forcing, y=t2, group=indextype, color="t2"), alpha=0.2)
+    geom_line(data=filter(ts_nc, estimate=="mean"), aes(x=sum_forcing, y=t1, group=indexest, color="nc"), alpha=0.2)
 
-ggplot(filter(ts, estimate=="mean"), aes(x=forcing, y=p2, group=indextype, color="p2") ) +
+ggplot(filter(ts, estimate=="mean"), aes(x=sum_forcing, y=t2, group=indexest) ) +
     geom_line() +
     facet_grid(Site ~ SPU_Name) +
-    geom_line(data=filter(ts, estimate=="mean"), aes(x=forcing, y=p3, group=indextype, color="p3"), alpha=0.1)
+    geom_line(data=filter(ts_nc, estimate=="mean"), aes(x=sum_forcing, y=t2, group=indexest, color="nc"), alpha=0.2)
+
+ggplot(filter(ts, estimate=="mean"), aes(x=DoY, y=t1, group=indexest) ) +
+    geom_line() +
+    facet_grid(Site ~ SPU_Name) +
+    geom_line(data=filter(ts, estimate=="mean"), aes(x=DoY, y=t2, group=indexest, color="t2"), alpha=0.2)
+
+ggplot(filter(ts, estimate=="mean"), aes(x=DoY, y=p2, group=indexest, color="p2") ) +
+    geom_line() +
+    facet_grid(Site ~ SPU_Name) +
+    geom_line(data=filter(ts, estimate=="mean"), aes(x=DoY, y=p3, group=indexest, color="p3"), alpha=0.1)
 
 # calculate state probabilities
 
