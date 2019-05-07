@@ -1,13 +1,11 @@
 ---
 title: "Predicting pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "January 25, 2019"
-params:
-  date !r SysDate()
+date: !r SysDate()
 output:
-  pdf_document: default
   html_document: 
-    toc:TRUE
+    toc: TRUE
+
 ---
 
 ```{r setup, include=FALSE}
@@ -15,7 +13,7 @@ library(knitr)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r depends}
+```{r depends, echo=FALSE, warning=FALSE}
 library(dplyr)
 ```
 # Introduction
