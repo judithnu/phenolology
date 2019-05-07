@@ -60,7 +60,7 @@ phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
     #filter(Site!="Tolko") #drop Tolko/TOHigh because it only has one provenance and that provenance isn't represented at any other sites.
 
 ## provenance
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
 
@@ -114,22 +114,13 @@ mrdump <- read_rdump("male.rdump")
 # write(stancode(fit_draft), file="female.stan")
 
 # Female
-```{r fit female, eval=FALSE}
-fitfem <- stan("female.stan",
-               chains=1, cores=1, warmup = 11, iter=20,
-               data=fdf)
-
-#femsum <- precis(fitfem, depth = 2)
-#saveRDS(fitfem, file = "2019-04-16_fem_intercept_only.rds")
-
-
 
 # Fit model for FEMALE strobili #############
 ftest <- stan("slopes.stan",
               chains=1, warmup=20, iter = 25, data = frdump) # quick check for small problems
 
 ffit <- stan("slopes.stan",
-             chains=8, cores=8, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=frdump)
+             chains=6, cores=6, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=frdump)
 
 saveRDS(ffit, file = "female_slopes.rds")
 
