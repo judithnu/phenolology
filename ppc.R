@@ -11,10 +11,29 @@ library(rethinking)
 ffit.stan <- readRDS("female_slopes.rds")
 #mfit.stan <- readRDS("male_slopes.rds")
 
-fmod <- as.data.frame(ffit.stan)
+fmod <- as.data.frame(mfit.stan)
 #mmod <- as.data.frame(ffit.stan)
 
+stanindexer <- function(df) {
+    df$CloneID <- group_indices(df, Clone)
+    df$OrchardID <- group_indices(df, Orchard)
+    df$ProvenanceID <- group_indices(df, SPU_Name)
+    df$SiteID <- group_indices(df, Site)
+    df$YearID <- group_indices(df, Year)
+    df$Tree <- group_indices(df,TreeID)
+    return(df)
+}
 
+logistic2 <- function(x,b,c) {
+    1/(1 + exp(-(b * (x-(c/b)))))
+}
+
+pdflogistic <- function(x,b,c) {
+    num <- b * exp(-b*(x-(c/b)))
+    denom <- (1 + exp(-(b * (x-(c/b)))))^2
+    val <- num/denom
+    return(val)
+}
 #data
 phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE) %>%
@@ -38,7 +57,7 @@ phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
     unique()
 
 # separate into male and female dataframes and turn factors into integers
-fdf <- filter(phendf, Sex == "FEMALE")
+fdf <- filter(phendf, Sex == "MALE")
 fdf <- stanindexer(fdf)
 fdf$groupID <- group_indices(fdf, SiteID, ProvenanceID, YearID, CloneID)
 fdf$recordID <- group_indices(fdf, groupID, Date )
@@ -110,9 +129,18 @@ dates <- select(fdf, recordID, groupID, Date, DoY) %>% distinct()
     # calculate slope and phi in columns
 pred_df <- pardf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
-    mutate(phi = betas * sum_forcing)
+    mutate(phi = betas * sum_forcing) %>%
+    mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
+    mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
+    mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
+    mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
+    mutate(f501 = kappa1/betas) %>%
+    mutate(f502 = kappa2/betas) %>%
+distinct()
 
-    # simulate state (1 per real obs)
+
+
+#simulate state (1 per real obs)
 state_pred <- c()
 for (i in 1:nrow(pred_df)) {
     state_pred[i] <- rethinking::rordlogit(1,
@@ -132,11 +160,35 @@ realpred <- full_join(pred_df, real_state) %>%
     select(-contains("beta")) %>%
     select(-contains("kappa")) %>%
     select(-contains("sigma")) %>%
-    gather(key=outcome, value=state, state_pred, Phenophase_Derived)
+   gather(key=outcome, value=state, state_pred, Phenophase_Derived)
+
+mrealpred <- realpred
+frealpred <- realpred
+
+ggplot(realpred, aes(x=sum_forcing, fill=as.factor(outcome))) +
+    geom_histogram(alpha=0.6) +
+    facet_grid(state ~ .) +
+    scale_fill_viridis_d() +
+    ggtitle("Male state data and predictions") +
+    theme_bw()
+
+m2rp <- filter(mrealpred, state==2)
+f2rp <- filter(frealpred, state==2)
+ggplot(f2rp, aes(x=f501, fill=SPU_Name, linetype=outcome)) +
+    geom_density(alpha=0.1) +
+    facet_wrap("Year") +
+    scale_fill_viridis_d() +
+    ggtitle("Female 50% first transition")
+
+ggplot(f2rp, aes(x=f502, fill=SPU_Name, linetype=outcome)) +
+    geom_density(alpha=0.1) +
+    facet_wrap("Year") +
+    scale_fill_viridis_d() +
+    ggtitle("Female 50% second transition")
 
 # calculate first and last day flowering. NEED MORE SIMULATIONS FOR THIS TO WORK.
 
-flowering <- filter(realpred, state=="2")
+#flowering <- filter(realpred, state=="2")
 
 
 # hpd_lower = function(x) HPDI(x, prob=.9)[1]
@@ -166,10 +218,10 @@ flowering <- filter(realpred, state=="2")
 ## calculate transitions #####################
 
 
-ts <- pardf %>%
-    mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
-    mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
-    mutate(t2 = logistic2(sum_forcing, betas, kappa2))
+# ts <- pardf %>%
+#     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
+#     mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
+#     mutate(t2 = logistic2(sum_forcing, betas, kappa2))
 
 
 plot1 <- ggplot(ts, aes(x=sum_forcing, y=t1, color=draw)) +
@@ -223,16 +275,7 @@ parestdf <- data.frame(ufdf,
     left_join(singledimparest)
 
 
-logistic2 <- function(x,b,c) {
-    1/(1 + exp(-(b * (x-(c/b)))))
-}
 
-pdflogistic <- function(x,b,c) {
-    num <- b * exp(-b*(x-(c/b)))
-    denom <- (1 + exp(-(b * (x-(c/b)))))^2
-    val <- num/denom
-    return(val)
-}
 
 # forcing <- seq(from = 175, to=500, length.out=50)
 index <- unique(parestdf$index)
@@ -249,19 +292,24 @@ ts <- parestdf %>%
     mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
     mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
     mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
+    mutate(f501 = kappa1/betas) %>%
+    mutate(f502 = kappa2/betas)
     distinct()
 
-ts_nc <- parestdf %>%
-    mutate(betas = b_prov + b_site + b_year + beta) %>%
-    left_join(clim) %>%
-    mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
-    mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
-    mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
-    mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
-    distinct()
+# ts_nc <- parestdf %>%
+#     mutate(betas = b_prov + b_site + b_year + beta) %>%
+#     left_join(clim) %>%
+#     mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
+#     mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
+#     mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
+#     mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
+#     distinct()
 
 ts$indexest <- group_indices(ts, groupID, estimate)
-ts_nc$indexest <- group_indices(ts_nc, groupID, estimate)
+#ts_nc$indexest <- group_indices(ts_nc, groupID, estimate)
+
+ggplot(ts, aes(x=SPU_Name, y=f501, fill=estimate)) +
+    geom_violin()
 
 ggplot(filter(ts, estimate=="mean"), aes(x=sum_forcing, y=t1, group=indexest) ) +
     geom_line() +

@@ -140,8 +140,8 @@ mvf <- lm(fsum$mean ~ msum$mean)
 
 # central posterior uncertainty intervals. by default shows 50% intervals (thick) and 90% intervals (thinner outer). Use point_est to show or hide point estimates
 color_scheme_set("red")
-fint_bsp <- mcmc_intervals(fpostdf, regex_pars = c("site", "prov"))
-mint_bsp <- mcmc_intervals(mpostdf, regex_pars = c("site", "prov"))
+fint_bsp <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
+mint_bsp <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
 
 compare_fm(fint_bsp, mint_bsp)
 
