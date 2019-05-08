@@ -1,0 +1,659 @@
+---
+title: "Phenology data - visualization and simple models"
+author: "Susannah Tysor"
+date: "April 22, 2019"
+output: html_document
+editor_options:
+    chunk_output_type: console
+---
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
+```
+
+```{r depends}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(summarytools)
+library(stringr)
+library(arm)
+
+```
+
+In this document, I 
+1) explore the structure of an ordered logistic model using simulated data in order to understand how to parameterize the model.
+2) compare simple versions of an ordered logistic phenology model with different forcing units
+3) consider whether an ordered logistic model is appropriate - are transitions dramatically different speeds?
+    
+
+## 1. Which parameters can be successfully recaptured?
+
+Simulate data from an ordered logistic distribution with three states and forcing values similar to mine. Then fit a variety of models to the data.
+
+
+### 1 cluster, 3 groups, varying slopes
+```{r simulate one cluster three groups beta}
+cuts <- c(5,10)
+beta <- .1
+beta2 <- .75
+# cuts2 <- c(10,40)
+beta3 <- 2
+# cuts3 <- c(20, 80)
+forcing <- runif(400, 0, 50)
+eta <- beta * forcing 
+eta2 <- beta2 * forcing
+eta3 <- beta3 * forcing
+state <- rordlogit(length(eta), phi = eta, a = cuts)
+state2 <- rordlogit(length(eta2), phi=eta2, a=cuts)
+state3 <- rordlogit(length(eta3), phi= eta3, a=cuts)
+sim <- data.frame(forcing, g1=state, g2=state2, g3=state3) %>% 
+    gather(key=group, value=state, g1, g2, g3)
+sim$group <- group_indices(sim, group)
+sim$state <- group_indices(sim, state)
+
+ggplot(sim, aes(x=forcing, color=as.factor(group))) +
+    stat_ecdf() +
+    facet_grid(group ~ state)
+        
+```
+
+#### fit with bayespolr
+```{r fit 3 groups with different betas}
+library(arm)
+simfit <- bayespolr(as.factor(state) ~ forcing + group, data=sim)
+summary(simfit)
+#simulate from simfit
+
+
+```
+
+I don't understand the parameters for sure, but it looks like bayespolr can't figure out the slopes in any meaningful fashion. But I don't understand R formulas well enough to understand what the coefficients are or even if it's doing what I think it should. Time to try with an ulam model.
+
+#### stan group slope only
+
+```{r fit 3 groups with different betas in stan}
+
+simfit <- ulam(
+    alist(
+        #likelihood
+        state ~ ordered_logistic(eta, cuts),
+        # model
+        eta <- b[group] * forcing,
+        # priors
+        b[group] ~ exponential(lambda),
+        cuts ~ dnorm(10,5),
+        lambda ~ exponential(2)
+        # mu ~ exponential(1.5),
+        # sigma ~ exponential(1.5)
+    ),
+    data=sim, chains=4, cores=4, iter=500
+)
+
+precis(simfit, depth=2) 
+
+```
+
+Slope parameters are captured well for each group when betas are very differentiated (.1,.75, 2)!
+
+When betas are medium sized and closer together (.1,.2, .3) slope parameter estimates are well estimated.
+
+When betas relatively small (.01, .02, .03), slope parameter estimates fail to fit realistic intervals unless betas are constrained to be positive and do not do as well.
+
+
+#### stan main slope effect + group level effect
+What if the group effects are separated out so there's a main slope effect and then modifiers on it?
+
+```{r fit 3 groups with different betas in stan}
+
+simfit_bb <- ulam(
+    alist(
+        #likelihood
+        state ~ ordered_logistic(eta, cuts),
+        # model
+        eta <- (beta + b[group]) * forcing,
+        # priors
+        b[group] ~ normal(mu, sigma),
+        cuts ~ dnorm(10,5),
+        mu ~ normal(0,1),
+        sigma ~ exponential(2),
+        beta ~ exponential(1.5)
+    ),
+    data=sim, chains=4, cores=4, warmup=1100, iter=1300, control=list(max_treedepth=12, adapt_delta=0.9)
+)
+
+precis(simfit_bb, depth=2) 
+
+```
+
+The model really has trouble even with relatively large and well differentiated betas (.1,.75, 2) Tons of divergent transitions and max treedepth issues at 500 iter and normal treedepth and adapt_delta.
+With a longer warmup and increased max_treedepth, divergent transitions are resolved, but parameter values are not well recovered.
+With a longer warmup, increased max_treedepth, and increased adapt_delta, parameter values are well recovered.
+Eliminating the overall beta should help my model fit quite a lot. This makes it much harder to interpret parameters though. I can try a run that increases max_treedepth and adapt_delta modification to help.
+
+#### slope and an intercept effect of groups
+
+```{r simulate group data with different slope and intercept}
+cuts <- c(5,10)
+beta <- c(.1, .75, 2)
+alpha <- c(6, 2, -1)
+forcing <- runif(300, 0, 50)
+
+eta <- beta[1] * forcing + alpha[1]
+eta2 <- beta[2] * forcing + alpha[2]
+eta3 <- beta[3] * forcing + alpha[3]
+state <- rordlogit(length(eta), phi = eta, a = cuts)
+state2 <- rordlogit(length(eta2), phi=eta2, a=cuts)
+state3 <- rordlogit(length(eta3), phi= eta3, a=cuts)
+sim <- data.frame(forcing, g1=state, g2=state2, g3=state3) %>% 
+    gather(key=group, value=state, g1, g2, g3)
+sim$group <- group_indices(sim, group)
+sim$state <- group_indices(sim, state)
+
+ggplot(sim, aes(x=forcing, color=as.factor(group))) +
+    stat_ecdf() +
+    facet_grid(group ~ state)
+        
+```
+
+```{r fit 3 groups with different betas and different alphas in stan}
+
+simfit <- ulam(
+    alist(
+        #likelihood
+        state ~ ordered_logistic(eta, cuts),
+        # model
+        eta <- (beta + b[group]) * forcing + alpha[group],
+        # priors
+        beta ~ exponential(2),
+        b[group] ~ normal(mu, sigma),
+        alpha[group] ~ normal(xi, lambda),
+        cuts ~ dnorm(10,5),
+        mu ~ normal(0,1),
+        sigma ~ exponential(1.5),
+        xi ~ normal(0,1),
+        lambda ~ exponential(1.5)
+        #gq>state_exp[group] <- ordered_logistic_rng(b[group]*forcing+alpha[group],cuts),
+    ),
+    data=sim, chains=4, cores=4, iter=800, control=list(max_treedepth=12)
+)
+
+precis(simfit, depth=2) 
+
+```
+
+In a version of the model without correlation and with group effects total instead of slit into main part and effect compenent, the model gets beta, but struggles with alpha. Increasing iterations and max tree_depth and including beta separately doesn't seem to help.
+
+``
+          mean   sd  5.5% 94.5% n_eff Rhat
+b[1]      0.11 0.01  0.10  0.13   719 1.00
+b[2]      0.89 0.10  0.74  1.07   725 1.00
+b[3]      1.82 0.24  1.43  2.23   573 1.00
+alpha[1]  4.28 1.57  1.74  6.76   262 1.01
+alpha[2] -0.45 1.63 -2.97  2.21   279 1.01
+alpha[3] -1.07 1.64 -3.67  1.58   327 1.01
+cuts[1]   3.67 1.56  1.14  6.20   275 1.01
+cuts[2]   8.53 1.62  6.04 11.20   290 1.01
+mu        0.74 0.50 -0.09  1.49   563 1.00
+sigma     0.95 0.43  0.47  1.68   699 1.00
+xi        0.37 0.96 -1.17  1.94   515 1.01
+lambda    2.28 0.74  1.30  3.66   709 1.00
+``
+
+##### slope and intercept effects with correlation
+Does adding correlation help?
+
+```{r slope intercept correlation}
+simfit <- ulam(
+    alist(
+        #likelihood
+        state ~ ordered_logistic(eta, cuts),
+        # model
+        eta <- (b[group]) * forcing + alpha[group],
+        # priors
+        cuts ~ dnorm(10,5),
+        # group slope and intercept
+        c(alpha, b)[Group] ~ multi_normal(c(ag, bg), Rhog, sigma_group),
+        ag ~ dnorm(0,1),
+        bg ~ dnorm(0, 0.5),
+        sigma_group ~ exponential(1.5),
+        Rhog ~ lkj_corr(2)
+    ),
+    data=sim, chains=1, cores=1, iter=20
+)
+```
+I can't even get this to start sampling with a separate beta component.
+
+### group intercept only
+
+```{r simulate group data with different intercepts}
+cuts <- c(5,10)
+beta <- 2
+alpha <- c(6, 2, -1)
+forcing <- runif(300, 0, 50)
+
+eta <- beta * forcing + alpha[1]
+eta2 <- beta * forcing + alpha[2]
+eta3 <- beta * forcing + alpha[3]
+state <- rordlogit(length(eta), phi = eta, a = cuts)
+state2 <- rordlogit(length(eta2), phi=eta2, a=cuts)
+state3 <- rordlogit(length(eta3), phi= eta3, a=cuts)
+sim <- data.frame(forcing, g1=state, g2=state2, g3=state3) %>% 
+    gather(key=group, value=state, g1, g2, g3)
+sim$group <- group_indices(sim, group)
+sim$state <- group_indices(sim, state)
+
+ggplot(sim, aes(x=forcing, color=as.factor(group))) +
+    stat_ecdf() +
+    facet_grid(group ~ state)
+        
+```
+
+```{r varying intercepts}
+simfit <- ulam(
+    alist(
+        #likelihood
+        state ~ ordered_logistic(eta, cuts),
+        # model
+        eta <- beta * forcing + alpha[group],
+        # priors
+        beta ~ exponential(2),
+        alpha[group] ~ normal(xi, lambda),
+        cuts ~ dnorm(10,5),
+        xi ~ normal(0,1),
+        lambda ~ exponential(1.5)
+        #gq>state_exp[group] <- ordered_logistic_rng(b[group]*forcing+alpha[group],cuts),
+    ),
+    data=sim, chains=4, cores=4, iter=500
+)
+
+precis(simfit, depth=2)
+```
+I thought this would be the simplest case, but it actually makes recovery of both the intercepts and cutpoints difficult! I think a model with effects only on beta is likely the best way forward. For ease of interpretation, a main beta effect with differences is preferable. However, for ease of fitting, no main beta effect is easier.
+
+## 2. Ristos or heatsum?
+
+```{r data, echo=FALSE, results="asis"}
+
+
+phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) 
+
+SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+    dplyr::select(SPU_Name, Orchard) #add provenance information
+
+phendf <- phenology_data %>%
+    na.omit()
+phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+    unique() %>%
+    mutate(state = as.factor(Phenophase_Derived))
+
+view(dfSummary(phendf))
+# summary(phendf)
+
+```
+
+```{r split}
+
+
+fdf <- filter(phendf, Sex == "FEMALE")
+#fdf <- stanindexer(fdf)
+mdf <- filter(phendf, Sex == "MALE")
+#mdf <- stanindexer(mdf)
+
+#test
+nrow(fdf) + nrow(mdf) == nrow(phendf)
+
+```
+
+To answer this question, I can build models of each transition using ristos and using GDD.
+
+Looking at the data, I don't really have a good sense of which is better.
+
+```{r ristos and heatsum}
+ggplot(phendf, aes(x=sum_forcing, fill=state)) +
+    geom_histogram(alpha=0.5, binwidth = 10, position = "identity") +
+    facet_grid(forcing_type ~ Sex) +
+    ggtitle("Histogram of forcing in each stage")
+
+ggplot(phendf, aes(x=sum_forcing, color=state)) +
+    stat_ecdf()+
+    facet_grid(forcing_type ~ Sex) +
+    ggtitle("Cumulative forcing in each stage")
+
+```
+Comparing the range of values each phase occurs over for ristos and GDD, ristos are generally higher. I believe there's more separation between phase 1 and 2 for GDD than ristos. For the transition from 2 to 3 I believe they are quite similar, though ristos may have more separation. Unclear what will happen with modelling.
+
+```{r ristos and gdd}
+ggplot(phendf, aes(x=state, y=sum_forcing, fill=forcing_type)) +
+    geom_violin()+
+    facet_wrap(. ~ Sex) +
+    ggtitle("Compare ristos and GDD required for each state")
+
+```
+
+
+```{r ristos v gdd}
+
+#male
+mgdd <- dplyr::filter(mdf, forcing_type=="gdd")
+mristo <- dplyr::filter(mdf, forcing_type=="ristos")
+mristoscaled <- dplyr::filter(mdf, forcing_type=="scaled_ristos")
+
+fitmgdd <- bayespolr(state ~ sum_forcing, data = mgdd)
+fitmristo <- bayespolr(state ~ sum_forcing, data=mristo)
+fitmristoscaled <- bayespolr(state ~ sum_forcing, data=mristoscaled)
+AIC(fitmgdd, fitmristo, fitmristoscaled)
+
+
+#female
+fgdd <- dplyr::filter(fdf, forcing_type=="gdd")
+fristo <- dplyr::filter(fdf, forcing_type=="ristos")
+fristoscaled <- dplyr::filter(fdf, forcing_type=="scaled_ristos")
+
+fitfgdd <- bayespolr(factor(state) ~ sum_forcing, data = fgdd)
+fitfristo <- bayespolr(state ~ sum_forcing, data=fristo)
+fitfristoscaled <- bayespolr(state ~ sum_forcing, data=fristoscaled)
+AIC(fitfgdd, fitfristo, fitfristoscaled)
+```
+
+It looks like growing degree days actually do a better job for the males and females. 
+
+Is that true even after accounting for the largest effects? 
+
+```{r site and prov on slope}
+fitmgdd_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mgdd)
+fitmristo_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mristo)
+fitmristoscaled_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=mristoscaled)
+AIC(fitmgdd_sp, fitmristo_sp, fitmristoscaled_sp)
+
+fitfgdd_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fgdd)
+fitfristo_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fristo)
+fitfristoscaled_sp <- bayespolr(state ~ sum_forcing + Site + SPU_Name, data=fristoscaled)
+AIC(fitfgdd_sp, fitfristo_sp, fitfristoscaled_sp)
+```
+When including site and prov effects on slope, ristos perform better than gdd. ristos and scaled ristos are similar - ristos are a bit better.
+
+## 3. Varying slopes - transition state
+Next question! Do slopes vary by transition state?
+
+For this I will use logistic models for each transition in each sex.
+
+First let's have a look at the data.
+
+```{r data prep do slopes vary}
+
+phendf <- filter(phendf, forcing_type=="ristos")
+#male
+mdf <- filter(mdf, forcing_type == "ristos")
+mt1 <- filter(mdf, state %in% c(1,2)) %>% #male transition 1
+    mutate(state = case_when(state==1 ~ 0,
+                             state==2 ~ 1))
+
+mt2 <- filter(mdf, state %in% c(2,3)) %>% #male transition 2
+    mutate(state = case_when(state==2 ~ 0,
+                             state==3 ~ 1))
+
+#female
+
+fdf <- dplyr::filter(fdf, forcing_type == "ristos")
+ft1 <- filter(fdf, state %in% c(1,2)) %>% #male transition 1
+    mutate(state = case_when(state==1 ~ 0,
+                             state==2 ~ 1))
+
+ft2 <- filter(fdf, state %in% c(2,3)) %>% #male transition 2
+    mutate(state = case_when(state==2 ~ 0,
+                             state==3 ~ 1))
+```
+
+```{r eyeballing slope diffs}
+ggplot(fdf, aes(x=sum_forcing, colour=state)) +
+    stat_ecdf() +
+    ggtitle("females")
+
+
+ggplot(mdf, aes(x=sum_forcing, colour=state)) +
+    stat_ecdf() +
+    ggtitle("males")
+
+```
+
+The slope doesn't look very different overall.
+
+What about when broken down by site?
+
+```{r eyeballing slopes site}
+ggplot(phendf, aes(x=sum_forcing, color=state)) +
+    stat_ecdf() +
+    facet_grid(Site ~ Sex)
+```
+
+Slope for different transitions does look a bit different at some sites, but only at ones with not-as-good data collection.
+
+```{r eyeballing slopes provenance}
+ggplot(phendf, aes(x=sum_forcing, color=state)) +
+    stat_ecdf() +
+    facet_grid(SPU_Name ~ Sex)
+```
+
+In a lot of these graphs, it kind of looks like the first transition is a Gompertz curve and the 2nd is a logistic. Not sure what to do about that.
+
+Model with logit glm.
+
+```{r do slopes vary logits}
+#male
+fit_mt1 <- glm(state ~ sum_forcing, family = binomial(link = 'logit'), data = mt1)
+fit_mt2 <- glm(state ~ sum_forcing, family = binomial(link = 'logit'), data = mt2)
+
+fit_mt1$coefficients
+fit_mt2$coefficients
+
+get_slope_range <- function(fit, name) {
+    low <- fit$coefficients[2] - se.coef(fit)[2]
+    high <- fit$coefficients[2] + se.coef(fit)[2]
+    return(c(model=name, lower=low, upper=high))
+}
+
+maleslopes <- rbind(get_slope_range(fit_mt1, "m1"),
+                    get_slope_range(fit_mt2, "m2"))
+
+#female
+fit_ft1 <- glm(state ~ sum_forcing, family = binomial(link = 'logit'), data = ft1)
+fit_ft2 <- glm(state ~ sum_forcing, family = binomial(link = 'logit'), data = ft2)
+
+fit_ft1$coefficients
+fit_ft2$coefficients
+
+femaleslopes <- rbind(get_slope_range(fit_ft1, "f1"),
+                      get_slope_range(fit_ft2, "f2"))
+
+```
+
+With the simplest version of the model, the slopes for the different transitions are different, but are pretty close. Given data censorship, I'd say this is fine.
+
+`r maleslopes`
+`r femaleslopes`
+
+The first transition is slower than the second transition, however
+
+What if I include effects on the slope? 
+```{r }
+#male
+fit_met1 <- glm(state ~ sum_forcing + Site + SPU_Name, family = binomial(link = 'logit'), data = mt1)
+fit_met2 <- glm(state ~ sum_forcing+ Site+SPU_Name, family = binomial(link = 'logit'), data = mt2)
+
+fit_met1$coefficients
+fit_met2$coefficients
+metcoef <- cbind(trans1 = fit_met1$coefficients, trans2 = fit_met2$coefficients)
+print(metcoef)
+
+maleslopes_effects <- rbind(get_slope_range(fit_met1, "m1"),
+                    get_slope_range(fit_met2, "m2"))
+
+AIC(fit_mt1, fit_met1)
+AIC(fit_mt2, fit_met2)
+
+#female
+fit_fet1 <- glm(state ~ sum_forcing + Site + SPU_Name, family = binomial(link = 'logit'), data = ft1)
+fit_fet2 <- glm(state ~ sum_forcing+ Site + SPU_Name, family = binomial(link = 'logit'), data = ft2)
+
+fit_fet1$coefficients
+fit_fet2$coefficients
+
+
+femaleslopes_effects <- rbind(get_slope_range(fit_fet1, "f1"),
+                      get_slope_range(fit_fet2, "f2"))
+
+AIC(fit_ft1, fit_fet1)
+AIC(fit_ft2, fit_fet2)
+
+fetcoef <- cbind(trans1 = fit_fet1$coefficients, trans2 =fit_fet2$coefficients)
+print(fetcoef)
+```
+
+`r maleslopes_effects`
+`r femaleslopes_effects`
+
+The overall slopes are quite similar, but at each transition, but are site effects can be dramatically different for each transition. Prince George and Vernon - where some of my nicest data comes from - are particularly problematic.
+
+I'm not sure how this will affect my cutpoints model, but we'll see.
+
+I wouldn't know how to deal with an ordered logistic model where the transitions can have different slopes. Is that even an ordered logistic model anymore? I think I'd have to switch to an HMM model.
+
+## 4. Which variables to include?
+
+I'm not sure which variables to include. Maybe all of them? Let's see if there's anything obvious about Orchard and Tree.
+
+```{r variable selection}
+
+fitmristo <- bayespolr(state ~ sum_forcing, data=mristo)
+fitfristo <- bayespolr(state ~ sum_forcing, data=fristo)
+
+mristo$SPU_Name <- as.factor(mristo$SPU_Name)
+mristo$Site <- as.factor(mristo$Site)
+mristo$Orchard <- as.factor(mristo$Orchard)
+mristo$Clone <- as.factor(mristo$Clone)
+mristo$Year <- as.factor(mristo$Year)
+mristo$Tree <- as.factor(mristo$TreeID)
+
+fit_prov <- bayespolr(state ~ sum_forcing + SPU_Name, data=mristo)
+fit_site <- bayespolr(state ~ sum_forcing + Site, data=mristo)
+fit_clone <- bayespolr(state ~ sum_forcing + Clone, data=mristo)
+fit_year <- bayespolr(state ~ sum_forcing + Year, data=mristo)
+fit_tree <- bayespolr(state ~ sum_forcing + Tree, data=mristo)
+fit_orchard <- bayespolr(state ~ sum_forcing + Orchard, data=mristo)
+
+aicdf <- AIC(fitmristo, fit_prov, fit_site, fit_clone, fit_year, fit_tree, fit_orchard) 
+aicdf$model <- rownames(aicdf)
+aicdf %>%
+    arrange(AIC)
+```
+
+Year and orchard are most important effects. Adding tree by itself seems to be worse than a model with no effects.
+
+I know looking at these in isolation won't tell me exactly what I want to know. But we'll see how things shake out in the real model.
+
+## 5. Cutpoints difference
+## Fit model to simulated data
+
+7 sites, 6 provenances, and 10 observations for each of 15 individuals at different forcing temperatures
+```{r simulate_grouped_data}
+# cutpoints <- c(0)
+# cutpoints[2] <- abs(rnorm(1,5,2))
+# cutpoints[3] <- abs(rnorm(1,20,2))
+# #k <- rbeta(1,.5, 5)
+
+nsite <- 7
+nprov <- 6
+nindiv <- 15
+nobs <- 3
+forcing <- runif(10, 175,500)
+basecut <- c(15,20)
+beta = 0.05
+cut_site <- rnorm(n= nsite, mean=1, sd=1)
+cut_prov <- rnorm(n= nprov, mean=-2, sd=1)
+
+sites <- data.frame(site = 1:nsite, effect = cut_site)
+provs <- data.frame(prov = 1:nprov, effect= cut_prov)
+
+simu_prep <- tidyr::crossing(site = sites$site, prov = provs$prov, nobs, indiv = 1:nindiv, forcing) %>%
+    dplyr::left_join(sites) %>% #add site and prov effects
+    rename(site_effect = effect) %>%
+    left_join(provs) %>%
+    rename(prov_effect = effect) %>%
+    mutate(group_effects = site_effect + prov_effect) 
+
+simu <- simu_prep %>% # calculate cutpoints and eta
+    # cutpoints
+    mutate(cut1 = group_effects + basecut[1])  %>%
+    mutate(cut2 = group_effects + basecut[2]) %>%
+    # linear model eta
+    mutate(eta = beta * forcing) 
+
+#simulate states
+for (i in 1:nrow(simu)) {
+    simu$state[i] <- rordlogit(1, 
+                               phi = simu$eta[i], 
+                               a = c(simu$cut1[i], simu$cut2[i]))
+    }
+```
+
+```{r visualize simulated_data}
+hist(simu$state)
+ggplot(simu, aes(x=forcing, y=state, color=prov)) +
+    geom_jitter() +
+    facet_wrap("site")
+```
+
+
+
+```{r simulated fit, eval=FALSE}
+
+
+# Write simulated data in a format stan can understand
+# simplest data
+K = length(unique(sim$state))
+N = nrow(sim)
+#stan_rdump(c("N", "K", "forcing", "state"), "simulated_nogroups.Rdump")
+simplesimdat <- read_rdump("simulated_nogroups.Rdump")
+
+# 1 group data
+K <- length(unique(sim$state))
+N <- nrow(sim)
+Ngroup = length(unique(sim$group))
+#stan_rdump(c("N", "K", "Ngroup", "forcing", "state", "group"), "simulated_data.Rdump")
+simdat <- read_rdump("simulated_data.Rdump")
+
+# Fit model to simulated data
+simfit <- stan("cutpoints_difference.stan", 
+               chains=5, cores=5, iter=2000, 
+               data=simplesimdat)
+              #control=list(adapt_delta=0.99))#, max_treedepth=11))
+
+# Check diagnostics
+util$check_all_diagnostics(simfit)
+```
+
+### Consider fit of model to simulated data
+```{r precis simulated data fit, eval=FALSE}
+precis(simfit, depth=2)
+```
+
+```{r extract fit, eval=FALSE}
+simpost <- as.matrix(simfit)
+pairs(simpost)
+```
+
+
+```{r plot real params vs posterior, eval=FALSE}
+mcmc_areas(simpost, regex_pars = "cutpoints") + 
+    geom_vline(xintercept = c(15,20))
+mcmc_areas(simpost, pars="beta") +
+    geom_vline(xintercept = 0.05)
+```
+
+If cutpoints prior is a single gamma distribution, cutpoints are not returned well. Neither is beta. Edited model so prior is on the difference between cutpoints rather than the cutpoints as a group. 
+
+Also want to try 
+- modeling cutpoints with separate linear models
+ 
+

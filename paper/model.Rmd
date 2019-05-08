@@ -1,7 +1,7 @@
 ---
 title: "A multilevel Bayesian model of pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "April 16, 2019"
+date: "April 25, 2019"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -21,12 +21,6 @@ library(summarytools)
 
 ```
 
-```{r stan setup}
-
-
-options(mc.cores=parallel::detectCores())
-rstan_options(auto_write=TRUE)
-```
 
 ## Conceptual Analysis
 
@@ -36,15 +30,16 @@ Pollination phenology in lodgepole pine refers to the timing of two events - pol
 
 ```{r data, echo=FALSE, results="asis"}
 
-# phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-#     filter(daily_forcing_type=="ristos")
-phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(daily_forcing_type=="ristos")
+phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+    filter(forcing_type=="ristos") %>%
+  filter(Site!="Tolko")
+# phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+#   dplyr::filter(forcing_type=="ristos")
 
-# SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-#    dplyr::select(SPU_Name, Orchard) #add provenance information
-SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
-dplyr::select(SPU_Name, Orchard)
+ SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+   dplyr::select(SPU_Name, Orchard) #add provenance information
+# SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+# dplyr::select(SPU_Name, Orchard)
  # SPU_dat <- read.csv("~/Documents/phd_sus/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
  #   dplyr::select(SPU_Name, Orchard) #add provenance information
 
@@ -54,38 +49,18 @@ phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
     unique()
 
 view(dfSummary(phendf))
+
 # summary(phendf)
 
 ```
 
-```{r stanindexing}
-#Create indexes that stan will like
-stanindexer <- function(df) {
-    df$CloneID <- group_indices(df, Clone)
-    df$OrchardID <- group_indices(df, Orchard)
-    df$ProvenanceID <- group_indices(df, SPU_Name)
-    df$SiteID <- group_indices(df, Site)
-    df$YearID <- group_indices(df, Year)
-    df$Tree <- group_indices(df,TreeID)
-    return(df)
-}
 
-fdf <- filter(phendf, Sex == "FEMALE")
-fdf <- stanindexer(fdf)
-mdf <- filter(phendf, Sex == "MALE")
-mdf <- stanindexer(mdf)
-
-#test
-nrow(fdf) + nrow(mdf) == nrow(phendf)
-
-
-```
 
 ```{r data}
 view(dfSummary(fdf))
 view(dfSummary(mdf))
 
-ggplot(phendf, aes(x=Sex, y=forcing_accum, fill=as.factor(Phenophase_Derived))) +
+ggplot(phendf, aes(x=Sex, y=sum_forcing, fill=as.factor(Phenophase_Derived))) +
     geom_violin() +
     scale_fill_viridis_d() + 
     ggtitle("range of heatsums at each stage")
@@ -96,7 +71,7 @@ ggplot(phendf, aes(x=Sex, y=forcing_accum, fill=as.factor(Phenophase_Derived))) 
 Pollen shed almost always begins prior to or simultaneously with cone receptivity. Pollen shed finishes before the receptive period is over less than half the time and sometimes finishes after the receptivity period is done. 
 
 ```{r dataviz, fig.width=11, fig.height=9}
-ggplot(phendf, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived), linetype=Sex)) +
     stat_ecdf() +
     theme_bw(base_size=16) +
     facet_grid(SPU_Name ~ Site) +
@@ -109,7 +84,7 @@ ggplot(phendf, aes(x=forcing_accum, color=Phenophase_Derived, linetype=Sex)) +
 The order of development and the forcing accumulation required is much more consistent across sites than provenances, suggesting stronger site than provenance effects. The proportion of each phenophase at different forcing amounts is much more consistent within a site than within provenances, suggesting strong site effects/limited provenance effects.
 
 ```{r fig.width=11, fig.height=9}
-ggplot(phendf, aes(x=forcing_accum, color=as.factor(Phenophase_Derived))) +
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived))) +
     geom_density() +
     theme_bw(base_size=16) +
     facet_grid(Site ~ SPU_Name, scales="free_y") +
@@ -117,7 +92,7 @@ ggplot(phendf, aes(x=forcing_accum, color=as.factor(Phenophase_Derived))) +
     ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance") +
     theme(legend.position = "bottom")
 
-ggplot(phendf, aes(x=forcing_accum, color=as.factor(Phenophase_Derived))) +
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived))) +
     geom_density() +
     theme_bw(base_size=16) +
     facet_grid(SPU_Name ~ Site, scales="free_y") +
@@ -274,414 +249,10 @@ $f$ accumulated forcing units
 
 ## Woah now let's calm down and do a simpler version. Maybe look back at an old workflow and try again.
 
-## Fit a model to simulated data
 
-Simulate data from an ordered logistic distribution with three states and forcing values from real data. 
 
-```{r simulate simplest data}
-cuts <- c(15,20)
-beta <- 0.05
-forcing <- runif(300, 175, 500)
-eta <- beta * forcing 
-state <- rordlogit(length(eta), phi = eta, a = cuts)
-sim <- data.frame(forcing,state)
-#sim$state <- group_indices(sim, state)
-```
 
-7 sites, 6 provenances, and 10 observations for each of 15 individuals at different forcing temperatures
-```{r simulate_grouped_data}
-# cutpoints <- c(0)
-# cutpoints[2] <- abs(rnorm(1,5,2))
-# cutpoints[3] <- abs(rnorm(1,20,2))
-# #k <- rbeta(1,.5, 5)
 
-nsite <- 7
-nprov <- 6
-nindiv <- 15
-nobs <- 3
-forcing <- runif(10, 175,500)
-basecut <- c(15,20)
-beta = 0.05
-cut_site <- rnorm(n= nsite, mean=1, sd=1)
-cut_prov <- rnorm(n= nprov, mean=-2, sd=1)
 
-sites <- data.frame(site = 1:nsite, effect = cut_site)
-provs <- data.frame(prov = 1:nprov, effect= cut_prov)
-
-simu_prep <- tidyr::crossing(site = sites$site, prov = provs$prov, nobs, indiv = 1:nindiv, forcing) %>%
-    dplyr::left_join(sites) %>% #add site and prov effects
-    rename(site_effect = effect) %>%
-    left_join(provs) %>%
-    rename(prov_effect = effect) %>%
-    mutate(group_effects = site_effect + prov_effect) 
-
-simu <- simu_prep %>% # calculate cutpoints and eta
-    # cutpoints
-    mutate(cut1 = group_effects + basecut[1])  %>%
-    mutate(cut2 = group_effects + basecut[2]) %>%
-    # linear model eta
-    mutate(eta = beta * forcing) 
-
-#simulate states
-for (i in 1:nrow(simu)) {
-    simu$state[i] <- rordlogit(1, 
-                               phi = simu$eta[i], 
-                               a = c(simu$cut1[i], simu$cut2[i]))
-    }
-```
-
-```{r visualize simulated_data}
-hist(simu$state)
-ggplot(simu, aes(x=forcing, y=state, color=prov)) +
-    geom_jitter() +
-    facet_wrap("site")
-```
-
-## Fit model to simulated data
-
-```{r simulated fit, eval=FALSE}
-#Use ulam to help draft the model
-# sim <- select(sim, state, forcing)
-# simfit <- ulam(
-#     alist(
-#         #likelihood
-#         state ~ dordlogit(eta, cutpoints),
-#         # model
-#         eta <- beta * forcing,
-#         cutpoints <- c(c1, c2),
-#         c1 ~ half_normal(5, 3),
-#         c2 ~ half_normal(20, 5),
-#         # priors
-#         beta ~ dbeta(.5,5)
-#     ),
-#     data=sim, chains=1, cores=1, iter=20
-# )
-
-# stancode(simfit)
-
-# Write simulated data in a format stan can understand
-# simplest data
-K = length(unique(sim$state))
-N = nrow(sim)
-stan_rdump(c("N", "K", "forcing", "state"), "simulated_nogroups.Rdump")
-simplesimdat <- read_rdump("simulated_nogroups.Rdump")
-
-# 1 group data
-K <- length(unique(sim$state))
-N <- nrow(sim)
-Ngroup = length(unique(sim$group))
-stan_rdump(c("N", "K", "Ngroup", "forcing", "state", "group"), "simulated_data.Rdump")
-simdat <- read_rdump("simulated_data.Rdump")
-
-# Fit model to simulated data
-simfit <- stan("cutpoints_difference.stan", 
-               chains=5, cores=5, iter=2000, 
-               data=simplesimdat)
-              #control=list(adapt_delta=0.99))#, max_treedepth=11))
-
-# Check diagnostics
-util$check_all_diagnostics(simfit)
-```
-
-### Consider fit of model to simulated data
-```{r precis simulated data fit, eval=FALSE}
-precis(simfit, depth=2)
-```
-
-```{r extract fit, eval=FALSE}
-simpost <- as.matrix(simfit)
-pairs(simpost)
-```
-
-
-```{r plot real params vs posterior, eval=FALSE}
-mcmc_areas(simpost, regex_pars = "cutpoints") + 
-    geom_vline(xintercept = c(15,20))
-mcmc_areas(simpost, pars="beta") +
-    geom_vline(xintercept = 0.05)
-```
-
-If cutpoints prior is a single gamma distribution, cutpoints are not returned well. Neither is beta. Edited model so prior is on the difference between cutpoints rather than the cutpoints as a group. 
-
-Also want to try 
-- modeling cutpoints with separate linear models
-- 
-
-## Real data
-```{r dataprep real, eval=FALSE}
-N <- nrow(phendf)
-K <- length(unique(phendf$Phenophase_Derived))
-Nclone <- length(unique(phendf$CloneID))
-Nprovenance <- length(unique(phendf$ProvenanceID))
-Nsite <- length(unique(phendf$SiteID))
-Nyear <- length(unique(phendf$YearID))
-
-
-CloneID <- phendf$CloneID
-ProvenanceID <- phendf$ProvenanceID
-SiteID <- phendf$SiteID
-YearID <- phendf$YearID
-
-forcing <- phendf$forcing_accum
-state <- phendf$Phenophase_Derived
-
-L <- 1
-
-stan_rdump(c("N", "K", "L", "Nsex", "Nclone", "Nprovenance", "Nsite", "SexID", "SiteID", "CloneID", "ProvenanceID", "forcing", "state"), "multilevel_phenology.Rdump")
-standat <- read_rdump("multilevel_phenology.Rdump")
-```
-
-```{r fit model, eval=FALSE}
-
-
-fit <- stan("multilevel_phenology.stan", 
-               chains=5, cores=5, iter=3000, data=standat)
-
-
-```
-
-```{r save model, eval=FALSE}
-saveRDS(fit, file = "multilevel_phenology.rds")
-posterior_cp <- as.array(fit)
-```
-
-### Model version with correlation
-
-
-
-```{r sex and prov with corr, eval=FALSE}
-
-### sex, site, prov, clone, year
-#generate stan code for a draft of the stan code
-fit_full_draft <- ulam(
-    alist(
-        Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- alphas + beta*forcing_accum,
-        alphas <- a_sex[SexID] + a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID],
-        beta <- b + b_sex[SexID] + b_prov[ProvenanceID],
-        #priors
-        b ~ dbeta(.5,5),
-        kappa ~ dnorm(10,2), #change to gamma in real model
-        a_site[SiteID] ~ dnorm(0,1),
-        a_clone[CloneID] ~ dnorm(0,1),
-        a_year[YearID] ~ dnorm(0,1),
-        #sex
-        c(a_sex, b_sex)[SexID] ~ multi_normal(c(as, bs), Rhos, sigma_sex),
-        as ~ dnorm(0,1),
-        bs ~ dnorm(0, 0.1),
-        sigma_sex ~ exponential(1),
-        #provenance
-        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
-        ap ~ dnorm(0,1),
-        bp ~ dnorm(0, 0.1),
-        sigma_prov ~ exponential(1),
-        Rhos ~ lkj_corr(2),
-        Rhop ~ lkj_corr(2)
-    ),
-    data=phendf, sample=FALSE, declare_all_data= FALSE, iter = 10
-)
-stancode(fit_full_draft)
-```
-
-
-```{r fit full model, eval=FALSE}
-
-fitful <- stan("../correlation.stan", 
-               chains=8, cores=8, warmup = 1000, iter=1200, 
-
-```
-```{r save model output, eval=FALSE}
-parsum <- precis(fitful, depth = 2)
-saveRDS(fitful, file = "2019-04-14_correlation.rds")
-posterior_cp <- as.array(fit)
-
-```
-```{r with pooling, eval=FALSE}
-#generate stan code for a draft of the stan code
-fit_full_draft <- ulam(
-    alist(
-        Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- alphas + beta*forcing_accum,
-        alphas <- a_sex[SexID] + a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID],
-        beta <- b + b_sex[SexID] + b_prov[ProvenanceID],
-        #priors
-        b ~ dbeta(.5,5),
-        kappa ~ dnorm(10,2), # change to gamma in stan
-        a_site[SiteID] ~ dnorm(0,site_sigma),
-        a_clone[CloneID] ~ dnorm(0,clone_sigma),
-        a_year[YearID] ~ dnorm(0,year_sigma),
-        #sex
-        c(a_sex, b_sex)[SexID] ~ multi_normal(c(as, bs), Rhos, sigma_sex),
-        as ~ dnorm(0,1),
-        bs ~ dnorm(0, 0.1),
-        sigma_sex ~ exponential(1),
-        #provenance
-        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
-        ap ~ dnorm(0,1),
-        bp ~ dnorm(0, 0.1),
-        sigma_prov ~ exponential(1),
-        #pop varying effects
-        Rhos ~ lkj_corr(2),
-        Rhop ~ lkj_corr(2),
-        # hyperpriors
-        site_sigma ~ exponential(2),
-        clone_sigma ~ exponential(2),
-        year_sigma ~ exponential(2)
-    ),
-    data=phendf, sample=FALSE, declare_all_data= FALSE
-)
-stancode(fit_full_draft)
-```
-```{r fit correlation with pooling, eval=FALSE}
-fitfulpool <- stan("../correlation_with_pooling.stan", 
-               chains=8, cores=8, warmup = 1000, iter=1300, 
-               data=phendf)
-```
-
-```{r save pooling model output}
-#parsumpool <- precis(fitfulpool, depth = 2)
-#saveRDS(fitfulpool, file = "2019-04-15_correlation_with_pooling.rds")
-
-fitfulpool.stan <- readRDS("../2019-04-15_correlaton_with_pooling.rds")
-posteriorpool <- as.array(fitfulpool.stan)
-parsumpool <- precis(fitfulpool.stan, depth=2)
-postext <- extract.samples(fitfulpool.stan)
-
-```
-```{r plot some model}
-dens( postext$Rhop[,1,2] )
-dens( postext$Rhos[,1,2] )
-```
-Negative correlation between slopes and intercepts for provenance.
-Unclear correlatoin between slopes and intercepts for sex. This doesn't look well fit. I think I might need separate models for each sex.
-
-```{r pooling}
-# compute unpooled estimates directly from data
-ap_unpooled <- sapply( 1:length(unique(phendf$ProvenanceID)) ,
-        function(i) mean(phendf$forcing_accum[phendf$ProvenanceID==i]) )
-#bp_unpooled <- sapply( 1:length(unique(phendf$ProvenanceID)) ,
-      #  function(i) mean(phendf$forcing_accum[phendf$ProvenanceID==i])) - ap_unpooled
-# extract posterior means of partially pooled estimates
-
-a_prov <- apply( postext$a_prov , 2 , mean )
-b_prov <- apply( postext$b_prov , 2 , mean )
-
-# plot both and connect with lines
-plot( ap_unpooled * b_prov, b_prov , xlab="intercept" , ylab="slope" ,
-    pch=16 , col=rangi2 , ylim=c( min(b_prov)-0.1 , max(b_prov)+0.1 ) ,
-    xlim=c( min(a_prov)-0.1 , max(a_prov)+0.1 ) )
-points( a_prov , b_prov , pch=1 )
-#for ( i in 1:N_cafes ) lines( c(a1[i],a2[i]) , c(b1[i],b2[i]) )
-
-# compute posterior mean bivariate Gaussian
-Mu_est <- c( mean(postext$ap) , mean(postext$bp) )
-rho_est <- mean( postext$Rhop[,1,2] )
-sa_est <- mean( postext$sigma_prov[,1] )
-sb_est <- mean( postext$sigma_prov[,2] )
-cov_ab <- sa_est*sb_est*rho_est
-Sigma_est <- matrix( c(sa_est^2,cov_ab,cov_ab,sb_est^2) , ncol=2 )
-# draw contours
-library(ellipse)
-for ( l in c(0.1,0.3,0.5,0.8,0.99) )
-    lines(ellipse(Sigma_est,centre=Mu_est,level=l),
-        col=col.alpha("black",0.2))
-```
-
-```{r}
-mcmc_intervals(posteriorpool, regex_pars = c("a_prov", "a_site", "a_year", "a_sex"))
-mcmc_intervals(posteriorpool, regex_pars = c("b_prov", "b_site", "b_year", "b_sex", "b"))
-
-mcmc_intervals(posteriorpool, regex_pars = "b_prov") + ggtitle("slope effect provenance")
-mcmc_intervals(posteriorpool, regex_pars = "a_prov") + ggtitle("intercept effect provenance")
-
-# betas
-
-betas <- postext$b + postext$b_prov[,1] + postext$b_sex
-mcmc_intervals(betas)
-
-# prov threshold effect
-h50p1 <- (postext$kappa[,1] + postext$a_prov)/postext$b_prov
-colnames(h50p1) <- unique(phen$SPU_Name)
-
-h50p2 <- (postext$kappa[,2] + postext$a_prov)/postext$b_prov
-colnames(h50p2) <- unique(phen$SPU_Name)
-
-mcmc_intervals(h50p1)
-mcmc_intervals(h50p2)
-
-#sex threshold effects
-h50sex1 <- (postext$kappa[,1] + postext$a_sex)/postext$b_sex
-colnames(h50sex1) <- unique(phen$Sex)
-
-h50sex2 <- (postext$kappa[,2] + postext$a_sex)/postext$b_sex
-colnames(h50sex2) <- unique(phen$Sex)
-
-mcmc_intervals(h50sex1)
-mcmc_intervals(h50sex2)
-
-
-```
-
-### Separate male and female models with no correlation
-
-
-```{r ulam draft, eval=FALSE}
-
-stancleaner <- function(df) {
-    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -daily_forcing_type)
-    return(df)
-}
-
-fdf <- stancleaner(fdf)
-mdf <- stancleaner(mdf)
-
-fit_draft <- ulam(
-    alist(
-        Phenophase_Derived ~ dordlogit(phi, kappa),
-        phi <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID] + beta*forcing_accum,
-        #priors
-        beta ~ dbeta(.5,5),
-        kappa ~ dnorm(10,2), # change to gamma in stan
-        a_prov[ProvenanceID] ~ dnorm(0, prov_sigma),
-        a_site[SiteID] ~ dnorm(0,site_sigma),
-        a_year[YearID] ~ dnorm(0,year_sigma),
-        a_clone[CloneID] ~ dnorm(0,clone_sigma),
-        # hyperpriors
-        prov_sigma ~ exponential(1.5),
-        site_sigma ~ exponential(1.5),
-        year_sigma ~ exponential(1.5),
-        clone_sigma ~ exponential(1.5)
-    ),
-    data=fdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
-
-stancode(fit_draft)
-```
-
-#### female
-```{r fit female, eval=FALSE}
-#fitfem <- stan("../female_intercept_only.stan", 
-               chains=8, cores=8, warmup = 1100, iter=1300, 
-               data=fdf)
-
-#femsum <- precis(fitfem, depth = 2)
-#saveRDS(fitfem, file = "2019-04-16_fem_intercept_only.rds")
-
-
-```
-
-
-#### male
-```{r fit male, eval=FALSE}
-
-fitm <- stan("../male_intercept_only.stan", 
-               chains=8, cores=8, warmup = 1100, iter=1300, 
-               data=fdf)
-
-msum <- precis(fitfem, depth = 2)
-saveRDS(fitm, file = "2019-04-16_fem_intercept_only.rds")
-
-fitm.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
-
-```
 
 

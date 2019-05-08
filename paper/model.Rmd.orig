@@ -1,0 +1,933 @@
+---
+title: "A multilevel Bayesian model of pollination phenology in lodgepole pine"
+author: "Susannah Tysor"
+date: "April 25, 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
+```
+
+```{r depends}
+library(rethinking)
+library(dplyr)
+library(bayesplot)
+library(tidyr)
+library(summarytools)
+
+```
+
+```{r stan setup}
+util <- new.env()
+source('stan_utility.R', local=util)
+
+options(mc.cores=parallel::detectCores())
+rstan_options(auto_write=TRUE)
+```
+
+## Conceptual Analysis
+
+Pollination phenology in lodgepole pine refers to the timing of two events - pollen shed and cone receptivity. I want to estimate the beginning, end, and length of both events. 
+
+### Phenology data summary
+
+```{r data, echo=FALSE, results="asis"}
+
+phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+    filter(forcing_type=="ristos") %>%
+  filter(Site!="Tolko")
+# phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+#   dplyr::filter(forcing_type=="ristos")
+
+ # SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+ #   dplyr::select(SPU_Name, Orchard) #add provenance information
+SPU_dat <- read.csv("~/phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+dplyr::select(SPU_Name, Orchard)
+ # SPU_dat <- read.csv("~/Documents/phd_sus/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+ #   dplyr::select(SPU_Name, Orchard) #add provenance information
+
+phendf <- phenology_data %>%
+    na.omit()
+phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+    unique()
+
+view(dfSummary(phendf))
+
+# summary(phendf)
+
+```
+
+```{r stanindexing}
+#Create indexes that stan will like
+stanindexer <- function(df) {
+    df$CloneID <- group_indices(df, Clone)
+    df$OrchardID <- group_indices(df, Orchard)
+    df$ProvenanceID <- group_indices(df, SPU_Name)
+    df$SiteID <- group_indices(df, Site)
+    df$YearID <- group_indices(df, Year)
+    df$Tree <- group_indices(df,TreeID)
+    return(df)
+}
+
+fdf <- filter(phendf, Sex == "FEMALE")
+fdf <- stanindexer(fdf)
+mdf <- filter(phendf, Sex == "MALE")
+mdf <- stanindexer(mdf)
+
+#test
+nrow(fdf) + nrow(mdf) == nrow(phendf)
+
+
+```
+
+```{r data}
+view(dfSummary(fdf))
+view(dfSummary(mdf))
+
+ggplot(phendf, aes(x=Sex, y=sum_forcing, fill=as.factor(Phenophase_Derived))) +
+    geom_violin() +
+    scale_fill_viridis_d() + 
+    ggtitle("range of heatsums at each stage")
+
+```
+
+
+Pollen shed almost always begins prior to or simultaneously with cone receptivity. Pollen shed finishes before the receptive period is over less than half the time and sometimes finishes after the receptivity period is done. 
+
+```{r dataviz, fig.width=11, fig.height=9}
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived), linetype=Sex)) +
+    stat_ecdf() +
+    theme_bw(base_size=16) +
+    facet_grid(SPU_Name ~ Site) +
+    scale_color_viridis_d(direction =-1) +
+    ggtitle("Phenophase accumulation as heatsum increases\n by Site and Provenance") +
+    theme(legend.position = "bottom")
+
+```
+
+The order of development and the forcing accumulation required is much more consistent across sites than provenances, suggesting stronger site than provenance effects. The proportion of each phenophase at different forcing amounts is much more consistent within a site than within provenances, suggesting strong site effects/limited provenance effects.
+
+```{r fig.width=11, fig.height=9}
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived))) +
+    geom_density() +
+    theme_bw(base_size=16) +
+    facet_grid(Site ~ SPU_Name, scales="free_y") +
+    scale_color_viridis_d(direction=-1) +
+    ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance") +
+    theme(legend.position = "bottom")
+
+ggplot(phendf, aes(x=sum_forcing, color=as.factor(Phenophase_Derived))) +
+    geom_density() +
+    theme_bw(base_size=16) +
+    facet_grid(SPU_Name ~ Site, scales="free_y") +
+    scale_color_viridis_d(direction=-1) +
+    ggtitle("Phenophase proportion as heatsum increases\n by Site and Provenance") +
+    theme(legend.position = "bottom")
+```
+
+<!--![Site x Provenance](../graphsforsally/phenophase_prop_sitexprov.png)
+![Provenance x Site](../graphsforsally/phenophase_prop_provxsite.png) -->
+
+As the developmental process for pollen shed and cone receptivity appears to be logistic (Sarvas 1972), I will use a logistic model. A logistic model has two parameters. $k$ affects the speed of transition and $h$ determines the time ("location") of transition. $k$ must be positive and between 0 and 1. $k$ near 0 is a slow transition. $k$ near one is a near instantaneous transition. $h$ is the inflection point of the curve, in our case, the point at which a given tree is 50% likely to have transitioned from state $s$ to state $s+1$
+
+$$y = \frac{1}{1+e^{-k(x-h)}}$$
+
+There are two transitions I need to model for each event - 
+1) transitioning from not started to active and 
+2) from active to completed. 
+
+Since there are two transitions, I will use an ordered logistic model that describes the likelihood of being in each phenological state $s$ given a linear model $\eta$ and cutpoints $c$.
+
+For $S=3$ categories
+
+$$\small{\text{OrderedLogistic}(s|~\eta,c) = \left\{ \begin{array}{ll} 1 -
+\text{logistic}(\eta - c_1)  &  \text{if } s = 1, \\[4pt]
+\text{logistic}(\eta - c_1) - \text{logistic}(\eta - c_2)  &
+\text{if } s=2, \text{and} \\[4pt] \text{logistic}(\eta -
+c_3) - 0  &  \text{if } s = 3. \end{array} \right.}
+$$
+Where $\eta$ is a linear model with explanatory variable x - in our case, forcing units (*e.g.* heatsum), and $k$ slope
+$$\eta = k x \\$$
+This model is parameterized slightly differently than the logistic model above. In this model 
+
+$$k=k \\
+h_s=\frac{c_s}{k}\\$$
+
+An ordered logistic model respects the ordering of the phenological states and generates two curves - one representing the "not-yet to active" transition and the other the "active to complete" transition. The transition from before not-yet to not-yet is not meaningful and $c_1$ is set to 0.
+
+Adding intercept components to $\eta$ shifts the location and they are added to the cutpoints when calculating $h_s$. For example, adding a provenance effect to eta 
+
+$$\eta=kx + \alpha_{provenance}$$
+means that the location $h_s$ is calculated as
+
+$$h_s = \frac{c_s+\alpha_{provenance}}{k}$$
+
+In this example parameterization, cutpoints are not sex or population specific. $\alpha$ components in $\eta$ affect both transitions equally. So a provenance effect $\alpha_{provenance}$ will shift both the transition from state from 1 to 2 and from 2 to 3 by the same amount. Is this (biologically) correct?
+
+Sarvas's experimental work on development in trees says that 
+
+> the regression of the rate of progress of the active period on temperature is the same for all the genera, species, individual trees and the different parts of the active period investigated in this study. [@Sarvas1972]
+
+His study included *Populus*, *Betula*, *Alnus* as well as *Picea abies*, *Pinus sylvestris*, and 2 *Larix* species.
+
+The unit for the "rate of progress" is period units/hour where period units are 1/5 of the cycle interval that the active period of a given genotype progresses in 1 hour at a constant temperature of 10 degrees C.
+
+So if it takes 100 hours to go from phenophase 1 to 2 at 10 degrees, then the period unit is 20 minutes.
+
+This does not mean that everything should have the same slope ($k$). It does mean that I can use the same forcing units for everything.
+
+I will parameterize this model with effects on k (slopes) from Sex and Provenance and effects on location (intercepts) from Sex, Site, Provenance, Clone, and Year.
+
+### Important model assumptions
+In a model where effects are included in eta, any effect influences both curves identically. That is, curves can be shifted to the left or right by an effect, but cannot be shifted in opposite directions.
+
+I am making assumptions about the kinds of effects that are possible in what I choose to include on both slopes and intercepts.
+
+In my current model
+
+####Alternative parameterizations
+##### Effects on each cutpoint
+I could parameterize the model differently I think. For example, considering just the effects of sex and provenance: 
+
+$$\eta = (k + k_{sex} + k_{provenance})x \\
+c_1 = \alpha + \alpha_{sex} + \alpha_{provenance} \\
+c_2 = \beta + \beta_{sex} + \beta_{provenance}
+$$
+This means making way more priors, but I think makes biological sense!  
+In old versions of my model, whatever effects there are from provenance, clone, ramet, etc shift all $h_s$ by the same amount. 
+
+This model would have at least double the number of parameters as the other parameterization and may be very difficult or impossible to fit. I did successfully create a model with different effects on both cutpoints, but wasn't able to make the model fit more than one group. This is a technical issue and not a theoretical one. 
+
+##### Difference between cutpoints
+Instead of modeling intercepts as part of $\eta$ or on each cutpoint individually, I could model the *difference* between cutpoints. This is my preferred approach, but I cannot make any versions of this with actual effects included work. I've asked for help [here](https://discourse.mc-stan.org/t/add-effects-to-difference-between-cutpoints-in-multilevel-ordered-logistic-model/8421).
+
+I think this makes sense biologically. I'd estimate some main cutpoints and then the effects on the difference would determine the precise location. A positive male effect on the difference would mean that the curves are pushed apart. A negative male effect would mean the curves are pulled closer together. This is still symmetric, but could capture an effect like - males begin flowering at lower forcing units and stop flowering at higher forcing units than females.
+
+### How to include effects of sex, provenance, etc.
+The first question is whether to include the effect in the speed of transition $k$ or the locations.
+
+### Male and female in same model?
+I am not sure whether to include male and female strobili in the same model. Male and female strobili develop separately but as as part of the same elongating stem. 
+
+If I include them in the same model, unless I do some really crazy parameterization, then I am assuming that clonal, provenance, tree, and site effects are the same across sexes. For example, a clone that has a lower threshold has a lower threshold for both males and females. 
+
+I could do a test for this by running separate models or adding *a lot* of parameters.
+
+The location must vary by sex. If there isn't a cutpoint component  for sex, then curves will be identical for males and females unless the $k$ is allowed to vary. Since $h_s$ depends on $k$ as well as the cutpoints, changes in $k$ can shift the location of the curve. 
+
+Previous model runs have been letting $k$ vary by sex, but not the location. I believe that was a mistake. They could very easily have different $k$ and $h_s$
+
+### Should the sex component have partial pooling?
+No! Sex components should not be pooled across males and females. They're connected but separate and I believe they should be allowed to vary completely independently.
+
+### What about pooling for other effects?
+For clone, site, year, and provenance, I believe partial pooling is the right decision. No pooling will overfit and exaggerate effects, but ignoring the effects (total pooling) will ignore effects I'm testing for (provenance) or that undoubtedly exist (clone, site).
+
+## So what does the model look like?
+
+$$\begin{array}{rlr}
+
+S_i & \sim \text{OrderedLogistic}(s |\eta_i, c_s)\\
+\eta_i & = (k + k_{sex[i]} + k_{provenance[i]}) \times f_i + \alpha_i \\
+\alpha_i &= \alpha_{sex[i]} + \alpha_{provenance[i]} + \alpha_{site[i]} + \alpha_{clone[i]} + \alpha_{year[i]} \\
+
+
+&& \text{priors} \\
+c_s &\sim \text{gamma}(7.5,1)
+k &\sim \text{beta}(.5,5) & \text{slope priors}\\
+k_{sex}, k_{provenance} &\sim \text{normal}(0, 0.1) \\
+\alpha_{sex} &\sim \text{normal}(0, \sigma_{sex}) & \text{intercept priors}\\
+\alpha_{provenance} &\sim \text{normal}(0, \sigma_{provenance}) \\
+\alpha_{site} &\sim \text{normal}(0, \sigma_{site}) \\
+\alpha_{clone} &\sim \text{normal}(0, \sigma_{clone}) \\
+\alpha_{year} &\sim \text{normal}(0, \sigma_{tree}) \\
+\\
+&&\text{populations of varying effects} \\
+\begin{bmatrix}
+\alpha{sex} \\
+\beta{sex}
+\end{bmatrix} &\sim \text{MVNormal} \\
+
+
+&& \text{hyperpriors}\\
+\sigma_{sex} & \sim \text{exponential}(1.5) \\
+\upsilon_{sex} &\sim \text{exponential}(1.5) \\
+\\
+\sigma_{provenance} &\sim \text{exponential}(1.5) \\
+\upsilon_{provenance} &\sim \text{exponential}(1.5) \\
+\\
+\sigma_{site} &\sim \text{exponential}(1.5) \\
+\upsilon_{site} &\sim \text{exponential}(1.5) \\
+\\
+\sigma_{clone} &\sim \text{exponential}(1.5) \\
+\upsilon_{clone} &\sim \text{exponential}(1.5) \\
+\\
+\sigma_{ramet} &\sim \text{exponential}(1.5) \\
+\upsilon_{ramet} &\sim \text{exponential}(1.5)
+\end{array}$$
+
+
+$f$ accumulated forcing units
+
+## What about calculating the start, end, and length of the phenological period?
+
+## Woah now let's calm down and do a simpler version. Maybe look back at an old workflow and try again.
+
+7 sites, 6 provenances, and 10 observations for each of 15 individuals at different forcing temperatures
+```{r simulate_grouped_data}
+# cutpoints <- c(0)
+# cutpoints[2] <- abs(rnorm(1,5,2))
+# cutpoints[3] <- abs(rnorm(1,20,2))
+# #k <- rbeta(1,.5, 5)
+
+nsite <- 7
+nprov <- 6
+nindiv <- 15
+nobs <- 3
+forcing <- runif(10, 175,500)
+basecut <- c(15,20)
+beta = 0.05
+cut_site <- rnorm(n= nsite, mean=1, sd=1)
+cut_prov <- rnorm(n= nprov, mean=-2, sd=1)
+
+sites <- data.frame(site = 1:nsite, effect = cut_site)
+provs <- data.frame(prov = 1:nprov, effect= cut_prov)
+
+simu_prep <- tidyr::crossing(site = sites$site, prov = provs$prov, nobs, indiv = 1:nindiv, forcing) %>%
+    dplyr::left_join(sites) %>% #add site and prov effects
+    rename(site_effect = effect) %>%
+    left_join(provs) %>%
+    rename(prov_effect = effect) %>%
+    mutate(group_effects = site_effect + prov_effect) 
+
+simu <- simu_prep %>% # calculate cutpoints and eta
+    # cutpoints
+    mutate(cut1 = group_effects + basecut[1])  %>%
+    mutate(cut2 = group_effects + basecut[2]) %>%
+    # linear model eta
+    mutate(eta = beta * forcing) 
+
+#simulate states
+for (i in 1:nrow(simu)) {
+    simu$state[i] <- rordlogit(1, 
+                               phi = simu$eta[i], 
+                               a = c(simu$cut1[i], simu$cut2[i]))
+    }
+```
+
+```{r visualize simulated_data}
+hist(simu$state)
+ggplot(simu, aes(x=forcing, y=state, color=prov)) +
+    geom_jitter() +
+    facet_wrap("site")
+```
+
+## Fit model to simulated data
+
+```{r simulated fit, eval=FALSE}
+#Use ulam to help draft the model
+# sim <- select(sim, state, forcing)
+# simfit <- ulam(
+#     alist(
+#         #likelihood
+#         state ~ dordlogit(eta, cutpoints),
+#         # model
+#         eta <- beta * forcing,
+#         cutpoints <- c(c1, c2),
+#         c1 ~ half_normal(5, 3),
+#         c2 ~ half_normal(20, 5),
+#         # priors
+#         beta ~ dbeta(.5,5)
+#     ),
+#     data=sim, chains=1, cores=1, iter=20
+# )
+
+# stancode(simfit)
+
+# Write simulated data in a format stan can understand
+# simplest data
+K = length(unique(sim$state))
+N = nrow(sim)
+stan_rdump(c("N", "K", "forcing", "state"), "simulated_nogroups.Rdump")
+simplesimdat <- read_rdump("simulated_nogroups.Rdump")
+
+# 1 group data
+K <- length(unique(sim$state))
+N <- nrow(sim)
+Ngroup = length(unique(sim$group))
+stan_rdump(c("N", "K", "Ngroup", "forcing", "state", "group"), "simulated_data.Rdump")
+simdat <- read_rdump("simulated_data.Rdump")
+
+# Fit model to simulated data
+simfit <- stan("cutpoints_difference.stan", 
+               chains=5, cores=5, iter=2000, 
+               data=simplesimdat)
+              #control=list(adapt_delta=0.99))#, max_treedepth=11))
+
+# Check diagnostics
+util$check_all_diagnostics(simfit)
+```
+
+### Consider fit of model to simulated data
+```{r precis simulated data fit, eval=FALSE}
+precis(simfit, depth=2)
+```
+
+```{r extract fit, eval=FALSE}
+simpost <- as.matrix(simfit)
+pairs(simpost)
+```
+
+
+```{r plot real params vs posterior, eval=FALSE}
+mcmc_areas(simpost, regex_pars = "cutpoints") + 
+    geom_vline(xintercept = c(15,20))
+mcmc_areas(simpost, pars="beta") +
+    geom_vline(xintercept = 0.05)
+```
+
+If cutpoints prior is a single gamma distribution, cutpoints are not returned well. Neither is beta. Edited model so prior is on the difference between cutpoints rather than the cutpoints as a group. 
+
+Also want to try 
+- modeling cutpoints with separate linear models
+- 
+
+## Real data
+
+
+```{r fit model, eval=FALSE}
+
+
+femfit <- stan("phenology.stan", 
+               chains=4, cores=4, warmup=1000, iter=1300, data=frdump)
+femtest <- stan("phenology.stan",
+                chains=1, warmup=20, iter=25, data=frdump)
+
+
+```
+
+
+### Separate male and female models with no correlation
+
+
+```{r ulam draft, eval=FALSE}
+
+stancleaner <- function(df) {
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
+    return(df)
+}
+
+fdf <- stancleaner(fdf)
+mdf <- stancleaner(mdf)
+
+fit_draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID] + (beta + beta_site[SiteID] + beta_prov[ProvenanceID])*sum_forcing,
+        #transformed_parameters
+        transpars> kappa_diff <- kappa[2] - kappa[1],
+       # transpars> beta_tot <- beta + beta_site[SiteID] + beta_prov[ProvenanceID],
+       # transpars> alpha_tot <- a_prov[ProvenanceID] + a_site[SiteID] + a_year[YearID] + a_clone[CloneID],
+       # transpars> h1 <- (kappa[1] + alpha_tot)/beta_tot,
+        #adaptive priors
+        a_prov[ProvenanceID] ~ dnorm(0, prov_sigma),
+        a_site[SiteID] ~ dnorm(0,site_sigma),
+        a_year[YearID] ~ dnorm(0,year_sigma),
+        a_clone[CloneID] ~ dnorm(0,clone_sigma),
+       beta_site[SiteID] ~ dnorm(0, site_nu),
+       beta_prov[ProvenanceID] ~ dnorm(0, prov_nu),
+        #fixed priors
+        beta ~ exponential(1.5),
+        kappa[1] ~ dnorm(10,2),
+        kappa_diff ~ dnorm(5,1),
+       # beta_tot ~ exponential(1.5),
+        # hyperpriors
+        prov_sigma ~ exponential(1.5),
+        site_sigma ~ exponential(1.5),
+        year_sigma ~ exponential(1.5),
+        clone_sigma ~ exponential(1.5),
+        site_nu ~ exponential(2),
+        prov_nu ~ exponential(2)
+    ),
+    data=fdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
+
+write(stancode(fit_draft), file="female.stan")
+```
+
+#### female
+```{r fit female, eval=FALSE}
+fitfem <- stan("female.stan", 
+               chains=1, cores=1, warmup = 11, iter=20, 
+               data=fdf)
+
+#femsum <- precis(fitfem, depth = 2)
+#saveRDS(fitfem, file = "2019-04-16_fem_intercept_only.rds")
+
+
+```
+
+
+#### run male
+```{r fit male, eval=FALSE}
+
+fitm <- stan("male.stan", 
+               chains=1, cores=1, warmup = 11, iter=20, 
+               data=mdf)
+, init=list(list(beta_site=rep(0.02,7),  beta_prov=rep(0.02,6), beta=5)))
+
+msum <- precis(fitfem, depth = 2)
+saveRDS(fitm, file = "2019-04-16_fem_intercept_only.rds")
+
+fitm.stan <- readRDS(2019-04-16_fem_intercept_only.rds")
+
+```
+### Separate male and female models with correlations
+
+```{r draft corr model with ulam}
+
+stancleaner <- function(df) {
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
+    return(df)
+}
+
+fdf <- stancleaner(fdf)
+mdf <- stancleaner(mdf)
+
+
+fit_full_draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID] + (beta + b_site[SiteID] + b_prov[ProvenanceID]) * sum_forcing,
+        # priors
+        beta ~ exponential(2),
+        kappa ~ dnorm(10,2), # change to gamma in stan
+        #adaptive_priors
+        a_clone[CloneID] ~ dnorm(0, clone_sigma),
+        a_year[YearID] ~ dnorm(0, year_sigma),
+        #site
+        c(a_site, b_site)[SiteID] ~ multi_normal(c(as, bs), Rhos, sigma_site),
+        as ~ dnorm(0, 1),
+        bs ~ dnorm(0, 0.5),
+        sigma_site ~ exponential(1.5),
+        #provenance
+        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
+        ap ~ dnorm(0, 1),
+        bp ~ dnorm(0, 0.5),
+        sigma_prov ~ exponential(1.5),
+        #pop varying effects
+        Rhos ~ lkj_corr(2),
+        Rhop ~ lkj_corr(2),
+        # hyperpriors
+        clone_sigma ~ exponential(2),
+        year_sigma ~ exponential(2)
+    ), data=fdf, sample=FALSE, declare_all_data = FALSE) #change data depending on male or female model
+
+write(stancode(fit_full_draft), file="phenology_corr.stan")
+```
+
+```{r fit female model}
+
+femtest <- stan("phenology_corr.stan", chains = 1, warmup =20, iter=25, control=list(adapt_delta=.95, max_treedepth=15), data=fdf)
+
+```
+
+## Error model?
+
+```{r error model}
+fit_error_draft <- ulam(
+    alist(
+        Phenophase_Derived ~ dordlogit(phi, kappa),
+        phi <- a_site[SiteID] + a_prov[ProvenanceID] + a_clone[CloneID] + a_year[YearID] + (beta + b_site[SiteID] + b_prov[ProvenanceID]) * sum_forcing_true,
+        #error
+        sum_forcing_true ~ normal(11,3),
+        sum_forcing ~ normal(sum_forcing_true, 1),
+        # priors
+        beta ~ exponential(2),
+        kappa ~ dnorm(10,2), # change to gamma in stan
+        #adaptive_priors
+        a_clone[CloneID] ~ dnorm(0, clone_sigma),
+        a_year[YearID] ~ dnorm(0, year_sigma),
+        #site
+        c(a_site, b_site)[SiteID] ~ multi_normal(c(as, bs), Rhos, sigma_site),
+        as ~ dnorm(0, 1),
+        bs ~ dnorm(0, 0.5),
+        sigma_site ~ exponential(1.5),
+        #provenance
+        c(a_prov, b_prov)[ProvenanceID] ~ multi_normal(c(ap, bp), Rhop, sigma_prov),
+        ap ~ dnorm(0, 1),
+        bp ~ dnorm(0, 0.5),
+        sigma_prov ~ exponential(1.5),
+        #pop varying effects
+        Rhos ~ lkj_corr(2),
+        Rhop ~ lkj_corr(2),
+        # hyperpriors
+        clone_sigma ~ exponential(2),
+        year_sigma ~ exponential(2), 
+    ), 
+    data=fdf, declare_all_data = FALSE, sample.prior=TRUE) #change data depending on male or female model
+
+write(stancode(fit_error_draft), file="phenology_corr_err.stan")
+```
+
+```{r fit female model}
+
+stancleaner <- function(df) {
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
+    return(df)
+}
+
+fdf <- stancleaner(fdf)
+mdf <- stancleaner(mdf)
+
+femtest <- stan("phenology_corr_err.stan",
+                chains=1, , warmup=20, iter=25, data=fdf)
+femfit <- stan("phenology_corr_err.stan",
+                chains=4, cores=4, warmup=3000, iter=5000, data=fdf)
+
+```
+
+```{r save model, eval=FALSE}
+saveRDS(femfit, file = "female_with_corr_err.rds")
+posterior <- as.array(femfit)
+post_re <- extract.samples(femfit)
+
+
+h50 <- (-post_re$kappa[,2] + post_re$a_site[,1] + post_re$a_prov[,1] + post_re$a_clone[,1])/(post_re$b_prov[,1]+post_re$b_site[,1] + post_re$beta)
+hist(h50)
+
+np <- nuts_params(femtest)
+fempars <- precis(femtest, depth=3)
+
+alphas <- fempars[str_detect(rownames(fempars), "^a_"),]
+divergences <- filter(np, Parameter=="divergent__" & Value==1)
+
+mcmc_areas(posterior, regex_pars = c("beta", "bs", "bp", "b_site", "b_prov", "sigma_site[2]")) + ggtitle("beta params")
+mcmc_areas(posterior, regex_pars = c("^a_s", "^a_p"))
+mcmc_areas(posterior, regex_pars = c("sigma"))
+mcmc_areas(posterior, regex_pars = c("kappa"))
+
+mcmc_areas(posterior, regex_pars=c("h50"))
+mcmc_parcoord(posterior, np=np, pars=c("beta", "prov_sigma", "site_sigma", "clone_sigma", "site_nu", "prov_nu", "kappa[1]", "kappa[2]"))
+
+
+mcmc_parcoord(posterior, np=np, regex_pars=c("beta", "sigma_prov", "sigma_site", "clone_sigma", "year_sigma", "kappa[1]", "kappa[2]"))
+
+mcmc_pairs(posterior, np=np, regex_pars=c("beta", "^as", "^ap", "clone_sigma", "year_sigma", "kappa[1]", "kappa[2]"))
+
+```
+
+## Fit a slope only model
+
+```{r ulam draft slope only}
+stancleaner <- function(df) {
+    df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
+    return(df)
+}
+
+fdf <- stancleaner(fdf)
+mdf <- stancleaner(mdf)
+
+slopedraft <- ulam(
+    alist(
+        Phenophase_Derived ~ ordered_logistic(phi, kappa),
+        phi <- sum_forcing * (beta + b_site[SiteID] + b_prov[ProvenanceID] + b_clone[CloneID] + b_year[YearID] + b_orch[OrchardID]),
+        #fixed priors
+        kappa ~ normal(7.5,2), #make gamma in stan
+        beta ~ exponential(3),
+        #adaptive priors
+        b_site[SiteID] ~ normal(0, sigma_site),
+        b_prov[ProvenanceID] ~ normal(0, sigma_prov),
+        b_clone[CloneID] ~ normal(0, sigma_clone),
+        b_year[YearID] ~ normal(0, sigma_year),
+        b_orch[OrchardID] ~ normal(0, sigma_orch),
+        #hyperpriors
+        sigma_site ~ exponential(2),
+        sigma_prov ~ exponential(2),
+        sigma_clone ~ exponential(2),
+        sigma_year ~ exponential(2),
+        sigma_orch ~ exponential(2)
+    ),
+     data=fdf, sample=FALSE, declare_all_data = FALSE)
+
+#write(stancode(slopedraft), file="slopes.stan")
+```
+
+```{r dataprep real, eval=FALSE}
+
+prepforstan <- function(df, file) {
+    N <- nrow(df)
+    K <- length(unique(df$Phenophase_Derived))
+    Nclone <- length(unique(df$CloneID))
+    Nprovenance <- length(unique(df$ProvenanceID))
+    Nsite <- length(unique(df$SiteID))
+    Nyear <- length(unique(df$YearID))
+    Norchard <- length(unique(df$OrchardID))
+    
+    CloneID <- df$CloneID
+    ProvenanceID <- df$ProvenanceID
+    SiteID <- df$SiteID
+    YearID <- df$YearID
+    OrchardID <- df$OrchardID
+    
+    forcing <- df$sum_forcing
+    state <- df$Phenophase_Derived
+    
+    rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
+}
+
+# prepforstan(fdf, "female.rdump")
+# prepforstan(mdf, "male.rdump")
+
+frdump <- read_rdump("female.rdump")
+mrdump <- read_rdump("male.rdump")
+```
+### Female model
+```{r fit female slopes}
+ftest <- stan("slopes.stan",
+                chains=1, warmup=20, iter = 25, data = frdump)
+ffit <- stan("slopes.stan",
+                chains=8, cores=8, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=frdump)
+```
+
+```{r female model summary}
+
+
+saveRDS(ffit, file = "female_slopes.rds")
+ffit.stan <- readRDS("female_slopes.rds")
+util$check_all_diagnostics(ffit)
+
+fpars <- precis(ffit.stan, depth = 2)
+post_re <- extract.samples(ffit.stan)
+post <- as.array(ffit.stan)
+lp <- log_posterior(ffit.stan)
+param_names <- attributes(post)$dimnames$parameters
+np <- nuts_params(ffit.stan) #nuts params
+
+```
+
+```{r diagnose fitting problems}
+sex = "female"
+mcmc_trace(post, regex_pars = "site") + ggtitle(paste(sex, "site"))
+mcmc_trace(post, regex_pars = "prov") + ggtitle(paste(sex, "prov"))
+mcmc_trace(post, regex_pars = "sigma") + ggtitle(paste(sex, "sigma"))
+mcmc_trace(post, regex_pars = "year") + ggtitle(paste(sex, "year"))
+mcmc_trace(post, regex_pars = "kappa") + ggtitle(paste(sex, "kappa"))
+#mcmc_trace(post, regex_pars = "orch") + ggtitle(paste(sex, "orchard"))
+
+divergences <- filter(np, Parameter=="divergent__" & Value==1)
+nrow(divergences)
+
+color_scheme_set("darkgray")
+mcmc_parcoord(post, np = np, pars = param_names[c(3:16, 276:294)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
+mcmc_parcoord(post, np=np, regex_pars = c("clone"))
+
+mcmc_pairs(post, np = np, regex_pars = c("kappa")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
+mcmc_pairs(post, np = np, regex_pars = c("site"))
+mcmc_pairs(post, np=np, regex_pars="prov")
+mcmc_pairs(post, np = np, regex_pars = "sigma")
+mcmc_pairs(post, np= np, pars = c("b_year[1]", "b_year[2]", "b_year[3]", "b_year[4]", "sigma_year"))
+mcmc_pairs(post, np=np, pars=c("b_site[1]", "b_clone[1]", "b_prov[1]"))
+
+<<<<<<< HEAD
+```
+#### posterior predictive checks
+```{r ppc}
+library(shinystan)
+shinyfit <- as.shinystan(ffit.stan)
+launch_shinystan(shinyfit)
+
+# try to generate states
+
+#index for 1000 random draws from the sample
+draws <- base::sample(1:8000, size=1000, replace = FALSE) 
+forcing_predictor <- runif(length(draws), min=min(phendf$sum_forcing), max=max(phendf$sum_forcing)) # randomly generated forcing temperatures within range of real forcing temperatures 
+
+phiexp <- (post_re$b_site[draws,1] + mean(post_re$b_clone[draws,1]) + post_re$b_prov[draws,1] + mean(post_re$b_year[draws,1]) + post_re$beta[draws]) * forcing_predictor
+
+cuts <- data.frame(post_re$kappa)[draws,]
+colnames(cuts) <- c("kappa1", "kappa2")
+
+stateexp <- c()
+for (i in 1:length(draws)) {
+    stateexp[i] <- rordlogit(1, phiexp[i], cuts[i,])
+}
+
+expectations <- data.frame(sum_forcing=forcing_predictor, state=stateexp, source="predicted")
+
+data <- filter(mdf, SiteID==1, ProvenanceID==1) %>% 
+    dplyr::select(sum_forcing, state=Phenophase_Derived) %>%
+    mutate(source="data")
+
+de <- rbind(expectations, data)
+
+ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source))) +
+    stat_ecdf()
+
+```
+### Male model
+```{r fit male slopes}
+mtest <- stan("slopes.stan",
+                chains=1, warmup=20, iter = 25, data = mdf)
+mfit <- stan("slopes.stan",
+                chains=8, cores=8, warmup=2000, iter=3000, data=mdf)
+```
+```{r male model summary}
+
+util$check_all_diagnostics(mfit)
+
+#saveRDS(mfit, file = "male_slopes.rds")
+mfit.stan <- readRDS("male_slopes.rds")
+
+mpars <- precis(mfit.stan, depth = 2)
+post_re <- extract.samples(mfit.stan)
+post <- as.array(mfit.stan)
+lp <- log_posterior(mfit.stan)
+param_names <- attributes(post)$dimnames$parameters
+np <- nuts_params(mfit.stan) #nuts params
+
+mcmc_trace(post, regex_pars = "site") + ggtitle("male site")
+```
+
+```{r diagnose fitting problems}
+
+divergences <- filter(np, Parameter=="divergent__" & Value==1)
+nrow(divergences)
+
+mcmc_trace(post, regex_pars = "site") + ggtitle("male site")
+
+color_scheme_set("darkgray")
+mcmc_parcoord(post, np = np, pars = param_names[c(3:16, 276:312)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
+mcmc_parcoord(post, np=np, regex_pars = c("clone"))
+
+mcmc_pairs(post, np = np, regex_pars = c("beta$", "kappa"))
+# show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
+=======
+>>>>>>> 8f83057ef69a86c46877a5c51e712df4807ce4a8
+
+color_scheme_set("red")
+mcmc_nuts_divergence(np, lp)
+mcmc_nuts_divergence(np, lp, chain = 1) # understand how divergences interact with the model globally. Identify light tails and incomplete exploration of target distribution. use chain argument to overlay the plot for a particular Markov chain on the plot
+mcmc_nuts_divergence(np, lp, chain = 2)
+mcmc_nuts_divergence(np, lp, chain = 3)
+mcmc_nuts_divergence(np, lp, chain = 4)
+mcmc_nuts_divergence(np, lp, chain = 5)
+mcmc_nuts_divergence(np, lp, chain = 6)
+mcmc_nuts_divergence(np, lp, chain = 7)
+mcmc_nuts_divergence(np, lp, chain = 8)
+
+### ENERGY
+color_scheme_set("red")
+mcmc_nuts_energy(np) + ggtitle(paste(sex, "energy plot"))
+# energy plot. shows overlaid histograms of the marginal energy distribution piE and the first-differenced distribution pi_deltaE. id overly heavy tails (also challenging for sampling). the energy diagnostic for HMC (and the related energy-based Bayesian fraction of missing info) quantifies the heaviness of the tails of the posterior. Ideally the two histograms will look the same
+
+#Look at the pairs plot to see which primitive parameters are correlated with the energy__ margin. There should be a negative relationship between lp__ and energy__ in the pairs plot, which is not a concern because lp__ is the logarithm of the posterior kernel rather than a primitive parameter.
+
+energy <- dplyr::filter(np, Parameter== "energy__")
+
+plot(post_re$b_site[,7], energy$Value)
+title(paste(sex, "site 2 energy"))
+
+sites <- data.frame(post_re$b_site)
+sites <- cbind(energy = energy$Value, sites)
+pairs(sites)
+
+provs <- data.frame(post_re$b_prov)
+provs <- cbind(energy = energy$Value, provs)
+pairs(provs)
+
+# Rhat: potential scale reduction statistic
+# compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
+
+rhats_good <- rhat(ffit.stan)#, pars = param_names[1:10])
+color_scheme_set("brightblue")
+mcmc_rhat(rhats_good) +
+    yaxis_text(hjust = 1)
+
+# Effective sample size
+# estimate of the number of independent draws from the posterior dist of the estimand of interest. n_eff in stan is based on ability of draws to estimate the true mean value of the param. because draws are not independent if there is autocorrelation between draws, neff is usually smaller than total N. the larger the ration of n_eff to N, the better. ratios depend not just on the model but on the algorithm used to fit the model
+
+ratios <- neff_ratio(ffit.stan, param_names[270:295])
+print(ratios)
+
+mcmc_neff(ratios, size = 2) +
+    yaxis_text(hjust = 1)
+
+# Autocorrelation
+#n_eff/N decreases as autocorrelation becomes more extreme. Visualize autocorrelation using mcmc_acf or mcmc_acf_bar. Postive autocorrelation is bad because it means the chain gets stuck. Ideally, it drops quickly to zero as lag increasses. negative autocorrelation indicates fast convergence of sample mean towards true
+
+mcmc_acf(post, lags = 10, regex_pars = c("kappa"))
+mcmc_acf(post, lags=10, regex_pars = c('b_site'))
+mcmc_acf(post, lags=10, regex_pars=c('b_prov'))
+mcmc_acf(post, lags=10, regex_pars=c('b_year'))
+
+```
+
+#### posterior predictive checks
+```{r ppc}
+library(shinystan)
+shinyfit <- as.shinystan(ffit.stan)
+launch_shinystan(shinyfit)
+
+# try to generate states
+
+#index for 1000 random draws from the sample
+draws <- base::sample(1:1200, size=1000, replace = FALSE)
+draws <- 1:1200
+forcing_predictor <- runif(length(draws), min=min(phendf$sum_forcing), max=max(phendf$sum_forcing)) # randomly generated forcing temperatures within range of real forcing temperatures 
+
+phiexp <- (post_re$b_site[draws,1] + mean(post_re$b_clone[draws,1]) + post_re$b_prov[draws,1] + mean(post_re$b_year[draws,1]) + post_re$beta[draws]) * forcing_predictor
+
+cuts <- data.frame(post_re$kappa)[draws,]
+colnames(cuts) <- c("kappa1", "kappa2")
+
+stateexp <- c()
+for (i in 1:length(draws)) {
+    stateexp[i] <- rordlogit(1, phiexp[i], cuts[i,])
+}
+
+expectations <- data.frame(sum_forcing=forcing_predictor, state=stateexp, source="predicted")
+
+data <- filter(mdf, SiteID==1, ProvenanceID==1) %>% 
+    dplyr::select(sum_forcing, state=Phenophase_Derived) %>%
+    mutate(source="data")
+
+de <- rbind(expectations, data)
+
+ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source))) +
+    stat_ecdf()
+
+ggplot(de, aes(x=sum_forcing, color=as.factor(state), linetype=as.factor(source))) +
+  geom_density()
+
+```
+
+
+
+
+
+### Male model
+```{r fit male slopes}
+mtest <- stan("slopes.stan",
+                chains=1, warmup=20, iter = 25, data = mrdump)
+mfit <- stan("slopes.stan",
+                chains=8, cores=8, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=mrdump)
+```
+```{r male model summary}
+
+util$check_all_diagnostics(mfit)
+
+saveRDS(mfit, file = "male_slopes.rds")
+mfit.stan <- readRDS("male_slopes.rds")
+
+mpars <- precis(mfit.stan, depth = 2)
+post_re <- extract.samples(mfit.stan)
+post <- as.array(mfit.stan)
+lp <- log_posterior(mfit.stan)
+param_names <- attributes(post)$dimnames$parameters
+np <- nuts_params(mfit.stan) #nuts params
+
+mcmc_trace(post, regex_pars = "site") + ggtitle("male site")

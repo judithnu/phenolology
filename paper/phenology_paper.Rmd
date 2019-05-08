@@ -1,13 +1,11 @@
 ---
 title: "Predicting pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: "January 25, 2019"
-params:
-  date !r SysDate()
+date: May 8, 2019
 output:
-  pdf_document: default
   html_document: 
-    toc:TRUE
+    toc: TRUE
+
 ---
 
 ```{r setup, include=FALSE}
@@ -15,8 +13,12 @@ library(knitr)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r depends}
+```{r depends, echo=FALSE, warning=FALSE}
 library(dplyr)
+library(rstan)
+library(rethinking)
+library(bayesplot)
+library(stringr)
 ```
 # Introduction
 As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
@@ -61,10 +63,6 @@ While lodgepole pine has four subspecies, this work concerns only *Pinus contort
 
 ### Data
 
-#### Weather data
-
-[build model with local data from orchards and weather stations, apply across landscape with [PCIC daily gridded data](https://pacificclimate.org/data/daily-gridded-meteorological-datasets)
-
 #### Phenology Data
 
 My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, I modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. I then applied the model to weather data across the lodgepole pine distribution to determine the distance between populations with synchronous pollen shed and cone receptivity.
@@ -73,7 +71,9 @@ My aim was to model pollination phenology in lodgepole pine and calculate synchr
 ##### Sites
 Trees selected from across the British Columbia portion of the lodgepole pine range are grown in both large scale provenance trials and seed orchards, which are similar to common gardens, as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 8 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another, but sites span about 5 degrees of latitude and are at elevations from [X] to [X].
 
-![Map of seed orchard locations. Boxed area in map on left is shown in greater detail on the right.](~/Documents/research_phd/maps/SiteMaps/sitemap.png)
+![Map of seed orchard locations. Boxed area in map on left is shown in greater detail on the right.](/home/sus/Documents/research_phd/maps/SiteMaps/sitemap.png)
+
+
 ##### Provenances
 Trees grown at the seed orchard sites were sourced from 6 biogeoclimate regions known as Seed Planning Units. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
@@ -81,7 +81,7 @@ I obtained records for 17 of the 26 lodgepole pine seed orchards in British Colu
 
 Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology.
 
-![Contingency table of Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](/home/sus/Documents/research_phd/phd_proposal/figure/contingencytable.png)
+![Contingency table of years of data for Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](/home/sus/Documents/research_phd/phd_proposal/figure/contingencytable.png)
 
 
 ![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPZ}](/home/sus/Documents/research_phd/maps/SPUmaps/SPUmap.png)
@@ -116,7 +116,7 @@ There are three phenological stages of interest each for a tree's male and femal
 Phenophases in the field were recorded using different symbol sets and resolutions. I assigned each symbol to one of the phenophases above. Trees that did not produce cones are assigned phenological stage 0.
 
 
-```{r phenophase_derivation}
+```{r phenophase_derivation, echo=FALSE}
 no_flowers <- '0'
 #before_flowering <- c('1', '2.5', '-') #stage 1
 before_flowering <- c("1, 2.5, -")
@@ -133,17 +133,30 @@ phenophase_legend <- data.frame(Phenophase = derived_phenophase, Symbols = recor
 kable(phenophase_legend, padding = 0)
 ```
 
+#### Weather data
 
-## Modeling
+Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet was used for each station. Mean daily temperature was calculated from the minimum and maximum daily temperatures.
+
+![Map of Sites with nearest climate gridpoints](/home/sus/Documents/research_phd/maps/SiteMaps/siteswithclimategrid.png)
+
+#### Forcing units
+
+The relative effect of mean daily temperature $t$ on the rate of forcing was calculated with
+
+$$R(t) = \frac{28.4}{1+ e^{-0.185*t-18.4}}$$
+which describes the relationship between temperature and development rate. This equation for forcing units is based on experimental work from Risto Sarvas with in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990]. @Chuine1999 found this calculation of forcing units superior to degree day calculations.  
+Forcing Units on day $d$ ($f_d$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
+
+$$f(d) = \sum_{i=1}^d R_d(x)$$
+
+The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and verified to perform better than growing degree day models by Chuine [@Chuine1999]
+
 
 ## Phenology Modeling 
 
 
-
-
-
 ### Actual methods
-I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan [@standevelopmentteamRStanInterfaceStan2018].
+I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. An ordinal logistic model 
 
 For phenological states $k \in \{1,2,3\}$, the probability of 
 
@@ -156,22 +169,29 @@ c_3) - 0  &  \text{if } k = 3. \end{array} \right.$$
 
 
 $$\begin{array}{rlr}
-S_i & \sim OrderedLogistic(\eta,\kappa) & \text{probability of data}\\
-\eta_i & = \beta_{sex} h_i + \alpha_{provenance} + \alpha_{clone} & \text{linear model}\\
-\kappa_k & \sim \mathrm{normal}(5,10) & \text{common prior for cutpoints}\\
-\beta_{clone} & \sim \mathrm{beta}(1,1) & \text{prior for transition speed}\\
-\alpha_{clone} & \sim \mathrm{normal}(0,1) & \text{prior for clone threshold effects}\\
-\alpha_{provenance} & \sim \mathrm{normal}(0,1) & \text{prior for provenance threshold effects}
+S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
+\eta_i & = (\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
+\kappa_k & \sim \mathrm{gamma}(7.5,1) & \text{fixed priors}\\
+\beta & \sim \mathrm{exponential}(2) & \text{}\\
+\beta_{site} & \sim \mathrm{normal}(0,\sigma_{site}) & \text{adaptive priors}\\
+\beta_{prov} & \sim \mathrm{normal}(0,\sigma_{prov}) & \text{}\\
+\beta_{year} & \sim \mathrm{normal}(0, \sigma_{year}) \\
+\beta_{clone} & \sim \mathrm{normal}(0, \sigma_{clone}) \\
+\sigma_{site} & \sim \mathrm{exponential}(3) & \text{hyperpriors}\\
+\sigma_{prov} & \sim \mathrm{exponential}(3) \\
+\sigma_{year} & \sim \mathrm{exponential}(3) \\
+\sigma_{clone} & \sim \mathrm{exponential}(3) \\
 \end{array}$$
 
 
-The overall threshold for for phase transition can be calculated by dividing the slope by the intercept.
+The point at which a tree is 50% likely to have transitioned from one phenophase to another can be calculated by dividing the cutpoint for the transition by the slope.
 
 $$\begin{array}{ll}
-\bf{H}_1 &= \beta_{sex}/(c_1+\alpha_{clone}+\alpha_{provenance})\\
-\bf{H}_2 &= \beta_{sex}/(c_2+\alpha_{clone}+\alpha_{provenance})
+\bf{H}_1 &= \kappa_1/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
+\bf{H}_2 &= \kappa_2/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
 \end{array}$$
 
+Another way to think about the probabilities in this model:
 
 $$\begin{array}{rll}
 S_i&\sim \mathrm{Categorical}(\bf{p}) &\text{probability of data} \\
@@ -179,20 +199,23 @@ p_1 & = q_1 &\text{probabilities of each value of } k\\
 p_2 & = q_2 - q_1 \\
 p_3 & = 1-q_3 \\
 logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
-\eta_i&= \beta_{sex} h_i + \alpha_{provenance} + \alpha_{clone} &\text{linear model}\\
+\eta_i&= (\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model} &\text{linear model}\\
 \\
-\kappa_k&\sim \mathrm{normal}(5,10) &\text{common prior for cutpoints}\\
-\beta_{clone}&\sim \mathrm{beta}(1,1) \\
-\alpha_{clone} &\sim \mathrm{normal}(0,1) \\
-\alpha_{provenance} &\sim \mathrm{normal}(0,1) \\
-\bf{H}_1 &= \beta_{sex}/(c_1+\alpha_{clone}+\alpha_{provenance})\\
-\bf{H}_2 &= \beta_{sex}/(c_2+\alpha_{clone}+\alpha_{provenance})
 \end{array}$$
 
 
 To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions
 
-### Results
+#### Differences between provenances
+
+Were calculated according to [@vandermijnsbruggeVariationBudBurst2015] - "difference in days in which half the plants has reached the same score level"
+
+$$\mathrm{H50}_{prov_i} - \mathrm{H50}_{prov_j} = \beta_{prov_j} - \beta_{prov_2}/\beta$$
+
+#### Assumptions 
+Chilling requirements are met and chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Both phases occur at the same rate.
+
+# Results
 
 1) How strong are the genetic vs. environmental effects on pollination phenology?
 
@@ -210,6 +233,137 @@ However, seedling spring vegetative phenology data from four growth chamber temp
 I expect that faster spring warm-up will condense as well as advance growth initiation dates and also shorten pollination phenological periods by speeding development prior to and during the phenological period. This should further synchronize populations in similar climates and act as a barrier to breeding with populations in more different climates. On the other hand, it could favor outcrossing over selfing by causing protandry - pollen shed in advance of cone receptivity. Based on anecdotal reports from seed orchards managers, I expect protandry (and thus outcrossing) to increase under climate change.
 
 I will examine the variability of the start date across the range ($t_1$) to see if it shrinks in warmer years and as the climate changes. I will also calculate overlap between within population cone receptivity and pollen shed under current conditions and with climate warming and see if the heat sum requirements for cone receptivity and pollen shed are different.
+
+
+## Model summary
+
+```{r model data}
+ffit.stan <- readRDS("female_slopes.rds")
+mfit.stan <- readRDS("male_slopes.rds")
+
+fsum <- rstan::summary(ffit.stan)$summary
+fsum <- as.data.frame(fsum)
+fsum$par <- rownames(fsum)
+fpost <- as.data.frame(ffit.stan)
+fpost_re <- extract.samples(ffit.stan)
+fparam_names <- colnames(fpost)
+
+flp <- log_posterior(ffit.stan)
+fnp <- nuts_params(ffit.stan) #nuts params
+
+msum <- rstan::summary(mfit.stan)$summary
+msum <- as.data.frame(msum)
+msum$par <- rownames(msum)
+mpost <- as.data.frame(mfit.stan)
+mpost_re <- extract.samples(mfit.stan)
+mparam_names <- colnames(mpost)
+
+mlp <- log_posterior(mfit.stan)
+mnp <- nuts_params(mfit.stan) #nuts params
+
+#mf
+fpost$sex <- 0
+mpost$sex <- 1
+
+
+post <- full_join(mpost, fpost) %>%
+    select(-`b_clone[260]`)
+```
+
+### Parameter estimates
+
+Clones not included
+
+*Female*
+```{r param female table}
+kable(
+fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
+```
+
+*Male*
+```{r param male table}
+kable(
+msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
+```
+
+```{r compare plot function}
+
+compare_fm <- function(femplot, mplot, nrow = 2, ...) {
+    bayesplot_grid(
+        femplot, mplot,
+        grid_args = list(nrow = nrow),
+        subtitles = c("Female",
+                      "Male"),
+        ...
+    )
+}
+
+compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
+    bayesplot_grid(
+        femplot, mplot,
+        grid_args = list(ncol = ncol),
+        subtitles = c("Female",
+                      "Male"),
+        ...
+    )
+}
+```
+
+
+```{r compare site and prov intervals}
+ggplot(post, aes(x=beta, fill=as.factor(sex))) +
+    geom_density(alpha=0.5) + 
+    ggtitle("male and female speed of transition estimates")
+
+fint_beta <- mcmc_areas(fpost, regex_pars = "beta") + ggtitle("beta")
+mint_beta <- mcmc_areas(mpost, regex_pars = "beta")
+
+compare_fm(fint_beta, mint_beta, xlim=c(0.05, 0.10))
+
+fkap <- mcmc_areas(fpost, regex_pars = "kappa")
+mkap <- mcmc_areas(mpost, regex_pars = "kappa")
+
+compare_fm_wide(fkap, mkap, xlim=c(18, 29))
+
+color_scheme_set("blue")
+fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
+mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
+
+compare_fm_wide(fint_site, mint_site, xlim=c(-0.04, 0.06)) 
+
+fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
+ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
+
+compare_fm_wide(fa_sigma, ma_sigma)
+
+fa_y <- mcmc_areas(fpost, regex_pars = "year") + ggtitle("year")
+ma_y <- mcmc_areas(mpost, regex_pars = "year")
+
+compare_fm_wide(fa_y, ma_y)
+
+```
+
+```{r compare clones}
+fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
+mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
+
+compare_fm_wide(fint_c, mint_c, xlim=c(-0.01, 0.01))
+```
+
+### Sex diff
+
+```{r half transitions - no effects}
+fpost$f1 <- fpost$`kappa[1]`/fpost$beta
+fpost$f2 <- fpost$`kappa[2]`/fpost$beta
+mpost$f1 <- mpost$`kappa[1]`/mpost$beta
+mpost$f2 <- mpost$`kappa[2]`/mpost$beta
+
+ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
+mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
+
+compare_fm(ff, mf, xlim=c(200,600))
+```
+
 
 # Discussion
 
