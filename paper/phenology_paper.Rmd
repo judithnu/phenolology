@@ -238,8 +238,8 @@ I will examine the variability of the start date across the range ($t_1$) to see
 ## Model summary
 
 ```{r model data}
-ffit.stan <- readRDS("female_slopes.rds")
-mfit.stan <- readRDS("male_slopes.rds")
+ffit.stan <- readRDS("../female_slopes.rds")
+mfit.stan <- readRDS("../male_slopes.rds")
 
 fsum <- rstan::summary(ffit.stan)$summary
 fsum <- as.data.frame(fsum)
