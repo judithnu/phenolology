@@ -1,19 +1,17 @@
 #### posterior predictive checks
 
+# Create datasets holding
+# 1) parameter values - including 50% transition thresholds
+# 2) pdf and cdf curves for 200 risto points between 150 and 500 ristos for 500 draws
+# 3) simulated data from model (phenological states) for 200 risto points between 150 and 500 ristos for 500 draws with 3 points simulated for each predictor
+
 library(tidyr)
 library(dplyr)
 library(stringr)
 library(rstan)
 library(rethinking)
 
-# MODEL AND ORIGINAL DATA ############
-#model
-ffit.stan <- readRDS("female_slopes.rds")
-#mfit.stan <- readRDS("male_slopes.rds")
-
-fmod <- as.data.frame(mfit.stan)
-#mmod <- as.data.frame(ffit.stan)
-
+# FUNCTIONS ####################################
 stanindexer <- function(df) {
     df$CloneID <- group_indices(df, Clone)
     df$OrchardID <- group_indices(df, Orchard)
@@ -34,6 +32,16 @@ pdflogistic <- function(x,b,c) {
     val <- num/denom
     return(val)
 }
+
+# MODEL AND ORIGINAL DATA ############
+#model
+ffit.stan <- readRDS("female_slopes.rds")
+#mfit.stan <- readRDS("male_slopes.rds")
+
+fmod <- as.data.frame(ffit.stan)
+#mmod <- as.data.frame(ffit.stan)
+
+
 #data
 phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE) %>%
@@ -57,7 +65,7 @@ phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
     unique()
 
 # separate into male and female dataframes and turn factors into integers
-fdf <- filter(phendf, Sex == "MALE")
+fdf <- filter(phendf, Sex == "FEMALE")
 fdf <- stanindexer(fdf)
 fdf$groupID <- group_indices(fdf, SiteID, ProvenanceID, YearID, CloneID)
 fdf$recordID <- group_indices(fdf, groupID, Date )
@@ -66,7 +74,7 @@ fdf$recordID <- group_indices(fdf, groupID, Date )
 
 # identify combinations of effects & predictor (sum_forcing) that actually occur
 ufdf <- fdf %>%
-    select(groupID, recordID, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID, sum_forcing) %>%
+    select(groupID, recordID, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID, sum_forcing, DoY) %>%
     distinct()
 
 
@@ -120,10 +128,6 @@ pardf <- data.frame(ufdf,
 
 # add dates to pardf
 
-dates <- select(fdf, recordID, groupID, Date, DoY) %>% distinct()
-
-
-
 # Now simulate state predictions ##################
 
     # calculate slope and phi in columns
@@ -173,16 +177,22 @@ ggplot(realpred, aes(x=sum_forcing, fill=as.factor(outcome))) +
     theme_bw()
 
 m2rp <- filter(mrealpred, state==2)
-f2rp <- filter(frealpred, state==2)
+f2rp <- filter(frealpred, state==2 & outcome=="state_pred")
 ggplot(f2rp, aes(x=f501, fill=SPU_Name, linetype=outcome)) +
-    geom_density(alpha=0.1) +
-    facet_wrap("Year") +
+    geom_density(alpha=0.4) +
+    #facet_wrap("Year") +
+    scale_fill_viridis_d() +
+    ggtitle("Female 50% first transition")
+
+ggplot(f2rp, aes(x=DoY, fill=SPU_Name, linetype=outcome)) +
+    geom_histogram(alpha=0.4) +
+    facet_wrap(Year ~ Site, scales="free") +
     scale_fill_viridis_d() +
     ggtitle("Female 50% first transition")
 
 ggplot(f2rp, aes(x=f502, fill=SPU_Name, linetype=outcome)) +
     geom_density(alpha=0.1) +
-    facet_wrap("Year") +
+    #facet_wrap("Year") +
     scale_fill_viridis_d() +
     ggtitle("Female 50% second transition")
 
