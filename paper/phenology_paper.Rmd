@@ -39,7 +39,7 @@ Lodgepole pine has a very large geographical distribution (across 33$^\circ$ lat
 For example, populations from both northern interior British Columbia and northern Idaho can survive in areas with mean annual temperatures between -4 and 6 $^\circ\mathrm{C}$, but the northern British Columbia population survives best where mean annual temperatures are ~ 1 $^\circ\mathrm{C}$ and the Idaho population best at ~ 4 $^\circ\mathrm{C}$ [@Rehfeldt1999a]. 
 Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@Rehfeldt1983]. [Summarize/cite adaptree work]
 
-![Rangemap of lodgepole pine. After @Little1971 \label{range}.](/home/sus/Documents/research_phd/maps/SpeciesDistribution/distmap_pincon.png)
+
 
 Pollen is an important vector for identifying gene flow in lodgepole pine because outcrossing is common, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. There is evidence for spatially varying levels of gene flow in the species as populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006]. Pollination phenology could control this. 
 
@@ -51,25 +51,32 @@ Models of lodgepole pine vegetative phenology, on the other hand, are better rep
 Predicting pollination phenology will also have practical benefits. Seed orchard managers in British Columbia are particularly concerned about protandry, when all pollen in an area is shed before cones become receptive (*personal communication, Chris Walsh, Former Seed Orchard Manager, Kalamalka Seed Orchards, February 13, 2013*). 
 Protandry occurs in particularly hot and dry years [@Owens2005]. If this pattern holds, protandry could become more common in natural populations, leaving some populations pollen limited and likely hampering local adaption. [Outcrossing! Inbreeding!]
 
-Crucial to the scale of this project, ~15 years of pollination phenology data are available from seed orchard sites producing seed for reforestation for lodgepole pine. Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. Interior lodgepole pine (*Pinus contorta* var *latifolia*) is planted more than any other species at rates of [XXX] million/year as of [201X]. In the late 90s, it became apparent that seed yields (filled seeds per cone) at seed orchards in the northern Okanagan were much lower than in orchards near Prince George. To plan for future seed production and orchard establishment and management, studies were undertaken to understand why seed yields at north Okanagan orchards were lower than at the Prince George Tree Improvement Station orchards.Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@Webber2007]  . Pollination phenology data recorded as part of this program included pollen concentrations and dates of pollen shed and cone receptivity. 
+
 
 I will use pollination phenology and temperature data to fit a mechanistic model predicting pollen shed and cone receptivity across the entire range of *Pinus contorta* var. *latifolia* and consider how the date and length of pollination phenology periods vary normally and under several climate change scenarios. 
 Specifically, I will answer 1) What is the relationship between temperature and pollen shed and temperature and cone receptivity timing and length? 2) Does provenance affect that relationship? 3) How many days will pollination phenology shift under the next 30, 60, and 90 years of climate change 4) Will protandry become more common?
 
 # Methods
+
+My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, I modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. 
+
 ## Study species
 
-While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. 
+While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Lodgepole pine is a wind-pollinated conifer with an extensive range and well documented local adaptation. Female and male strobili begin developing (when? Sarvas help!) and mature in spring as temperatures warm. Receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
+
+![Rangemap of lodgepole pine. After @Little1971 \label{range}.](/home/sus/Documents/research_phd/maps/SpeciesDistribution/distmap_pincon.png)
 
 ### Data
 
 #### Phenology Data
 
-My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, I modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. I then applied the model to weather data across the lodgepole pine distribution to determine the distance between populations with synchronous pollen shed and cone receptivity.
+This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards.  Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. In the 90s, it became apparent that seed yields at seed orchards in the southern interior were much lower than in more northern seed orchards. To plan for future seed production and orchard establishment and management, studies were undertaken to understand why seed yields at north Okanagan orchards were lower than at the Prince George Tree Improvement Station orchards. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@Webber2007]. 
+
+Pollination phenology data recorded as part of this program included pollen concentrations and dates of pollen shed and cone receptivity. 
 
 
 ##### Sites
-Trees selected from across the British Columbia portion of the lodgepole pine range are grown in both large scale provenance trials and seed orchards, which are similar to common gardens, as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 8 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another, but sites span about 5 degrees of latitude and are at elevations from [X] to [X].
+Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 8 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another, but sites span about 5 degrees of latitude and are at elevations from [X] to [X].
 
 ![Map of seed orchard locations. Boxed area in map on left is shown in greater detail on the right.](/home/sus/Documents/research_phd/maps/SiteMaps/sitemap.png)
 
@@ -366,6 +373,10 @@ compare_fm(ff, mf, xlim=c(200,600))
 
 
 # Discussion
+
+### Limitations of the dataset
+
+Benefits of this dataset include the large number of trees, long time series, multiple provenances grown at multiple sites giving a semi-common garden design, and the inclusion of clones. Limitations include interval and end censoring, especially at Prince George, irregular scoring systems, subjective scoring, non-random clone selection, and selective breeding.
 
 ### Grafting bias?
 
