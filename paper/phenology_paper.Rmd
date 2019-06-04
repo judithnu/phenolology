@@ -23,11 +23,12 @@ library(stringr)
 # Introduction
 As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
 This effect is already obvious in many species [@Parmesan2006; @Franks2014]. 
-Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects on dependent species [@Inouye2008; @Chuine2001a].
+Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects [VAGUE] on dependent species [@Inouye2008; @Chuine2001a].
 
-Conifers are a big part of the enormous northern northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013a). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @Aitken2008a). 
+[POLISH THIS INTRO SENTENCE]
+Conifers are a big part of the enormous northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013a). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @Aitken2008a). 
 
-Coniferous forest trees are wind pollinatated wtih pollination possible over large distances
+Coniferous forest trees are wind pollinated wtih pollination possible over large distances. [EXAMPLES]
 Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination. 
 Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed production declines. 
 [Also affects gene flow now and is important for understanding current spatial genetic structure and local adaptation] 
@@ -51,7 +52,7 @@ Models of lodgepole pine vegetative phenology, on the other hand, are better rep
 Predicting pollination phenology will also have practical benefits. Seed orchard managers in British Columbia are particularly concerned about protandry, when all pollen in an area is shed before cones become receptive (*personal communication, Chris Walsh, Former Seed Orchard Manager, Kalamalka Seed Orchards, February 13, 2013*). 
 Protandry occurs in particularly hot and dry years [@Owens2005]. If this pattern holds, protandry could become more common in natural populations, leaving some populations pollen limited and likely hampering local adaption. [Outcrossing! Inbreeding!]
 
-
+This paper relies on 15 year pollination phenology data set collected in British Columbia lodgepole pine seed orchards. Seed orchards produce seed for reforestation. While not set up as common gardens, several provenances are typically represented at each  site allowing testing for provenance effects and genetic x environmental interaction. and genotypes usually appear multiple times within a site and sometimes at multiple sites.
 
 I will use pollination phenology and temperature data to fit a mechanistic model predicting pollen shed and cone receptivity across the entire range of *Pinus contorta* var. *latifolia* and consider how the date and length of pollination phenology periods vary normally and under several climate change scenarios. 
 Specifically, I will answer 1) What is the relationship between temperature and pollen shed and temperature and cone receptivity timing and length? 2) Does provenance affect that relationship? 3) How many days will pollination phenology shift under the next 30, 60, and 90 years of climate change 4) Will protandry become more common?
@@ -62,7 +63,7 @@ My aim was to model pollination phenology in lodgepole pine and calculate synchr
 
 ## Study species
 
-While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Lodgepole pine is a wind-pollinated conifer with an extensive range and well documented local adaptation. Female and male strobili begin developing (when? Sarvas help!) and mature in spring as temperatures warm. Receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
+Lodgepole pine is a wind-pollinated conifer with an extensive range and well documented local adaptation. While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Pollen and seed cone buds differentiate in late summer and early fall, then go dormant. As temperatures warm the following year, buds resume development and strobili "flower"; receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
 
 ![Rangemap of lodgepole pine. After @Little1971 \label{range}.](/home/sus/Documents/research_phd/maps/SpeciesDistribution/distmap_pincon.png)
 
@@ -70,21 +71,21 @@ While lodgepole pine has four subspecies, this work concerns only *Pinus contort
 
 #### Phenology Data
 
-This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards.  Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. In the 90s, it became apparent that seed yields at seed orchards in the southern interior were much lower than in more northern seed orchards. To plan for future seed production and orchard establishment and management, studies were undertaken to understand why seed yields at north Okanagan orchards were lower than at the Prince George Tree Improvement Station orchards. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@Webber2007]. 
-
-Pollination phenology data recorded as part of this program included pollen concentrations and dates of pollen shed and cone receptivity. 
+This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards. Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. In the 90s, it became apparent that seed yields at seed orchards in the southern interior were much lower than in more northern seed orchards. To plan for future seed production and orchard establishment and management, seed orchard managers monitored pollination phenology and seed production to understand why seed yields at north Okanagan orchards were lower than at the Prince George Tree Improvement Station orchards. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@Webber2007]. 
 
 
 ##### Sites
-Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 8 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another, but sites span about 5 degrees of latitude and are at elevations from [X] to [X].
+Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 7 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another, but sites span about 5 $^\circ$ of latitude and are at elevations from 466 to 638 m.
 
 ![Map of seed orchard locations. Boxed area in map on left is shown in greater detail on the right.](/home/sus/Documents/research_phd/maps/SiteMaps/sitemap.png)
 
 
 ##### Provenances
-Trees grown at the seed orchard sites were sourced from 6 biogeoclimate regions known as Seed Planning Units. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
+Trees grown at the seed orchard sites were sourced from 6 biogeoclimate regions known as Seed Planning Units (SPUs). Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
-I obtained records for 17 of the 26 lodgepole pine seed orchards in British Columbia. Orchards include the offspring of trees from 6 of the 7 BC seed planning zones (SPZs) (Figure \ref{SPZ}) grown at at 7 sites across BC. SPZs are biogeoclimatic and political units used for seed planting purposes by British Columbia. SPZs are divided into elevation bands called Seed Planning Units (SPUs), which form this project's provenances. Thirteen out of 17 orchards in my data set are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.
+I obtained pollination phenology records from 17 of the 26 lodgepole pine seed orchards in British Columbia. Orchards include the offspring of trees from 6 of the 7 BC seed planning zones (SPZs) (Figure \ref{SPZ}) grown at at 7 sites across BC. SPZs are biogeoclimatic and political units used for seed planting purposes by British Columbia. SPZs are divided into elevation bands called Seed Planning Units (SPUs), which form this project's provenances. 
+
+Thirteen out of 17 orchards in my data set are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.
 
 Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology.
 
@@ -163,21 +164,23 @@ The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and ve
 
 
 ### Actual methods
-I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. An ordinal logistic model 
+I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. A cumulative link function (in this case logistic) accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states and estimates intercepts (typically called "cutpoints" in ordered regression models) that separate each state. 
 
-For phenological states $k \in \{1,2,3\}$, the probability of 
+The model was fit separately to data for male strobili and female strobili.
 
-The ordered logistic probability mass function is
-$$\text{OrderedLogistic}(k~|~\eta,c) = \left\{ \begin{array}{ll} 1 -
-\text{logistic}(\eta - c_1)  &  \text{if } k = 1, \\[4pt]
-\text{logistic}(\eta - c_1) - \text{logistic}(\eta - c_2)  &
-\text{if } k=2, \text{and} \\[4pt] \text{logistic}(\eta -
-c_3) - 0  &  \text{if } k = 3. \end{array} \right.$$
+The probability of being in state $s \in \{1,2,3\}$ is
 
+$$\text{OrderedLogistic}(s~|~\eta,c) = \left\{ \begin{array}{ll} 1 -
+\text{logistic}(\eta - \kappa_1)  &  \text{if } s = 1 \\[4pt]
+\text{logistic}(\eta - \kappa_1) - \text{logistic}(\eta - \kappa_2)  &
+\text{if } s=2  \\[4pt] \text{logistic}(\eta -
+\kappa_3) - 0  &  \text{if } s = 3 \end{array} \right.$$
+
+where the cutpoints $\kappa_s < \kappa_{s+1}$ and $\eta$ is a linear model relating forcing units to phenological state.
 
 $$\begin{array}{rlr}
 S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
-\eta_i & = (\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
+\eta_i & = (\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
 \kappa_k & \sim \mathrm{gamma}(7.5,1) & \text{fixed priors}\\
 \beta & \sim \mathrm{exponential}(2) & \text{}\\
 \beta_{site} & \sim \mathrm{normal}(0,\sigma_{site}) & \text{adaptive priors}\\
@@ -189,6 +192,8 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{year} & \sim \mathrm{exponential}(3) \\
 \sigma_{clone} & \sim \mathrm{exponential}(3) \\
 \end{array}$$
+
+Priors on gamma 
 
 
 The point at which a tree is 50% likely to have transitioned from one phenophase to another can be calculated by dividing the cutpoint for the transition by the slope.
