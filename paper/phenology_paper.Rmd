@@ -23,11 +23,12 @@ library(stringr)
 # Introduction
 As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
 This effect is already obvious in many species [@Parmesan2006; @Franks2014]. 
-Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects on dependent species [@Inouye2008; @Chuine2001a].
+Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects [VAGUE] on dependent species [@Inouye2008; @Chuine2001a].
 
-Conifers are a big part of the enormous northern northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013a). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @Aitken2008a). 
+[POLISH THIS INTRO SENTENCE]
+Conifers are a big part of the enormous northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013a). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @Aitken2008a). 
 
-Coniferous forest trees are wind pollinatated wtih pollination possible over large distances
+Coniferous forest trees are wind pollinated wtih pollination possible over large distances. [EXAMPLES]
 Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination. 
 Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed production declines. 
 [Also affects gene flow now and is important for understanding current spatial genetic structure and local adaptation] 
@@ -163,7 +164,7 @@ The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and ve
 
 
 ### Actual methods
-I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. A cumulative link function accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states and estimates intercepts (typically called "cutpoints" in this type of model) that separate each state. 
+I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. A cumulative link function (in this case logistic) accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states and estimates intercepts (typically called "cutpoints" in ordered regression models) that separate each state. 
 
 The model was fit separately to data for male strobili and female strobili.
 
@@ -191,6 +192,8 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{year} & \sim \mathrm{exponential}(3) \\
 \sigma_{clone} & \sim \mathrm{exponential}(3) \\
 \end{array}$$
+
+Priors on gamma 
 
 
 The point at which a tree is 50% likely to have transitioned from one phenophase to another can be calculated by dividing the cutpoint for the transition by the slope.
