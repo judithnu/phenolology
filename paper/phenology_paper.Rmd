@@ -5,6 +5,8 @@ date: May 8, 2019
 output:
   html_document: 
     toc: TRUE
+  pdf_document:
+    fig_caption: yes
 
 ---
 
@@ -29,7 +31,7 @@ Changes in pollination phenology can affect fecundity, gene flow, and even range
 Conifers are a big part of the enormous northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013a). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @Aitken2008a). 
 
 Coniferous forest trees are wind pollinated wtih pollination possible over large distances. [EXAMPLES]
-Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination. 
+Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination .rpe
 Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed production declines. 
 [Also affects gene flow now and is important for understanding current spatial genetic structure and local adaptation] 
 
@@ -162,8 +164,6 @@ The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and ve
 
 ## Phenology Modeling 
 
-
-### Actual methods
 I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. A cumulative link function (in this case logistic) accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states and estimates intercepts (typically called "cutpoints" in ordered regression models) that separate each state. 
 
 The model was fit separately to data for male strobili and female strobili.
@@ -193,8 +193,7 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{clone} & \sim \mathrm{exponential}(3) \\
 \end{array}$$
 
-Priors on gamma 
-
+I tried to use weakly informative priors, but simulations or more reading are required to decide if these are actually weakly informative or if they are too diffuse. Plotting the prior distributions with the parameter values would also probably help. 
 
 The point at which a tree is 50% likely to have transitioned from one phenophase to another can be calculated by dividing the cutpoint for the transition by the slope.
 
@@ -216,7 +215,15 @@ logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
 \end{array}$$
 
 
-To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions
+To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions.
+
+#### Flowering period timing and length
+
+Forcing units required to induce cone receptivity and pollen shed. 
+
+Total forcing units require to end cone receptivity and pollen shed.
+
+Difference between forcing units 
 
 #### Differences between provenances
 
