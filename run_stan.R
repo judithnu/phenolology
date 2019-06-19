@@ -2,7 +2,7 @@
 
 #library(rethinking)
 library(rstan)
-library(dplyr)
+library(tidyverse)
 
 
 # Functions #################
@@ -54,13 +54,13 @@ rstan_options(auto_write=TRUE)
 
 # Read in data ##################
 ## phenology
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
+phenology_data <- read.csv("data/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE) %>%
     filter(forcing_type=="ristos") #%>%
     #filter(Site!="Tolko") #drop Tolko/TOHigh because it only has one provenance and that provenance isn't represented at any other sites.
 
 ## provenance
-SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
 
