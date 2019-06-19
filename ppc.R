@@ -1,13 +1,11 @@
 #### posterior predictive checks
 
 # Create datasets holding
-# 1) parameter values - including 50% transition thresholds
-# 2) pdf and cdf curves for 200 risto points between 150 and 500 ristos for 500 draws
-# 3) simulated data from model (phenological states) for 200 risto points between 150 and 500 ristos for 500 draws with 3 points simulated for each predictor
+# 1) parameter values - fstart, fend, and f50s
+# 2) RETHINK pdf and cdf curves for 200 risto points between 150 and 500 ristos for 500 draws
+# 3) RETHINK simulated data from model (phenological states) for 200 risto points between 150 and 500 ristos for 500 draws with 3 points simulated for each predictor
 
-library(tidyr)
-library(dplyr)
-library(stringr)
+library(tidyverse)
 library(rstan)
 library(rethinking)
 
@@ -39,11 +37,12 @@ ffit.stan <- readRDS("female_slopes.rds")
 #mfit.stan <- readRDS("male_slopes.rds")
 
 fmod <- as.data.frame(ffit.stan)
-#mmod <- as.data.frame(ffit.stan)
+#mmod <- as.data.frame(mfit.stan)
 
+far <- as.array(ffit.stan)
 
 #data
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
+phenology_data <- read.csv("data/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE) %>%
     filter(forcing_type=="ristos")
 
@@ -64,7 +63,7 @@ phendf <- phenology_data %>%
 phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
     unique()
 
-# separate into male and female dataframes and turn factors into integers
+# separate phenology into male and female dataframes and turn factors into integers
 fdf <- filter(phendf, Sex == "FEMALE")
 fdf <- stanindexer(fdf)
 fdf$groupID <- group_indices(fdf, SiteID, ProvenanceID, YearID, CloneID)
@@ -73,43 +72,46 @@ fdf$recordID <- group_indices(fdf, groupID, Date )
 # mdf <- stanindexer(mdf)
 
 # identify combinations of effects & predictor (sum_forcing) that actually occur
+# ufdf <- fdf %>%
+#     select(groupID, recordID, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID, sum_forcing, DoY) %>%
+#     distinct()
+
+#identify combinations of effects that actually occur
 ufdf <- fdf %>%
-    select(groupID, recordID, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID, sum_forcing, DoY) %>%
+    select(groupID, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID) %>%
     distinct()
-
-
 
 # Build a dataframe where each row is a unique combination of parameters for each unique combination of forcing, site, clone, year, and provenance #########
 #split by param
 
-draws <- base::sample(1:nrow(fmod), 300)
-fmod_sampled <- fmod[draws,]
+# draws <- base::sample(1:nrow(fmod), 1200)
+# fmod_sampled <- fmod[draws,]
 
-singledimpars <- fmod_sampled %>%
-    mutate(draw=draws) %>%
-    select(draw, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa")) %>%
+singledimpars <- fmod %>%
+   # mutate(draw=draws) %>%
+    select( beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa")) %>%
     rename(kappa1 = `kappa[1]`) %>%
     rename(kappa2 = `kappa[2]`)
 
 tidypar <- function(stanframe, param, id) {
 
-#take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
+    #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
 
     #wide to long format for parameters
-par <- stanframe %>% select(contains(param)) %>%
-        mutate(draw = draws) %>%
+    par <- stanframe %>% select(contains(param)) %>%
+        #mutate(draw = draws) %>%
         gather(key = key, value = value, contains("b_")) %>%
         mutate(id = str_extract(key, "[0-9]{1,}"))
     colnames(par) <- c("draw", "name", param, id)
-   par[,4] <- as.integer(par[,4])
+    par[,4] <- as.integer(par[,4])
     return(par)
 }
 
-kappa <- select(fmod_sampled, contains("kappa"))
-siteb <- tidypar(fmod_sampled, "b_site", "SiteID")
-provb <- tidypar(fmod_sampled, "b_prov", "ProvenanceID")
-cloneb <- tidypar(fmod_sampled, "b_clone", "CloneID")
-yearb <- tidypar(fmod_sampled, "b_year", "YearID")
+kappa <- select(fmod, contains("kappa"))
+siteb <- tidypar(fmod, "b_site", "SiteID")
+provb <- tidypar(fmod, "b_prov", "ProvenanceID")
+cloneb <- tidypar(fmod, "b_clone", "CloneID")
+yearb <- tidypar(fmod, "b_year", "YearID")
 
 clonemerge <- left_join(ufdf, cloneb)
 provmerge <- left_join(ufdf, provb)
@@ -126,11 +128,63 @@ pardf <- data.frame(ufdf,
 
 #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
 
-# add dates to pardf
+# add transformed parameters fstart, fend, and f50s
+pardf_trans <- pardf %>%
+    mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
+    mutate(fstart = (logit(.2) + kappa1)/betas) %>%
+    mutate(fend = (logit(.8) + kappa2)/betas) %>%
+    mutate(fhalf1 = kappa1/betas) %>%
+    mutate(fhalf2 = kappa2/betas)
+
+tpars <- select(pardf_trans, contains("ID"), Site, SPU_Name, Clone, Year, starts_with("f")) %>%
+    gather(key="param", value="FUs", starts_with("f"))
+
+# Plot transformed parameters #############
+
+hpd_lower = function(x, prob) rethinking::HPDI(x, prob=.9)[1]
+hpd_upper = function(x, prob) rethinking::HPDI(x, prob=.9)[2]
+
+
+full <- group_by(tpars, param) %>%
+    summarize(x=hpd_lower(FUs, prob=1), xend=hpd_upper(FUs, prob=1)) %>%
+    mutate(interval="full")
+
+fifty <- group_by(tpars, param) %>%
+    summarize(x=hpd_lower(FUs, prob=1), xend=hpd_upper(FUs, prob=1)) %>%
+    mutate(interval="fifty")
+
+hpd_df <- full_join(full, fifty) %>%
+    gather(key=end, value=value, x, xend) %>%
+    arrange(interval)
+
+ggplot(hpd_df, aes(x=value, y=param, size=interval)) +
+    geom_line()
+
+
+ggplot(filter(tpars, param %in% c("fstart", "fend")), aes(x=FUs, linetype=param, color=SPU_Name)) +
+    geom_density(alpha=.5) +
+    theme_bw()
+
+ggplot(sfull, aes(x))
+
+
+
+ggplot(dplyr)
+ggplot(dplyr::filter(tpars, !param=="forcingdiff"), aes(x=param, y=value, color=Provenance)) +
+    geom_violin(draw_quantiles = .5) +
+    scale_color_viridis_d()
+
+ggplot(filter(tpars, !param=="forcingdiff"), aes(x=as.factor(CloneID), y=value)) +
+    geom_line(alpha=0.3) +
+    facet_wrap(param ~ .)
+
+summary <- tpars %>%
+    group_by(param, CloneID) %>%
+    summarise(mean(value))
 
 # Now simulate state predictions ##################
 
-    # calculate slope and phi in columns
+# calculate slope and phi in columns
 pred_df <- pardf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
     mutate(phi = betas * sum_forcing) %>%
