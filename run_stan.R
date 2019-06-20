@@ -1,8 +1,9 @@
 # Run phenology model
 
 #library(rethinking)
-library(rstan)
 library(tidyverse)
+library(rstan)
+
 
 
 # Functions #################
@@ -60,7 +61,7 @@ phenology_data <- read.csv("data/phenology_heatsum.csv",
     #filter(Site!="Tolko") #drop Tolko/TOHigh because it only has one provenance and that provenance isn't represented at any other sites.
 
 ## provenance
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
 
@@ -122,7 +123,7 @@ ftest <- stan("slopes.stan",
 ffit <- stan("slopes.stan",
              chains=6, cores=6, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=frdump)
 
-saveRDS(ffit, file = "female_slopes.rds")
+saveRDS(ffit, file = "female_slopes_tp.rds")
 
 # Fit model for MALE strobili #############
 
