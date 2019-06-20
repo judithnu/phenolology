@@ -56,7 +56,7 @@ rstan_options(auto_write=TRUE)
 ## phenology
 phenology_data <- read.csv("data/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(forcing_type=="ristos") #%>%
+    filter(forcing_type=="scaled_ristos") #%>%
     #filter(Site!="Tolko") #drop Tolko/TOHigh because it only has one provenance and that provenance isn't represented at any other sites.
 
 ## provenance
@@ -117,10 +117,17 @@ mrdump <- read_rdump("male.rdump")
 
 # Fit model for FEMALE strobili #############
 ftest <- stan("slopes.stan",
-              chains=1, warmup=20, iter = 25, data = frdump) # quick check for small problems
+              model_name = "female slopes",
+              data=frdump,
+              pars = c("betavec", "b_clone"), include = FALSE,
+              chains=1, cores=1, warmup=20, iter=25) # quick check for small problems
 
 ffit <- stan("slopes.stan",
-             chains=6, cores=6, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=frdump)
+             model_name = "female slopes",
+             data=frdump,
+             pars = c("betavec", "b_clone"), include = FALSE,
+             chains=6, cores=6, warmup=1000, iter=1200,
+             control=list(max_treedepth=15, adapt_delta=.9))
 
 saveRDS(ffit, file = "female_slopes.rds")
 
@@ -130,6 +137,6 @@ saveRDS(ffit, file = "female_slopes.rds")
 mtest <- stan("slopes.stan",
               chains=1, warmup=20, iter = 25, data = mrdump) #quick check for small problems
 mfit <- stan("slopes.stan",
-             chains=8, cores=8, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=mrdump)
+             chains=6, cores=6, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=mrdump)
 
-saveRDS(mfit, file = "male_slopes.rds")
+saveRDS(mfit, file = "male_slopes_tp.rds")
