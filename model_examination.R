@@ -2,7 +2,7 @@
 library(rstan)
 library(shinystan)
 library(bayesplot)
-library(ggplot2)
+#library(ggplot2)
 
 # FUNCTIONS ###############
 
@@ -21,10 +21,10 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 
 
 #ffit.stan <- readRDS("female_slopes.rds")
-ffit.stan <- readRDS("female_slopes_err.rds")
-mfit.stan <- readRDS("female_slopes.rds")
+ffit.stan <- readRDS("female_slopes_tp.rds")
+mfit.stan <- readRDS("male_slopes_tp.rds")
 
-fshiny <- as.shinystan(ffit.stan_o)
+fshiny <- as.shinystan(ffit.stan)
 launch_shinystan(fshiny)
 
 mshiny <- as.shinystan(mfit.stan)
