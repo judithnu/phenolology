@@ -127,7 +127,7 @@ ffit <- stan("slopes.stan",
              model_name = "female slopes",
              data=frdump,
              pars = c("betavec", "b_clone"), include = FALSE,
-             chains=6, cores=6, warmup=1000, iter=1200,
+             chains=10, cores=10, warmup=1000, iter=1200,
              control=list(max_treedepth=15, adapt_delta=.9))
 
 saveRDS(ffit, file = "female_slopes_tp.rds")
