@@ -1,11 +1,22 @@
 # Run phenology model
 
+# Set sex and forcing type ################
+# Choose sex and forcing type
 sex <- "FEMALE"
 #sex <- "MALE"
 
+forcingtype <- "scaled_ristos"
+
+
+# Dependencies and options ##################
 # library(rethinking)
 library(tidyverse)
 library(rstan)
+
+# rstan options
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+
 
 # Functions #################
 
@@ -48,22 +59,18 @@ prepforstan <- function(df, file) {
   rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
 }
 
-# Script ###################
-
-# rstan options
-options(mc.cores = parallel::detectCores())
-rstan_options(auto_write = TRUE)
 
 # Read in data ##################
 ## phenology
 phenology_data <- read.csv("data/phenology_heatsum.csv",
   stringsAsFactors = FALSE, header = TRUE
 ) %>%
-  filter(forcing_type == "scaled_ristos")
+  filter(forcing_type == forcingtype)
 ## provenance
 SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
+
 
 
 # Data Processing ##################
@@ -74,15 +81,15 @@ phendf <- phenology_data %>%
 phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
   unique()
 
-# separate into male and female dataframes and turn factors into integers
+# filter for sex of interest
 df <- filter(phendf, Sex == sex)
 df <- stanindexer(df)
 
 # write out and read in data structured for stan
 prepforstan(df, paste(sex, ".rdump", sep=""))
-#prepforstan(mdf, "male.rdump")
 
 rdump <- read_rdump(paste(sex, ".rdump", sep=""))
+
 
 
 # Draft stan code using rethinking ####
@@ -110,9 +117,8 @@ rdump <- read_rdump(paste(sex, ".rdump", sep=""))
 
 # write(stancode(fit_draft), file="slopes.stan")
 
-# Female
 
-# Fit model for FEMALE strobili #############
+# Fit model  #############
 test <- stan("slopes.stan",
   model_name = paste(sex, "slopes with scaled ristos"),
   data = rdump,
@@ -128,14 +134,3 @@ fit <- stan("slopes.stan",
 
 saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
 
-# Fit model for MALE strobili #############
-
-
-mtest <- stan("slopes.stan",
-  chains = 1, warmup = 20, iter = 25, data = mrdump
-) # quick check for small problems
-mfit <- stan("slopes.stan",
-  chains = 6, cores = 6, warmup = 1000, iter = 1200, control = list(max_treedepth = 15, adapt_delta = .9), data = mrdump
-)
-
-saveRDS(mfit, file = "male_slopes_tp.rds")
