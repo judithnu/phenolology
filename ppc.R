@@ -135,16 +135,11 @@ pardf_trans <- pardf %>%
     mutate(fhalf1 = kappa1/betas) %>%
     mutate(fhalf2 = kappa2/betas)
 
-tpars_wide <- dplyr::select(pardf_trans, contains("ID"), Site, SPU_Name, Clone, Year, starts_with("f"))
+## Put transformed parameters in a nice format that bayesplot can read
+tpars_wide <- dplyr::select(pardf_trans, iter, contains("ID"), Site, SPU_Name, Clone, Year, starts_with("f"))
 
 tpars_long <- tpars_wide %>%
     gather(key="param", value="FUs", starts_with("f"))
-
-provpaster <- function(var) {
-    paste(var, ProvenanceID, sep="")
-}
-tpars_wide_prov <- tpars_wide %>%
-    mutate(fstartprov = paste("fstart", ProvenanceID, sep=""))
 
 # Plot transformed parameters #############
 
@@ -152,27 +147,29 @@ hpd_lower = function(x, prob) rethinking::HPDI(x, prob=.9)[1]
 hpd_upper = function(x, prob) rethinking::HPDI(x, prob=.9)[2]
 
 
-full <- group_by(tpars, param) %>%
-    summarize(x=hpd_lower(FUs, prob=1), xend=hpd_upper(FUs, prob=1)) %>%
-    mutate(interval="full")
+full <- group_by(tpars_long, param) %>%
+    summarize(x=hpd_lower(FUs, prob=.99), xend=hpd_upper(FUs, prob=.99)) %>%
+    mutate(interval=".99")
 
-fifty <- group_by(tpars, param) %>%
-    summarize(x=hpd_lower(FUs, prob=1), xend=hpd_upper(FUs, prob=1)) %>%
-    mutate(interval="fifty")
+fifty <- group_by(tpars_long, param) %>%
+    summarize(x=hpd_lower(FUs, prob=.5), xend=hpd_upper(FUs, prob=.5)) %>%
+    mutate(interval="0.5")
 
 hpd_df <- full_join(full, fifty) %>%
-    gather(key=end, value=value, x, xend) %>%
+    #gather(key=end, value=value, x, xend) %>%
     arrange(interval)
 
-ggplot(hpd_df, aes(x=value, y=param, size=interval)) +
-    geom_line()
-
-
-ggplot(filter(tpars, param %in% c("fstart", "fend")), aes(x=FUs,y=SPU_Name, color=param)) +
-    geom_point() +
+ggplot(filter(tpars_long, param %in% c("fstart", "fend")), aes(x=FUs, color=SPU_Name, linetype=param)) +
+    geom_density() +
     theme_bw()
 
-ggplot(sfull, aes(x))
+ggplot(filter(tpars_long, param %in% c("fstart", "fend")), aes(x=FUs, linetype=param)) +
+    geom_density() +
+    facet_grid(SPU_Name ~ .) +
+    theme_bw() +
+    title
+
+
 
 
 
