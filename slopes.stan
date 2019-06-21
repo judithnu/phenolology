@@ -27,24 +27,6 @@ parameters{
     real<lower=0> sigma_year;
 }
 
-transformed parameters{
-    real lower;
-    real upper;
-    vector[N] betavec;
-    vector[N] fstart;
-    vector[N] fend;
-    vector[N] fhalf1;
-    vector[N] fhalf2;
-
-    lower = logit(0.2) + kappa[1];
-    upper = logit(0.8) + kappa[2];
-    betavec = (beta + b_site[SiteID] + b_prov[ProvenanceID] + b_clone[CloneID] + b_year[YearID]);
-    fstart = lower ./ betavec;
-    fend = upper ./ betavec;
-    fhalf1 = kappa[1] ./ betavec;
-    fhalf2 = kappa[2] ./ betavec;
-}
-
 model{
     vector[N] phi;
     beta ~ exponential(2);

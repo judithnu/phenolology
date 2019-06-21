@@ -1,10 +1,11 @@
 # Run phenology model
 
+sex <- "FEMALE"
+#sex <- "MALE"
+
 # library(rethinking)
 library(tidyverse)
 library(rstan)
-
-
 
 # Functions #################
 
@@ -58,9 +59,7 @@ rstan_options(auto_write = TRUE)
 phenology_data <- read.csv("data/phenology_heatsum.csv",
   stringsAsFactors = FALSE, header = TRUE
 ) %>%
-  filter(forcing_type == "scaled_ristos") # %>%
-# filter(Site!="Tolko") #drop Tolko/TOHigh because it only has one provenance and that provenance isn't represented at any other sites.
-
+  filter(forcing_type == "scaled_ristos")
 ## provenance
 SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
@@ -76,20 +75,15 @@ phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
   unique()
 
 # separate into male and female dataframes and turn factors into integers
-fdf <- filter(phendf, Sex == "FEMALE")
-fdf <- stanindexer(fdf)
-mdf <- filter(phendf, Sex == "MALE")
-mdf <- stanindexer(mdf)
-
-# test that you didn't toss any data
-nrow(fdf) + nrow(mdf) == nrow(phendf)
+df <- filter(phendf, Sex == sex)
+df <- stanindexer(df)
 
 # write out and read in data structured for stan
-prepforstan(fdf, "female.rdump")
-prepforstan(mdf, "male.rdump")
+prepforstan(df, paste(sex, ".rdump", sep=""))
+#prepforstan(mdf, "male.rdump")
 
-frdump <- read_rdump("female.rdump")
-mrdump <- read_rdump("male.rdump")
+rdump <- read_rdump(paste(sex, ".rdump", sep=""))
+
 
 # Draft stan code using rethinking ####
 # slopedraft <- ulam(
@@ -114,27 +108,25 @@ mrdump <- read_rdump("male.rdump")
 #     ),
 #     data=fdf, sample=FALSE, declare_all_data = FALSE)
 
-# write(stancode(fit_draft), file="female.stan")
+# write(stancode(fit_draft), file="slopes.stan")
 
 # Female
 
 # Fit model for FEMALE strobili #############
-ftest <- stan("slopes.stan",
-  model_name = "female slopes",
-  data = frdump,
-  pars = c("betavec", "b_clone"), include = FALSE,
+test <- stan("slopes.stan",
+  model_name = paste(sex, "slopes with scaled ristos"),
+  data = rdump,
   chains = 1, cores = 1, warmup = 20, iter = 25
 ) # quick check for small problems
 
-ffit <- stan("slopes.stan",
-  model_name = "female slopes",
-  data = frdump,
-  pars = c("betavec", "b_clone"), include = FALSE,
+fit <- stan("slopes.stan",
+  model_name = paste(sex, "slopes with scaled ristos"),
+  data = rdump,
   chains = 6, cores = 6, warmup = 1000, iter = 1200,
   control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(ffit, file = "female_slopes_tp.rds")
+saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
 
 # Fit model for MALE strobili #############
 
