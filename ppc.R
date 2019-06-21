@@ -1,9 +1,7 @@
 #### posterior predictive checks
 
-# Create datasets holding
-# 1) parameter values - fstart, fend, and f50s
-# 2) RETHINK pdf and cdf curves for 200 risto points between 150 and 500 ristos for 500 draws
-# 3) RETHINK simulated data from model (phenological states) for 200 risto points between 150 and 500 ristos for 500 draws with 3 points simulated for each predictor
+# Create datasets holding parameter values - fstart, fend, and f50s
+
 
 library(tidyverse)
 library(rstan)
@@ -31,15 +29,28 @@ pdflogistic <- function(x,b,c) {
     return(val)
 }
 
+tidypar <- function(stanframe, param, id) {
+
+    #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
+
+    #wide to long format for parameters
+    par <- stanframe %>% dplyr::select(contains(param), iter) %>%
+        tidyr::gather(key = key, value = value, contains("b_")) %>%
+        dplyr::mutate(id = str_extract(key, "[0-9]{1,}"))
+    colnames(par) <- c("iter", "name", param, id)
+    par[,ncol(par)] <- as.integer(par[,ncol(par)])
+    return(par)
+}
+
 # MODEL AND ORIGINAL DATA ############
 #model
-ffit.stan <- readRDS("female_slopes.rds")
+fmod <- readRDS("female_slopes.rds") %>%
+    as.data.frame()
 #mfit.stan <- readRDS("male_slopes.rds")
 
-fmod <- as.data.frame(ffit.stan)
 #mmod <- as.data.frame(mfit.stan)
 
-far <- as.array(ffit.stan)
+#far <- as.array(ffit.stan)
 
 #data
 phenology_data <- read.csv("data/phenology_heatsum.csv",
@@ -53,7 +64,8 @@ clim <- read.csv("data/all_clim_PCIC.csv", stringsAsFactors = FALSE, header=TRUE
 ## provenance
 SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
-    dplyr::select(SPU_Name, Orchard)
+    dplyr::select(SPU_Name, Orchard) %>%
+    mutate(SPU_Name = str_)
 
 # Data Processing ##################
 # join provenance and phenology data
@@ -78,36 +90,23 @@ fdf$recordID <- group_indices(fdf, groupID, Date )
 
 #identify combinations of effects that actually occur
 ufdf <- fdf %>%
-    select(groupID, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID) %>%
+    dplyr::select(groupID, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID) %>%
     distinct()
 
 # Build a dataframe where each row is a unique combination of parameters for each unique combination of forcing, site, clone, year, and provenance #########
 #split by param
 
-# draws <- base::sample(1:nrow(fmod), 1200)
+fmod$iter <- 1:nrow(fmod)
 # fmod_sampled <- fmod[draws,]
 
 singledimpars <- fmod %>%
-   # mutate(draw=draws) %>%
-    select( beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa")) %>%
+    dplyr::select(iter, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa")) %>%
     rename(kappa1 = `kappa[1]`) %>%
     rename(kappa2 = `kappa[2]`)
 
-tidypar <- function(stanframe, param, id) {
 
-    #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
 
-    #wide to long format for parameters
-    par <- stanframe %>% select(contains(param)) %>%
-        #mutate(draw = draws) %>%
-        gather(key = key, value = value, contains("b_")) %>%
-        mutate(id = str_extract(key, "[0-9]{1,}"))
-    colnames(par) <- c("draw", "name", param, id)
-    par[,4] <- as.integer(par[,4])
-    return(par)
-}
-
-kappa <- select(fmod, contains("kappa"))
+kappa <- dplyr::select(fmod, contains("kappa"))
 siteb <- tidypar(fmod, "b_site", "SiteID")
 provb <- tidypar(fmod, "b_prov", "ProvenanceID")
 cloneb <- tidypar(fmod, "b_clone", "CloneID")
@@ -119,7 +118,7 @@ sitemerge <- left_join(ufdf, siteb)
 yearmerge <- left_join(ufdf, yearb)
 
 pardf <- data.frame(ufdf,
-                       draw = clonemerge$draw,
+                       iter = clonemerge$iter,
                        b_clone = clonemerge$b_clone,
                        b_prov = provmerge$b_prov,
                        b_site = sitemerge$b_site,
@@ -136,8 +135,16 @@ pardf_trans <- pardf %>%
     mutate(fhalf1 = kappa1/betas) %>%
     mutate(fhalf2 = kappa2/betas)
 
-tpars <- select(pardf_trans, contains("ID"), Site, SPU_Name, Clone, Year, starts_with("f")) %>%
+tpars_wide <- dplyr::select(pardf_trans, contains("ID"), Site, SPU_Name, Clone, Year, starts_with("f"))
+
+tpars_long <- tpars_wide %>%
     gather(key="param", value="FUs", starts_with("f"))
+
+provpaster <- function(var) {
+    paste(var, ProvenanceID, sep="")
+}
+tpars_wide_prov <- tpars_wide %>%
+    mutate(fstartprov = paste("fstart", ProvenanceID, sep=""))
 
 # Plot transformed parameters #############
 
@@ -161,8 +168,8 @@ ggplot(hpd_df, aes(x=value, y=param, size=interval)) +
     geom_line()
 
 
-ggplot(filter(tpars, param %in% c("fstart", "fend")), aes(x=FUs, linetype=param, color=SPU_Name)) +
-    geom_density(alpha=.5) +
+ggplot(filter(tpars, param %in% c("fstart", "fend")), aes(x=FUs,y=SPU_Name, color=param)) +
+    geom_point() +
     theme_bw()
 
 ggplot(sfull, aes(x))
