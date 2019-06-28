@@ -21,8 +21,8 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 
 
 #ffit.stan <- readRDS("female_slopes.rds")
-ffit.stan <- readRDS("female_slopes_tp.rds")
-mfit.stan <- readRDS("male_slopes_tp.rds")
+ffit.stan <- readRDS("FEMALE_slopes_scaled.rds")
+mfit.stan <- readRDS("male_slopes.rds")
 
 fshiny <- as.shinystan(ffit.stan)
 launch_shinystan(fshiny)
@@ -56,7 +56,9 @@ mparam_names <- colnames(mpostdf)
 mnp <- nuts_params(mfit.stan) #nuts params
 
 # Diagnostics #######################
+postdf <- fpostdf
 sex = "female"
+
 mcmc_trace(postdf, regex_pars = "site") + ggtitle(paste(sex, "site"))
 mcmc_trace(postdf, regex_pars = "prov") + ggtitle(paste(sex, "prov"))
 mcmc_trace(postdf, regex_pars = "sigma") + ggtitle(paste(sex, "sigma"))
@@ -68,10 +70,10 @@ divergences <- filter(fnp, Parameter=="divergent__" & Value==1)
 nrow(divergences)
 
 color_scheme_set("darkgray")
-mcmc_parcoord(fpost, np = fnp, pars = fparam_names[c(3:16, 276:294)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
-mcmc_parcoord(fpost, np=fnp, regex_pars = c("clone"))
+mcmc_parcoord(fpostdf, np = fnp, pars = fparam_names[c(3:16, 276:294)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
+mcmc_parcoord(fpostdf, np=fnp, regex_pars = c("clone"))
 
-mcmc_pairs(fpost, np = fnp, regex_pars = c("kappa")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
+mcmc_pairs(fpost_re, np = fnp, regex_pars = c("kappa")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
 mcmc_pairs(fpostdf, np = fnp, regex_pars = c("site"))
 mcmc_pairs(fpostdf, np=fnp, regex_pars="prov")
 mcmc_pairs(fpostdf, np =fnp, regex_pars = "sigma")
