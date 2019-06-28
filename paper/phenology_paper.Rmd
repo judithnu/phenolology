@@ -283,7 +283,7 @@ I will examine the variability of the start date across the range ($t_1$) to see
 ## Model summary
 
 ```{r model data}
-ffit.stan <- readRDS("../female_slopes.rds")
+ffit.stan <- readRDS("FEMALE_slopes_scaled.rds")
 mfit.stan <- readRDS("../male_slopes.rds")
 
 fsum <- rstan::summary(ffit.stan)$summary
@@ -374,7 +374,7 @@ color_scheme_set("blue")
 fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
 mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
 
-compare_fm_wide(fint_site, mint_site, xlim=c(-0.04, 0.06)) 
+compare_fm_wide(fint_site, mint_site) 
 
 fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
 ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
@@ -392,7 +392,7 @@ compare_fm_wide(fa_y, ma_y)
 fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
 mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
 
-compare_fm_wide(fint_c, mint_c, xlim=c(-0.01, 0.01))
+compare_fm_wide(fint_c, mint_c)
 ```
 
 ### Sex diff
@@ -406,7 +406,7 @@ mpost$f2 <- mpost$`kappa[2]`/mpost$beta
 ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
 mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
 
-compare_fm(ff, mf, xlim=c(200,600))
+compare_fm(ff, mf)
 ```
 
 
