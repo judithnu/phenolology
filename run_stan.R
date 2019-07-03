@@ -1,21 +1,34 @@
 # Run phenology model
 
-#library(rethinking)
+# Set sex and forcing type ################
+# Choose sex and forcing type
+sex <- "FEMALE"
+#sex <- "MALE"
+
+forcingtype <- "scaled_ristos"
+
+
+# Dependencies and options ##################
+# library(rethinking)
+library(tidyverse)
 library(rstan)
-library(dplyr)
+
+# rstan options
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
 
 
 # Functions #################
 
 # Stan can only take numbers, so turn factors into integers
 stanindexer <- function(df) {
-    df$CloneID <- group_indices(df, Clone)
-    df$OrchardID <- group_indices(df, Orchard)
-    df$ProvenanceID <- group_indices(df, SPU_Name)
-    df$SiteID <- group_indices(df, Site)
-    df$YearID <- group_indices(df, Year)
-    df$Tree <- group_indices(df,TreeID)
-    return(df)
+  df$CloneID <- group_indices(df, Clone)
+  df$OrchardID <- group_indices(df, Orchard)
+  df$ProvenanceID <- group_indices(df, SPU_Name)
+  df$SiteID <- group_indices(df, Site)
+  df$YearID <- group_indices(df, Year)
+  df$Tree <- group_indices(df, TreeID)
+  return(df)
 }
 
 # Drop non-integer columns. Necessary if using rethinking to draft new stan code
@@ -26,67 +39,58 @@ stanindexer <- function(df) {
 
 # write file that stan can actually use
 prepforstan <- function(df, file) {
-    N <- nrow(df)
-    K <- length(unique(df$Phenophase_Derived))
-    Nclone <- length(unique(df$CloneID))
-    Nprovenance <- length(unique(df$ProvenanceID))
-    Nsite <- length(unique(df$SiteID))
-    Nyear <- length(unique(df$YearID))
-    Norchard <- length(unique(df$OrchardID))
+  N <- nrow(df)
+  K <- length(unique(df$Phenophase_Derived))
+  Nclone <- length(unique(df$CloneID))
+  Nprovenance <- length(unique(df$ProvenanceID))
+  Nsite <- length(unique(df$SiteID))
+  Nyear <- length(unique(df$YearID))
+  Norchard <- length(unique(df$OrchardID))
 
-    CloneID <- df$CloneID
-    ProvenanceID <- df$ProvenanceID
-    SiteID <- df$SiteID
-    YearID <- df$YearID
-    OrchardID <- df$OrchardID
+  CloneID <- df$CloneID
+  ProvenanceID <- df$ProvenanceID
+  SiteID <- df$SiteID
+  YearID <- df$YearID
+  OrchardID <- df$OrchardID
 
-    forcing <- df$sum_forcing
-    state <- df$Phenophase_Derived
+  forcing <- df$sum_forcing
+  state <- df$Phenophase_Derived
 
-    rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
+  rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
 }
 
-# Script ###################
-
-#rstan options
-options(mc.cores=parallel::detectCores())
-rstan_options(auto_write=TRUE)
 
 # Read in data ##################
 ## phenology
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
-                           stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(forcing_type=="ristos") #%>%
-    #filter(Site!="Tolko") #drop Tolko/TOHigh because it only has one provenance and that provenance isn't represented at any other sites.
-
+phenology_data <- read.csv("data/phenology_heatsum.csv",
+  stringsAsFactors = FALSE, header = TRUE
+) %>%
+  filter(forcing_type == forcingtype)
 ## provenance
 SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
 
+
+
 # Data Processing ##################
 # join provenance and phenology data
 
 phendf <- phenology_data %>%
-    na.omit()
+  na.omit()
 phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
-    unique()
+  unique()
 
-# separate into male and female dataframes and turn factors into integers
-fdf <- filter(phendf, Sex == "FEMALE")
-fdf <- stanindexer(fdf)
-mdf <- filter(phendf, Sex == "MALE")
-mdf <- stanindexer(mdf)
-
-# test that you didn't toss any data
-nrow(fdf) + nrow(mdf) == nrow(phendf)
+# filter for sex of interest
+df <- filter(phendf, Sex == sex)
+df <- stanindexer(df)
 
 # write out and read in data structured for stan
-prepforstan(fdf, "female.rdump")
-prepforstan(mdf, "male.rdump")
+prepforstan(df, paste(sex, ".rdump", sep=""))
 
-frdump <- read_rdump("female.rdump")
-mrdump <- read_rdump("male.rdump")
+rdump <- read_rdump(paste(sex, ".rdump", sep=""))
+
+
 
 # Draft stan code using rethinking ####
 # slopedraft <- ulam(
@@ -111,25 +115,22 @@ mrdump <- read_rdump("male.rdump")
 #     ),
 #     data=fdf, sample=FALSE, declare_all_data = FALSE)
 
-# write(stancode(fit_draft), file="female.stan")
-
-# Female
-
-# Fit model for FEMALE strobili #############
-ftest <- stan("slopes.stan",
-              chains=1, warmup=20, iter = 25, data = frdump) # quick check for small problems
-
-ffit <- stan("slopes.stan",
-             chains=6, cores=6, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=frdump)
-
-saveRDS(ffit, file = "female_slopes.rds")
-
-# Fit model for MALE strobili #############
+# write(stancode(fit_draft), file="slopes.stan")
 
 
-mtest <- stan("slopes.stan",
-              chains=1, warmup=20, iter = 25, data = mrdump) #quick check for small problems
-mfit <- stan("slopes.stan",
-             chains=8, cores=8, warmup=1000, iter=1200, control=list(max_treedepth=15, adapt_delta=.9), data=mrdump)
+# Fit model  #############
+test <- stan("slopes.stan",
+  model_name = paste(sex, "slopes with scaled ristos"),
+  data = rdump,
+  chains = 1, cores = 1, warmup = 20, iter = 25
+) # quick check for small problems
 
-saveRDS(mfit, file = "male_slopes.rds")
+fit <- stan("slopes.stan",
+  model_name = paste(sex, "slopes with scaled ristos"),
+  data = rdump,
+  chains = 6, cores = 6, warmup = 1000, iter = 1200,
+  control = list(max_treedepth = 15, adapt_delta = .9)
+)
+
+saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
+

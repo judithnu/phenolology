@@ -172,11 +172,12 @@ The model was fit separately to data for male strobili and female strobili.
 
 The likelihood of being in state $s \in \{1,2,3\}$ is
 
-$$\text{OrderedLogistic}(s~|~\eta,\kappa_i) = \left\{ \begin{array}{ll} 1 -
+
+$$\mathrm{Pr}(s=k)=\text{OrderedLogistic}(s~|~\eta,c) = \left\{ \begin{array}{ll} 1 -
 \text{logistic}(\eta - \kappa_1)  &  \text{if } s = 1 \\[4pt]
 \text{logistic}(\eta - \kappa_1) - \text{logistic}(\eta - \kappa_2)  &
 \text{if } s=2  \\[4pt] \text{logistic}(\eta -
-\kappa_3) - 0  &  \text{if } s = 3 \end{array} \right.$$
+\kappa_2) - 0  &  \text{if } s = 3 \end{array} \right.$$
 
 where the cutpoints $\kappa_s < \kappa_{s+1}$ and $\eta$ is a linear model relating forcing units to phenological state. $\beta$ parameters in $\eta$
 
@@ -205,13 +206,6 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 
 I tried to use weakly informative priors, but simulations or more reading are required to decide if these are actually weakly informative or if they are too diffuse. Plotting the prior distributions with the parameter values would also probably help. 
 
-The point at which a tree is 50% likely to have transitioned from one phenophase to another can be calculated by dividing the cutpoint for the transition by the slope.
-
-$$\begin{array}{ll}
-\bf{H}_1 &= \kappa_1/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
-\bf{H}_2 &= \kappa_2/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
-\end{array}$$
-
 Another way to think about the probabilities in this model:
 
 $$\begin{array}{rll}
@@ -229,13 +223,46 @@ To quantify accuracy of the model, I will calculate the difference in variance w
 
 #### Flowering period timing and length
 
-Forcing units required to induce cone receptivity and pollen shed. 
+Forcing units required to induce cone receptivity and pollen shed.
 
-Total forcing units require to end cone receptivity and pollen shed.
+I considered the beginning of the phenological period as the probability at which a tree was 20% likely to have passed out of stage 1 and the end of the phenological period as the probability at which a tree was 80% likely to have passed out of stage 2. This is equivalent to 20% of the trees in the population having reached stage 2 and 80% having reached stage 3.
 
-Difference between forcing units 
+The probability that a tree has passed out of a given stage $k$ is
+
+$$Pr(s_i > k) = \mathrm{logistic}(\vec{\beta}f_i-\kappa_k)$$
+The accumulated forcing units at which flowering is considered to start $f_{start}$ is 
+
+$$ \mathrm{Pr}(s_i>1) = 0.2 = \mathrm{logistic}(\mathbf{\vec\beta f_{start}}-\kappa_1)\\
+f_{start} = \frac{\log(\frac{.2}{1-.2}) + \kappa_1}{\vec\beta}
+$$
+
+and, similarly $f_end$ is
+$$ 
+
+f_{end} = \frac{\log(\frac{.8}{1-.8}) + \kappa_1}{\vec\beta}
+$$
+
+I calculated $f_{start}$ and $f_{end}$ for all clone site provenance year groupings in the dataset for all draws. The range of forcing units that stage 2 occurs over, *i.e.* the active phenological period, is 
+
+$$ range = f_{start} - f_{end}$$
+
+#### Dates
+
+$f_{start}$ and $f_{end}$ were matched to corresponding dates. Because $\beta_{year}$ is included as an effect, $f_{start}$ and $f_{end}$ are specific to the year the data was collected.
 
 #### Differences between provenances
+
+The point at which a tree is 50% likely to have transitioned from one phenophase to another can be calculated by dividing the cutpoint for the transition by the slope.
+
+The halfway point between any 2 consecutive phenological states is 
+
+$$\mathrm{Pr}(s>i) = 0.5 \\
+f_{half_i} = \frac{\kappa_i}{\vec\beta}$$
+
+$$\begin{array}{ll}
+\bf{H}_1 &= \kappa_1/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
+\bf{H}_2 &= \kappa_2/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
+\end{array}$$
 
 Were calculated according to [@vandermijnsbruggeVariationBudBurst2015] - "difference in days in which half the plants has reached the same score level"
 
@@ -267,7 +294,7 @@ I will examine the variability of the start date across the range ($t_1$) to see
 ## Model summary
 
 ```{r model data}
-ffit.stan <- readRDS("../female_slopes.rds")
+ffit.stan <- readRDS("FEMALE_slopes_scaled.rds")
 mfit.stan <- readRDS("../male_slopes.rds")
 
 fsum <- rstan::summary(ffit.stan)$summary
@@ -358,7 +385,7 @@ color_scheme_set("blue")
 fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
 mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
 
-compare_fm_wide(fint_site, mint_site, xlim=c(-0.04, 0.06)) 
+compare_fm_wide(fint_site, mint_site) 
 
 fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
 ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
@@ -376,7 +403,7 @@ compare_fm_wide(fa_y, ma_y)
 fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
 mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
 
-compare_fm_wide(fint_c, mint_c, xlim=c(-0.01, 0.01))
+compare_fm_wide(fint_c, mint_c)
 ```
 
 ### Sex diff
@@ -390,7 +417,7 @@ mpost$f2 <- mpost$`kappa[2]`/mpost$beta
 ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
 mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
 
-compare_fm(ff, mf, xlim=c(200,600))
+compare_fm(ff, mf)
 ```
 
 

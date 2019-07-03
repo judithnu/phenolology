@@ -57,8 +57,8 @@ view(dfSummary(phendf))
 
 
 ```{r data}
-view(dfSummary(fdf))
-view(dfSummary(mdf))
+# view(dfSummary(fdf))
+# view(dfSummary(mdf))
 
 ggplot(phendf, aes(x=Sex, y=sum_forcing, fill=as.factor(Phenophase_Derived))) +
     geom_violin() +
@@ -129,7 +129,7 @@ This model is parameterized slightly differently than the logistic model above. 
 $$k=k \\
 h_s=\frac{c_s}{k}\\$$
 
-An ordered logistic model respects the ordering of the phenological states and generates two curves - one representing the "not-yet to active" transition and the other the "active to complete" transition. The transition from before not-yet to not-yet is not meaningful and $c_1$ is set to 0.
+An ordered logistic model respects the ordering of the phenological states and generates two curves - one representing the "not-yet to active" transition and the other the "active to complete" transition. The transition from before not-yet to not-yet is not meaningful and $c_1$ is set to 0. THIS IS WRONG AND THE EQUATIONS ARE WRONG DOUBLE CHECK THEM.
 
 Adding intercept components to $\eta$ shifts the location and they are added to the cutpoints when calculating $h_s$. For example, adding a provenance effect to eta 
 

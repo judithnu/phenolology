@@ -1,17 +1,13 @@
 #### posterior predictive checks
 
-# Create datasets holding
-# 1) parameter values - including 50% transition thresholds
-# 2) pdf and cdf curves for 200 risto points between 150 and 500 ristos for 500 draws
-# 3) simulated data from model (phenological states) for 200 risto points between 150 and 500 ristos for 500 draws with 3 points simulated for each predictor
+# Create datasets holding parameter values - fstart, fend, and f50s
 
-library(tidyr)
-library(dplyr)
-library(stringr)
+library(tidyverse)
 library(rstan)
-library(rethinking)
 
 # FUNCTIONS ####################################
+
+# Add grouping columns that stan will tolerate.
 stanindexer <- function(df) {
     df$CloneID <- group_indices(df, Clone)
     df$OrchardID <- group_indices(df, Orchard)
@@ -33,317 +29,242 @@ pdflogistic <- function(x,b,c) {
     return(val)
 }
 
+tidypar <- function(stanframe, param, id) {
+
+    #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
+
+    #wide to long format for parameters
+    par <- stanframe %>% dplyr::select(contains(param), iter) %>%
+        tidyr::gather(key = key, value = value, contains("b_")) %>%
+        dplyr::mutate(id = str_extract(key, "[0-9]{1,}"))
+    colnames(par) <- c("iter", "name", param, id)
+    par[,ncol(par)] <- as.integer(par[,ncol(par)])
+    return(par)
+}
+
+# Filter the phenology dataframe by sex. Add grouping vars a la stan and extract unique combinations of grouping variables. df is a dataframe and sex is "MALE" or "FEMALE". Stan requires grouping vars to be consecutive integers, so indexes will differ/represent different underlying groups for any groups that are not identical across sexes
+splitsex <- function(df = phendf, sex) {
+    df <- filter(phendf, Sex == sex)
+    # add grouping columns to match with stan output
+    df <- stanindexer(df)
+}
+
+# join male and female sex
+unique_grouper <- function(df1 = fdf, df2 = mdf) {
+    df <- full_join(df1, df2)
+    #extract unique groups
+    udf <- df %>%
+        dplyr::select(Sex, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID) %>%
+        distinct()
+# Group by individual clone and group by individuals WITH sex
+    udf$IndGroup <- group_indices(udf, SiteID, ProvenanceID, YearID, CloneID)
+    udf$IndSexGroup <- group_indices(udf, Sex, IndGroup)
+    return(udf)
+}
+
+# Build a dataframe where each row is a unique combination of parameters for each unique combination of sex, site, clone, year, and provenance that occurs in the data (IndSexGroup). #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
+build_par_df <- function(mcmcdf, datdf = udf, sex) {
+
+    udf <- filter(datdf, Sex==sex)
+    mcmcdf$iter <- 1:nrow(fmod)
+
+    singledimpars <- mcmcdf %>%
+        dplyr::select(iter, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa")) %>%
+        rename(kappa1 = `kappa[1]`) %>%
+        rename(kappa2 = `kappa[2]`)
+
+    kappa <- dplyr::select(mcmcdf, contains("kappa"))
+    siteb <- tidypar(mcmcdf, "b_site", "SiteID")
+    provb <- tidypar(mcmcdf, "b_prov", "ProvenanceID")
+    cloneb <- tidypar(mcmcdf, "b_clone", "CloneID")
+    yearb <- tidypar(mcmcdf, "b_year", "YearID")
+
+    clonemerge <- left_join(udf, cloneb)
+    provmerge <- left_join(udf, provb)
+    sitemerge <- left_join(udf, siteb)
+    yearmerge <- left_join(udf, yearb)
+
+    pardf <- data.frame(udf,
+                        iter = clonemerge$iter,
+                        b_clone = clonemerge$b_clone,
+                        b_prov = provmerge$b_prov,
+                        b_site = sitemerge$b_site,
+                        b_year = yearmerge$b_year) %>%
+        left_join(singledimpars)
+}
+
+
 # MODEL AND ORIGINAL DATA ############
+
 #model
-ffit.stan <- readRDS("female_slopes.rds")
-#mfit.stan <- readRDS("male_slopes.rds")
+fmod <- readRDS("FEMALE_slopes_scaled.rds") %>%
+    as.data.frame()
 
-fmod <- as.data.frame(ffit.stan)
-#mmod <- as.data.frame(ffit.stan)
-
+mmod <- readRDS("MALE_slopes_scaled.rds") %>%
+    as.data.frame()
 
 #data
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv",
-                           stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(forcing_type=="ristos")
+phenology_data <- read.csv("data/phenology_heatsum.csv",
+                           stringsAsFactors = FALSE,
+                           header = TRUE) %>%
+    filter(forcing_type=="scaled_ristos")
 
-clim <- read.csv("data/all_clim_PCIC.csv", stringsAsFactors = FALSE, header=TRUE) %>%
-    filter(forcing_type=="ristos") %>%
-    filter(DoY %in% c(90:190))
+clim <- read.csv("data/all_clim_PCIC.csv",
+                 stringsAsFactors = FALSE, header=TRUE) %>%
+    filter(forcing_type=="scaled_ristos")
 
 ## provenance
 SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
+SPU_dat$SPU_Name <- str_split(SPU_dat$SPU_Name, " \\(", simplify=TRUE)[,1]
 
 # Data Processing ##################
 # join provenance and phenology data
 
-phendf <- phenology_data %>%
-    na.omit()
 phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
     unique()
 
-# separate into male and female dataframes and turn factors into integers
-fdf <- filter(phendf, Sex == "FEMALE")
-fdf <- stanindexer(fdf)
-fdf$groupID <- group_indices(fdf, SiteID, ProvenanceID, YearID, CloneID)
-fdf$recordID <- group_indices(fdf, groupID, Date )
-# mdf <- filter(phendf, Sex == "MALE")
-# mdf <- stanindexer(mdf)
+# identify combinations of effects that actually occur
 
-# identify combinations of effects & predictor (sum_forcing) that actually occur
-ufdf <- fdf %>%
-    select(groupID, recordID, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID, sum_forcing, DoY) %>%
-    distinct()
+fdf <- splitsex(phendf, "FEMALE")
+mdf <- splitsex(phendf, "MALE")
 
-
-
-# Build a dataframe where each row is a unique combination of parameters for each unique combination of forcing, site, clone, year, and provenance #########
-#split by param
-
-draws <- base::sample(1:nrow(fmod), 300)
-fmod_sampled <- fmod[draws,]
-
-singledimpars <- fmod_sampled %>%
-    mutate(draw=draws) %>%
-    select(draw, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa")) %>%
-    rename(kappa1 = `kappa[1]`) %>%
-    rename(kappa2 = `kappa[2]`)
-
-tidypar <- function(stanframe, param, id) {
-
-#take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
-
-    #wide to long format for parameters
-par <- stanframe %>% select(contains(param)) %>%
-        mutate(draw = draws) %>%
-        gather(key = key, value = value, contains("b_")) %>%
-        mutate(id = str_extract(key, "[0-9]{1,}"))
-    colnames(par) <- c("draw", "name", param, id)
-   par[,4] <- as.integer(par[,4])
-    return(par)
-}
-
-kappa <- select(fmod_sampled, contains("kappa"))
-siteb <- tidypar(fmod_sampled, "b_site", "SiteID")
-provb <- tidypar(fmod_sampled, "b_prov", "ProvenanceID")
-cloneb <- tidypar(fmod_sampled, "b_clone", "CloneID")
-yearb <- tidypar(fmod_sampled, "b_year", "YearID")
-
-clonemerge <- left_join(ufdf, cloneb)
-provmerge <- left_join(ufdf, provb)
-sitemerge <- left_join(ufdf, siteb)
-yearmerge <- left_join(ufdf, yearb)
-
-pardf <- data.frame(ufdf,
-                       draw = clonemerge$draw,
-                       b_clone = clonemerge$b_clone,
-                       b_prov = provmerge$b_prov,
-                       b_site = sitemerge$b_site,
-                       b_year = yearmerge$b_year) %>%
-    left_join(singledimpars)
+udf <- unique_grouper(fdf, mdf)
 
 #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
 
-# add dates to pardf
+fpardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE")
+mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
+pardf <- rbind(fpardf, mpardf)
 
-# Now simulate state predictions ##################
-
-    # calculate slope and phi in columns
-pred_df <- pardf %>%
+# add transformed parameters fstart, fend, and f50s
+pardf_trans <- pardf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
-    mutate(phi = betas * sum_forcing) %>%
-    mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
-    mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
-    mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
-    mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
-    mutate(f501 = kappa1/betas) %>%
-    mutate(f502 = kappa2/betas) %>%
-distinct()
+    mutate(fstart = (logit(.2) + kappa1)/betas) %>%
+    mutate(fend = (logit(.8) + kappa2)/betas) %>%
+    mutate(fhalf1 = kappa1/betas) %>%
+    mutate(fhalf2 = kappa2/betas)
 
 
 
-#simulate state (1 per real obs)
-state_pred <- c()
-for (i in 1:nrow(pred_df)) {
-    state_pred[i] <- rethinking::rordlogit(1,
-                                      phi = pred_df$phi[i],
-                                      a = c(pred_df$kappa1[i], pred_df$kappa2[i]))
-}
+tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, Clone, Year, contains("Ind"), starts_with("f")) %>%
+    gather(key="param", value="sum_forcing", starts_with("f"))
 
-pred_df <- data.frame(pred_df, state_pred=state_pred)
+# Get data for flowering periods
+fbloom <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
+    filter(Phenophase_Derived==2) %>%
+    rename(FUs = sum_forcing)
 
-#merge in real data
+mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
+    filter(Phenophase_Derived==2) %>%
+    rename(FUs = sum_forcing)
 
-real_state <- fdf %>%
-    dplyr::select(recordID, Phenophase_Derived)
+bdat <- rbind(fbloom, mbloom) %>%
+    full_join(tpars) %>%
+    filter(param %in% c("fstart", "fend"))
 
-realpred <- full_join(pred_df, real_state) %>%
-    select(-contains("b_")) %>%
-    select(-contains("beta")) %>%
-    select(-contains("kappa")) %>%
-    select(-contains("sigma")) %>%
-   gather(key=outcome, value=state, state_pred, Phenophase_Derived)
 
-mrealpred <- realpred
-frealpred <- realpred
+# Plot transformed parameters #############
 
-ggplot(realpred, aes(x=sum_forcing, fill=as.factor(outcome))) +
-    geom_histogram(alpha=0.6) +
-    facet_grid(state ~ .) +
-    scale_fill_viridis_d() +
-    ggtitle("Male state data and predictions") +
+hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
+hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
+
+# calculate HPDIs
+
+full <- group_by(tpars, param, Sex) %>%
+    summarize(x=hpd_lower(sum_forcing, prob=.99), xend=hpd_upper(sum_forcing, prob=.99)) %>%
+    mutate(interval=".99")
+
+fifty <- group_by(tpars, param, Sex) %>%
+    summarize(x=hpd_lower(sum_forcing, prob=.5), xend=hpd_upper(sum_forcing, prob=.5)) %>%
+    mutate(interval="0.5")
+
+hpd_df <- full_join(full, fifty) %>%
+    gather(key=end, value=value, x, xend) %>%
+    arrange(interval)
+
+
+# How to do an interval plot
+ggplot(filter(hpd_df, interval==".99"), aes(x=value, y=0, color=Sex, size=interval)) +
+    geom_line() +
+    geom_line(data = filter(hpd_df, interval=="0.5"), aes(x=value, y=0)) +
+    facet_grid(rows=vars(param, Sex)) +
+    theme_bw() +
+    scale_color_viridis_d()
+
+# This is a good plot
+ggplot(bdat, aes(x=sum_forcing, fill=Sex, linetype=param)) +
+    geom_density(alpha=0.5) +
+    geom_density(aes(x=FUs, alpha=0.5, linetype=NULL))+
+    theme_bw() +
+    facet_grid(SPU_Name ~ .) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    scale_fill_viridis_d()+
+    ggtitle("Modeled start and end of flowering with flowering period data", subtitle = "by provenance. fstart = 20% begun, fend = 80% done")
+
+# This is a good plot 2
+ggplot(bdat, aes(x=sum_forcing, fill=Sex, linetype=param)) +
+    geom_density(alpha=0.5) +
+    stat_ecdf(aes(x=FUs, color=Sex), alpha=.8)+
+    theme_bw() +
+    facet_grid(Site ~ .) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    scale_fill_viridis_d()+
+    scale_color_viridis_d() +
+    ggtitle("Modeled start and end of flowering with cumulative flowering period data", subtitle = "by site. fstart = 20% begun, fend = 80% done")
+
+ggplot(fdat, aes(x=sum_forcing, fill=param)) +
+    geom_density( alpha=0.5) +
+    geom_density(aes(x=FUs, fill=NULL))+
+    theme_bw() +
+    facet_grid(Site ~ .) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    scale_fill_viridis_d()+
+    ggtitle("Modeled start and end of receptivity with receptive period data ", subtitle = "by site. fstart = 20% begun, fend = 80% done")
+
+ggplot(fdat, aes(x=sum_forcing, fill=param)) +
+    geom_density( alpha=0.5) +
+    geom_density(aes(x=FUs, fill=NULL))+
+    theme_bw() +
+    facet_wrap(Year ~ ., scales="free") +
+    theme(strip.text.y = element_text(angle = 0)) +
+    scale_fill_viridis_d()+
+    ggtitle("Modeled start and end of receptivity with receptive period data ", subtitle = "by year. fstart = 20% begun, fend = 80% done")
+
+ggplot(filter(tpars_long, param %in% c("fstart", "fend")), aes(x=FUs, fill=SPU_Name, linetype=param)) +
+    geom_density(alpha=.2) +
     theme_bw()
 
-m2rp <- filter(mrealpred, state==2)
-f2rp <- filter(frealpred, state==2 & outcome=="state_pred")
-ggplot(f2rp, aes(x=f501, fill=SPU_Name, linetype=outcome)) +
-    geom_density(alpha=0.4) +
-    #facet_wrap("Year") +
-    scale_fill_viridis_d() +
-    ggtitle("Female 50% first transition")
+ggplot(filter(tpars_long, param %in% c("fstart", "fend")), aes(x=FUs, fill=Site, linetype=param)) +
+    geom_density(alpha=.2) +
+    theme_bw()
 
-ggplot(f2rp, aes(x=DoY, fill=SPU_Name, linetype=outcome)) +
-    geom_histogram(alpha=0.4) +
-    facet_wrap(Year ~ Site, scales="free") +
-    scale_fill_viridis_d() +
-    ggtitle("Female 50% first transition")
+ggplot(filter(tpars_long, param %in% c("fstart", "fend")), aes(x=FUs, group=as.factor(CloneID))) +
+    geom_density(alpha=.2) +
+    theme_bw() +
+    facet_grid(param ~ .) +
+    theme(
+        plot.background = element_blank(),
+        #panel.grid = element_blank(),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(size = 0.4),
+        axis.ticks = element_line(size = 0.3),
+        strip.background = element_blank(),
+        strip.text = element_text(size = rel(0.9)),
+        strip.placement = "outside",
+        # strip.background = element_rect(fill = "gray95", color = NA),
+        panel.spacing = unit(1.5, "lines"),
+        legend.position = "right",
+        legend.background = element_blank(),
+        legend.text = element_text(size = 13),
+        legend.text.align = 0,
+        legend.key = element_blank()
+    )
 
-ggplot(f2rp, aes(x=f502, fill=SPU_Name, linetype=outcome)) +
-    geom_density(alpha=0.1) +
-    #facet_wrap("Year") +
-    scale_fill_viridis_d() +
-    ggtitle("Female 50% second transition")
-
-# calculate first and last day flowering. NEED MORE SIMULATIONS FOR THIS TO WORK.
-
-#flowering <- filter(realpred, state=="2")
-
-
-# hpd_lower = function(x) HPDI(x, prob=.9)[1]
-# hpd_upper = function(x) HPDI(x, prob=.9)[2]
-# df_hpd <- group_by(pred, state) %>%
-#     summarise(x=hpd_lower(sum_forcing), xend=hpd_upper(sum_forcing))
-#
-# # calculate 90% HPDI
-# flowering <- filter(pred, state=="2")
-#
-#
-# ggplot(realpred, aes(x=sum_forcing, group=as.factor(draw), color=outcome)) +
-#     stat_ecdf(alpha=0.5) +
-#     facet_grid(state ~ .)  +
-#     #geom_segment(data=df_hpd, aes(x=x, xend=xend, y=0, yend=0, size=3))
-#     geom_vline(data=df_hpd, aes(xintercept=x)) +
-#     geom_vline(data=df_hpd, aes(xintercept=xend))
-#
-# ggplot(realpred, aes(x=sum_forcing, fill=outcome)) +
-#     geom_density(adjust=3, alpha=0.7) +
-#     facet_grid(state ~ .) +
-#     ggtitle("female strobili predicted and measured states with 90% HPDI") +
-#     geom_vline(data = df_hpd, aes(xintercept=x)) +
-#     geom_vline(data = df_hpd, aes(xintercept=xend)) +
-#     scale_fill_viridis_d()
-
-## calculate transitions #####################
-
-
-# ts <- pardf %>%
-#     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
-#     mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
-#     mutate(t2 = logistic2(sum_forcing, betas, kappa2))
-
-
-plot1 <- ggplot(ts, aes(x=sum_forcing, y=t1, color=draw)) +
-    geom_point(alpha=0.5)
-
-# Calculate transitions
-
-fmodsum <- rstan::summary(ffit.stan)
-fmodsum <- as.data.frame(fmodsum$summary)[,c(1,4:8)]
-
-
-foop <- as.data.frame(t(fmodsum ))
-foop$estimates <- rownames(foop)
-
-tidypar2 <- function(stanframe, param, id) {
-    #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
-    par <- stanframe %>% select(contains(param)) %>%
-        mutate(estimate = rownames(stanframe)) %>%
-        gather(key = key, value = value, contains("b_")) %>%
-        mutate(id = str_extract(key, "[0-9]{1,}"))
-    colnames(par) <- c("estimate","name", param, id)
-    par[,4] <- as.integer(par[,4])
-    return(par)
-}
-
-singledimparest <- foop %>%
-    mutate(estimate=rownames(foop)) %>%
-    select(estimate, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa")) %>%
-    rename(kappa1 = `kappa[1]`) %>%
-    rename(kappa2 = `kappa[2]`)
-
-siteest <- tidypar2(foop, "b_site", "SiteID")
-provest <- tidypar2(foop, "b_prov", "ProvenanceID")
-cloneest <- tidypar2(foop, "b_clone", "CloneID")
-yearest <- tidypar2(foop, "b_year", "YearID")
-
-ufdf <- ufdf %>% select(-sum_forcing, -recordID) %>% distinct()
-
-#only include years, clones, sites, and provs actually in dataset
-cloneestmerge <- left_join(ufdf, cloneest)
-provestmerge <- left_join(ufdf, provest)
-siteestmerge <- left_join(ufdf, siteest)
-yearestmerge <- left_join(ufdf, yearest)
-
-parestdf <- data.frame(ufdf,
-                    estimate = cloneestmerge$estimate,
-                    b_clone = cloneestmerge$b_clone,
-                    b_prov=provestmerge$b_prov,
-                    b_site = siteestmerge$b_site,
-                    b_year = yearestmerge$b_year) %>%
-    left_join(singledimparest)
-
-
-
-
-# forcing <- seq(from = 175, to=500, length.out=50)
-index <- unique(parestdf$index)
-# forcingframe <- crossing(index, forcing)
-
-
-
-
-
-ts <- parestdf %>%
-    mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
-    left_join(clim) %>%
-    mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
-    mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
-    mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
-    mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
-    mutate(f501 = kappa1/betas) %>%
-    mutate(f502 = kappa2/betas)
-    distinct()
-
-# ts_nc <- parestdf %>%
-#     mutate(betas = b_prov + b_site + b_year + beta) %>%
-#     left_join(clim) %>%
-#     mutate(t1 = logistic2(sum_forcing, betas, kappa1)) %>%
-#     mutate(t2 = logistic2(sum_forcing, betas, kappa2)) %>%
-#     mutate(p2 = pdflogistic(sum_forcing, betas, kappa1)) %>%
-#     mutate(p3 = pdflogistic(sum_forcing, betas, kappa2)) %>%
-#     distinct()
-
-ts$indexest <- group_indices(ts, groupID, estimate)
-#ts_nc$indexest <- group_indices(ts_nc, groupID, estimate)
-
-ggplot(ts, aes(x=SPU_Name, y=f501, fill=estimate)) +
-    geom_violin()
-
-ggplot(filter(ts, estimate=="mean"), aes(x=sum_forcing, y=t1, group=indexest) ) +
-    geom_line() +
-    facet_grid(Site ~ SPU_Name) +
-    geom_line(data=filter(ts_nc, estimate=="mean"), aes(x=sum_forcing, y=t1, group=indexest, color="nc"), alpha=0.2)
-
-ggplot(filter(ts, estimate=="mean"), aes(x=sum_forcing, y=t2, group=indexest) ) +
-    geom_line() +
-    facet_grid(Site ~ SPU_Name) +
-    geom_line(data=filter(ts_nc, estimate=="mean"), aes(x=sum_forcing, y=t2, group=indexest, color="nc"), alpha=0.2)
-
-ggplot(filter(ts, estimate=="mean"), aes(x=DoY, y=t1, group=indexest) ) +
-    geom_line() +
-    facet_grid(Site ~ SPU_Name) +
-    geom_line(data=filter(ts, estimate=="mean"), aes(x=DoY, y=t2, group=indexest, color="t2"), alpha=0.2)
-
-ggplot(filter(ts, estimate=="mean"), aes(x=DoY, y=p2, group=indexest, color="p2") ) +
-    geom_line() +
-    facet_grid(Site ~ SPU_Name) +
-    geom_line(data=filter(ts, estimate=="mean"), aes(x=DoY, y=p3, group=indexest, color="p3"), alpha=0.1)
-
-# calculate state probabilities
-
-
+tpars_wide <- select(tpars_wide, starts_with("f"))
+mcmc_areas(tpars_wide)
 
 
 

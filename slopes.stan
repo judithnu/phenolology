@@ -25,8 +25,8 @@ parameters{
     real<lower=0> sigma_prov;
     real<lower=0> sigma_clone;
     real<lower=0> sigma_year;
-
 }
+
 model{
     vector[N] phi;
     beta ~ exponential(2);
