@@ -4,6 +4,7 @@
 
 library(tidyverse)
 library(rstan)
+library(gtools)
 
 # FUNCTIONS ####################################
 
@@ -146,10 +147,15 @@ pardf_trans <- pardf %>%
     mutate(fhalf1 = kappa1/betas) %>%
     mutate(fhalf2 = kappa2/betas)
 
-
+#pardf has all parameters and transformed parameters
 
 tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, Clone, Year, contains("Ind"), starts_with("f")) %>%
     gather(key="param", value="sum_forcing", starts_with("f"))
+
+tpars$param <- factor(tpars$param)
+tpars$param = factor(tpars$param,levels(tpars$param)[c(1,3,2,4)])
+
+
 
 # Get data for flowering periods
 fbloom <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
@@ -163,7 +169,7 @@ mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Na
 bdat <- rbind(fbloom, mbloom) %>%
     full_join(tpars) %>%
     filter(param %in% c("fstart", "fend"))
-
+# bdat has forcing units (FUs) that the model estimates start and end to occur at as well as the actual forcing units (sum_forcing) that flowering was recorded at.
 
 # Plot transformed parameters #############
 
@@ -266,5 +272,23 @@ ggplot(filter(tpars_long, param %in% c("fstart", "fend")), aes(x=FUs, group=as.f
 tpars_wide <- select(tpars_wide, starts_with("f"))
 mcmc_areas(tpars_wide)
 
+# Compare provenances
 
+full_prov <- group_by(tpars, Sex, SPU_Name, param) %>%
+    summarize(x=hpd_lower(sum_forcing, prob=.99), xend=hpd_upper(sum_forcing, prob=.99)) %>%
+    mutate(interval=".99")
 
+fifty_prov <- group_by(tpars, Sex, SPU_Name, param) %>%
+    summarize(x=hpd_lower(sum_forcing, prob=.5), xend=hpd_upper(sum_forcing, prob=.5)) %>%
+    mutate(interval="0.5")
+
+hpd_df_prov <- full_join(full_prov, fifty_prov) %>%
+    gather(key=end, value=value, x, xend) %>%
+    arrange(interval)
+
+ggplot(filter(hpd_df_prov, interval==".99"), aes(x=value, y=SPU_Name, color=Sex, size=interval)) +
+    geom_line(alpha=0.5) +
+    geom_line(data = filter(hpd_df_prov, interval=="0.5"), aes(x=value, y=SPU_Name)) +
+    facet_grid(rows=vars(param, Sex) ) +
+    theme_bw() +
+    scale_color_viridis_d()
