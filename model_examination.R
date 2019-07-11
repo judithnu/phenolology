@@ -22,7 +22,7 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 
 #ffit.stan <- readRDS("female_slopes.rds")
 ffit.stan <- readRDS("FEMALE_slopes_scaled.rds")
-mfit.stan <- readRDS("male_slopes.rds")
+mfit.stan <- readRDS("MALE_slopes_scaled.rds")
 
 fshiny <- as.shinystan(ffit.stan)
 launch_shinystan(fshiny)
@@ -35,7 +35,7 @@ fsum <- rstan::summary(ffit.stan)$summary
 fsum <- as.data.frame(fsum)
 #postlist <- rstan::extract(ffit.stan)
 fpostdf <- as.data.frame(ffit.stan)
-fpost_re <- extract.samples(ffit.stan)
+#fpost_re <- extract.samples(ffit.stan)
 #post <- as.array(ffit.stan)
 flp <- log_posterior(ffit.stan)
 #param_names <- attributes(postdf)$dimnames$parameters
@@ -48,7 +48,7 @@ msum <- rstan::summary(mfit.stan)$summary
 msum <- as.data.frame(msum)
 #postlist <- rstan::extract(ffit.stan)
 mpostdf <- as.data.frame(mfit.stan)
-mpost_re <- extract.samples(mfit.stan)
+#mpost_re <- extract.samples(mfit.stan)
 #post <- as.array(ffit.stan)
 mlp <- log_posterior(mfit.stan)
 #param_names <- attributes(postdf)$dimnames$parameters
