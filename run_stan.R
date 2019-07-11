@@ -2,8 +2,8 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-sex <- "FEMALE"
-#sex <- "MALE"
+#sex <- "FEMALE"
+sex <- "MALE"
 
 forcingtype <- "scaled_ristos"
 
@@ -20,14 +20,14 @@ rstan_options(auto_write = TRUE)
 
 # Functions #################
 
-# Stan can only take numbers, so turn factors into integers
+# Stan can only take consecutive integers for factors, so turn factors into consecutive integers
 stanindexer <- function(df) {
   df$CloneID <- group_indices(df, Clone)
   df$OrchardID <- group_indices(df, Orchard)
   df$ProvenanceID <- group_indices(df, SPU_Name)
   df$SiteID <- group_indices(df, Site)
   df$YearID <- group_indices(df, Year)
-  df$Tree <- group_indices(df, TreeID)
+  df$TreeID <- group_indices(df, TreeUnique)
   return(df)
 }
 
@@ -132,5 +132,5 @@ fit <- stan("slopes.stan",
   control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
+#saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
 
