@@ -15,7 +15,7 @@ stanindexer <- function(df) {
     df$ProvenanceID <- group_indices(df, SPU_Name)
     df$SiteID <- group_indices(df, Site)
     df$YearID <- group_indices(df, Year)
-    df$Tree <- group_indices(df,TreeID)
+    df$TreeUnique <- group_indices(df,TreeID)
     return(df)
 }
 

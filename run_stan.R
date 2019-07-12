@@ -47,32 +47,32 @@ prepforstan <- function(df, file) {
   Nclone <- length(unique(df$CloneID))
   Ntree <- length(unique(df$TreeID))
   Nyear <- length(unique(df$YearID))
-
+  
   SiteID <- df$SiteID
   ProvenanceID <- df$ProvenanceID
   OrchardID <- df$OrchardID
   CloneID <- df$CloneID
   TreeID <- df$TreeID
   YearID <- df$YearID
-
+  
   forcing <- df$sum_forcing
   state <- df$Phenophase_Derived
-
-  rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone","Ntree", "Nyear", "SiteID", "ProvenanceID", "CloneID", "TreeID", "YearID", "forcing", "state"), file)
+  
+  rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Nyear", "SiteID", "ProvenanceID", "CloneID", "YearID", "forcing", "state"), file)
 }
 
 
 # Read in data ##################
 ## phenology
 phenology_data <- read.csv("data/phenology_heatsum.csv",
-  stringsAsFactors = FALSE, header = TRUE
+                           stringsAsFactors = FALSE, header = TRUE
 ) %>%
   filter(forcing_type == forcingtype)
 
 ## provenance
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
-    dplyr::select(SPU_Name, Orchard)
+  dplyr::select(SPU_Name, Orchard)
 
 
 
@@ -83,7 +83,6 @@ phendf <- phenology_data %>%
   na.omit() %>%
   left_join(SPU_dat) %>%
   unique()
-phendf$SiteXProv <- group_indices(Site, SPU_Name)
 
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)
@@ -93,8 +92,6 @@ df <- stanindexer(df)
 prepforstan(df, paste(sex, ".rdump", sep=""))
 
 rdump <- read_rdump(paste(sex, ".rdump", sep=""))
-
-
 
 # Draft stan code using rethinking ####
 # slopedraft <- ulam(
@@ -123,22 +120,18 @@ rdump <- read_rdump(paste(sex, ".rdump", sep=""))
 
 
 # Fit model  #############
-test <- stan("slopes_tree.stan",
-  model_name = paste(sex, "slopes with scaled ristos"),
-  pars = c("b_clone", "b_tree"),
-  include=FALSE,
-  data = rdump,
-  chains = 1, cores = 1, warmup = 20, iter = 25
+test <- stan("slopes.stan",
+             model_name = paste(sex, "slopes with scaled ristos"),
+             data = rdump,
+             chains = 1, cores = 1, warmup = 20, iter = 25
 ) # quick check for small problems
 
-fit <- stan("slopes_tree.stan",
-  model_name = paste(sex, "slopes with scaled ristos"),
-  data = rdump,
-  pars = c("b_clone", "b_tree"),
-  include=FALSE,
-  chains = 6, cores = 6, warmup = 1000, iter = 1200,
-  control = list(max_treedepth = 15, adapt_delta = .9)
+fit <- stan("slopes.stan",
+            model_name = paste(sex, "slopes with scaled ristos"),
+            data = rdump,
+            chains = 10, cores = 10, warmup = 1000, iter = 1300,
+            control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste(sex, "_slopes_scaled_tree.rds", sep=''))
+saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
 
