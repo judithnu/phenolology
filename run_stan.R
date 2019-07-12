@@ -2,8 +2,8 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-sex <- "FEMALE"
-#sex <- "MALE"
+#sex <- "FEMALE"
+sex <- "MALE"
 
 forcingtype <- "scaled_ristos"
 
@@ -20,14 +20,14 @@ rstan_options(auto_write = TRUE)
 
 # Functions #################
 
-# Stan can only take numbers, so turn factors into integers
+# Stan can only take consecutive integers for factors, so turn factors into consecutive integers
 stanindexer <- function(df) {
   df$CloneID <- group_indices(df, Clone)
   df$OrchardID <- group_indices(df, Orchard)
   df$ProvenanceID <- group_indices(df, SPU_Name)
   df$SiteID <- group_indices(df, Site)
   df$YearID <- group_indices(df, Year)
-  df$Tree <- group_indices(df, TreeID)
+  df$TreeID <- group_indices(df, TreeUnique)
   return(df)
 }
 
@@ -41,35 +41,38 @@ stanindexer <- function(df) {
 prepforstan <- function(df, file) {
   N <- nrow(df)
   K <- length(unique(df$Phenophase_Derived))
-  Nclone <- length(unique(df$CloneID))
-  Nprovenance <- length(unique(df$ProvenanceID))
   Nsite <- length(unique(df$SiteID))
-  Nyear <- length(unique(df$YearID))
+  Nprovenance <- length(unique(df$ProvenanceID))
   Norchard <- length(unique(df$OrchardID))
+  Nclone <- length(unique(df$CloneID))
+  Ntree <- length(unique(df$TreeID))
+  Nyear <- length(unique(df$YearID))
 
-  CloneID <- df$CloneID
-  ProvenanceID <- df$ProvenanceID
   SiteID <- df$SiteID
-  YearID <- df$YearID
+  ProvenanceID <- df$ProvenanceID
   OrchardID <- df$OrchardID
+  CloneID <- df$CloneID
+  TreeID <- df$TreeID
+  YearID <- df$YearID
 
   forcing <- df$sum_forcing
   state <- df$Phenophase_Derived
 
-  rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
+  rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Nyear", "SiteID", "ProvenanceID", "CloneID", "YearID", "forcing", "state"), file)
 }
 
 
 # Read in data ##################
 ## phenology
 phenology_data <- read.csv("data/phenology_heatsum.csv",
-  stringsAsFactors = FALSE, header = TRUE
+                           stringsAsFactors = FALSE, header = TRUE
 ) %>%
   filter(forcing_type == forcingtype)
+
 ## provenance
 SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
-    dplyr::select(SPU_Name, Orchard)
+  dplyr::select(SPU_Name, Orchard)
 
 
 
@@ -77,8 +80,8 @@ SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
 # join provenance and phenology data
 
 phendf <- phenology_data %>%
-  na.omit()
-phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+  na.omit() %>%
+  left_join(SPU_dat) %>%
   unique()
 
 # filter for sex of interest
@@ -89,8 +92,6 @@ df <- stanindexer(df)
 prepforstan(df, paste(sex, ".rdump", sep=""))
 
 rdump <- read_rdump(paste(sex, ".rdump", sep=""))
-
-
 
 # Draft stan code using rethinking ####
 # slopedraft <- ulam(
@@ -114,22 +115,22 @@ rdump <- read_rdump(paste(sex, ".rdump", sep=""))
 #         sigma_orch ~ exponential(2)
 #     ),
 #     data=fdf, sample=FALSE, declare_all_data = FALSE)
-
-# write(stancode(fit_draft), file="slopes.stan")
+#
+# # write(stancode(fit_draft), file="slopes.stan")
 
 
 # Fit model  #############
 test <- stan("slopes.stan",
-  model_name = paste(sex, "slopes with scaled ristos"),
-  data = rdump,
-  chains = 1, cores = 1, warmup = 20, iter = 25
+             model_name = paste(sex, "slopes with scaled ristos"),
+             data = rdump,
+             chains = 1, cores = 1, warmup = 20, iter = 25
 ) # quick check for small problems
 
 fit <- stan("slopes.stan",
-  model_name = paste(sex, "slopes with scaled ristos"),
-  data = rdump,
-  chains = 6, cores = 6, warmup = 1000, iter = 1200,
-  control = list(max_treedepth = 15, adapt_delta = .9)
+            model_name = paste(sex, "slopes with scaled ristos"),
+            data = rdump,
+            chains = 10, cores = 10, warmup = 1000, iter = 1300,
+            control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
 saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
