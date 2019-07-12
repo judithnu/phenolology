@@ -41,22 +41,24 @@ stanindexer <- function(df) {
 prepforstan <- function(df, file) {
   N <- nrow(df)
   K <- length(unique(df$Phenophase_Derived))
-  Nclone <- length(unique(df$CloneID))
-  Nprovenance <- length(unique(df$ProvenanceID))
   Nsite <- length(unique(df$SiteID))
-  Nyear <- length(unique(df$YearID))
+  Nprovenance <- length(unique(df$ProvenanceID))
   Norchard <- length(unique(df$OrchardID))
+  Nclone <- length(unique(df$CloneID))
+  Ntree <- length(unique(df$TreeID))
+  Nyear <- length(unique(df$YearID))
 
-  CloneID <- df$CloneID
-  ProvenanceID <- df$ProvenanceID
   SiteID <- df$SiteID
-  YearID <- df$YearID
+  ProvenanceID <- df$ProvenanceID
   OrchardID <- df$OrchardID
+  CloneID <- df$CloneID
+  TreeID <- df$TreeID
+  YearID <- df$YearID
 
   forcing <- df$sum_forcing
   state <- df$Phenophase_Derived
 
-  rstan::stan_rdump(c("N", "K", "Nclone", "Nprovenance", "Nsite", "Nyear", "SiteID", "CloneID", "ProvenanceID", "YearID", "forcing", "state"), file)
+  rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone","Ntree", "Nyear", "SiteID", "ProvenanceID", "CloneID", "TreeID", "YearID", "forcing", "state"), file)
 }
 
 
@@ -66,8 +68,9 @@ phenology_data <- read.csv("data/phenology_heatsum.csv",
   stringsAsFactors = FALSE, header = TRUE
 ) %>%
   filter(forcing_type == forcingtype)
+
 ## provenance
-SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
 
@@ -77,9 +80,10 @@ SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
 # join provenance and phenology data
 
 phendf <- phenology_data %>%
-  na.omit()
-phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+  na.omit() %>%
+  left_join(SPU_dat) %>%
   unique()
+phendf$SiteXProv <- group_indices(Site, SPU_Name)
 
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)
@@ -114,20 +118,24 @@ rdump <- read_rdump(paste(sex, ".rdump", sep=""))
 #         sigma_orch ~ exponential(2)
 #     ),
 #     data=fdf, sample=FALSE, declare_all_data = FALSE)
-
-# write(stancode(fit_draft), file="slopes.stan")
+#
+# # write(stancode(fit_draft), file="slopes.stan")
 
 
 # Fit model  #############
-test <- stan("slopes.stan",
+test <- stan("slopes_tree.stan",
   model_name = paste(sex, "slopes with scaled ristos"),
+  pars = c("b_clone", "b_tree"),
+  include=FALSE,
   data = rdump,
   chains = 1, cores = 1, warmup = 20, iter = 25
 ) # quick check for small problems
 
-fit <- stan("slopes.stan",
+fit <- stan("slopes_tree.stan",
   model_name = paste(sex, "slopes with scaled ristos"),
   data = rdump,
+  pars = c("b_clone", "b_tree"),
+  include=FALSE,
   chains = 6, cores = 6, warmup = 1000, iter = 1200,
   control = list(max_treedepth = 15, adapt_delta = .9)
 )
