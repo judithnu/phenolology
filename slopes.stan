@@ -27,13 +27,23 @@ parameters{
     real<lower=0> sigma_year;
 }
 
+transformed parameters{
+  real b_site_mean;
+  real b_prov_mean;
+  real b_clone_mean;
+
+  b_site_mean = mean(b_site);
+  b_prov_mean = mean(b_prov);
+  b_clone_mean = mean(b_clone);
+}
+
 model{
     vector[N] phi;
     beta ~ exponential(2);
-    sigma_year ~ exponential( 3 );
-    sigma_clone ~ exponential( 3 );
-    sigma_prov ~ exponential( 3 );
-    sigma_site ~ exponential( 3 );
+    sigma_year ~ exponential( 6 );
+    sigma_clone ~ exponential( 6 );
+    sigma_prov ~ exponential( 6 );
+    sigma_site ~ exponential( 6 );
     b_year ~ normal( 0 , sigma_year );
     b_clone ~ normal( 0 , sigma_clone );
     b_prov ~ normal( 0 , sigma_prov );

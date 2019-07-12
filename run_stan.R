@@ -83,7 +83,7 @@ phendf <- phenology_data %>%
   na.omit() %>%
   left_join(SPU_dat) %>%
   unique()
-phendf$SiteXProv <- group_indices(Site, SPU_Name)
+
 
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)

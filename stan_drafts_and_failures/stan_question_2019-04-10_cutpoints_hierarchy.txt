@@ -1,0 +1,75 @@
+Add effects to difference between cutpoints
+
+I am building an ordered logistic model with three categories. (Trees in phenological states determined by forcing temperatures). I would like to model the difference between cutpoints as a function of the clusters in my data.
+
+I can include the difference between cutpoints, but I can't figure out how to include the clusters in the difference.
+
+Some of the clusters are crossed and others are nested. (It's kind of a messy common garden design). Clones are represented by individual trees, which are male or female. Clones have a provenance. Provenances and clones are both represented at multiple sites.
+
+I'm not actually interested in the cutpoints, I'm interested in the point at which half of the trees have transitioned from one state to another, currently defined in the transformed parameters.
+
+I am new to stan and can't figure out how to add groups to the difference between cutpoints. I am trying to use the difference between cutpoints because I believe that some effects should shift the cutpoints in different directions. I am also open to adding effects to both cutpoints
+
+Here is a working version for simulated data with no groups.
+
+## Simulate data in R and run model
+cuts <- c(15,20)
+beta <- 0.05
+forcing <- unique(phendf$forcing_accum)
+eta <- beta * forcing
+state <- rordlogit(length(eta), phi = eta, a = cuts)
+sim <- data.frame(forcing,state)
+
+K = length(unique(sim$state))
+N = nrow(sim)
+stan_rdump(c("N", "K", "forcing", "state"), "simulated_nogroups.Rdump")
+simplesimdat <- read_rdump("simulated_nogroups.Rdump")
+
+simfit <- stan("cutpoints_difference.stan",
+               chains=5, cores=5, iter=2000,
+               data=simplesimdat)
+
+## Stan code
+data{
+    int N; //number of observations
+    int K; //number of possible states
+    int state[N];
+    vector[N] forcing; //predictor
+}
+
+parameters{
+    positive_ordered[K-1] cutpoints;
+    real<lower=0,upper=1> beta; // eta "slope"
+    real<lower=0> alpha;
+}
+
+transformed parameters {
+    //declare params
+    vector[K-1] h50; // transition points on forcing scale
+    real<lower=0> cdiff; //difference between cutpoints
+    //define params
+    for ( i in 1:2 ) {
+        h50[i] = cutpoints[i]/beta;
+    }
+    cdiff = cutpoints[2]-cutpoints[1];
+}
+
+model{
+    //declarations
+    vector[N] eta;
+    //priors
+        //for eta
+    beta ~ beta( 0.5 , 5 );
+        //for cutpoints
+    cutpoints[1] ~ exponential(0.3); // don't let first cutpoint flop around
+    alpha ~ lognormal(1,1);
+    cdiff ~ gamma(alpha, 1); // difference between first and second cutpoint
+    //model
+    for ( i in 1:N ) {
+        eta[i] = beta * forcing[i];
+    }
+        state ~ ordered_logistic( eta , cutpoints );
+}
+
+
+I also tried to include effects on each cutpoint individually based on this question https://groups.google.com/forum/#!msg/stan-users/sgX2Edo8qiQ/Da2g_47OBwAJ. However I couldn't figure out how to include multiple clusters.
