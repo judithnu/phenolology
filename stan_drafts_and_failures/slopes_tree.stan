@@ -58,7 +58,7 @@ model{
     b_year ~ normal( 0 , sigma_year );
     //eta
     for ( i in 1:N ) {
-        phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]] + b_clone[CloneID[i]] + b_year[YearID[i]]);
+        phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]] + b_clone[CloneID[i]] + b_tree[TreeID[i]] + b_year[YearID[i]]);
     }
     //likelihood
     for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );
