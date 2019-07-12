@@ -132,5 +132,5 @@ fit <- stan("slopes.stan",
   control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-#saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
+saveRDS(fit, file = paste(sex, "_slopes_scaled_tree.rds", sep=''))
 
