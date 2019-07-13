@@ -66,18 +66,18 @@ unique_grouper <- function(df1 = fdf, df2 = mdf) {
 build_par_df <- function(mcmcdf, datdf = udf, sex) {
 
     udf <- filter(datdf, Sex==sex)
-    mcmcdf$iter <- 1:nrow(fmod)
+    mcmcdf$iter <- 1:nrow(mcmcdf)
 
     singledimpars <- mcmcdf %>%
-        dplyr::select(iter, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa")) %>%
+        dplyr::select(iter, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa"), contains("mean")) %>%
         rename(kappa1 = `kappa[1]`) %>%
         rename(kappa2 = `kappa[2]`)
 
-    kappa <- dplyr::select(mcmcdf, contains("kappa"))
-    siteb <- tidypar(mcmcdf, "b_site", "SiteID")
-    provb <- tidypar(mcmcdf, "b_prov", "ProvenanceID")
-    cloneb <- tidypar(mcmcdf, "b_clone", "CloneID")
-    yearb <- tidypar(mcmcdf, "b_year", "YearID")
+    kappa <- dplyr::select(mcmcdf, contains("kappa")) #maybe extra?
+    siteb <- tidypar(mcmcdf, "b_site[", "SiteID")
+    provb <- tidypar(mcmcdf, "b_prov[", "ProvenanceID")
+    cloneb <- tidypar(mcmcdf, "b_clone[", "CloneID")
+    yearb <- tidypar(mcmcdf, "b_year[", "YearID")
 
     clonemerge <- left_join(udf, cloneb)
     provmerge <- left_join(udf, provb)
@@ -117,7 +117,6 @@ clim <- read.csv("data/all_clim_PCIC.csv",
 SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
-SPU_dat$SPU_Name <- str_split(SPU_dat$SPU_Name, " \\(", simplify=TRUE)[,1]
 
 # Data Processing ##################
 # join provenance and phenology data

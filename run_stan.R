@@ -2,8 +2,8 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-#sex <- "FEMALE"
-sex <- "MALE"
+sex <- "FEMALE"
+#sex <- "MALE"
 
 forcingtype <- "scaled_ristos"
 
