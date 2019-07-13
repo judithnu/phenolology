@@ -15,7 +15,7 @@ stanindexer <- function(df) {
     df$ProvenanceID <- group_indices(df, SPU_Name)
     df$SiteID <- group_indices(df, Site)
     df$YearID <- group_indices(df, Year)
-    df$TreeUnique <- group_indices(df,TreeID)
+    df$TreeID <- group_indices(df,TreeUnique)
     return(df)
 }
 
@@ -30,12 +30,11 @@ pdflogistic <- function(x,b,c) {
     return(val)
 }
 
+#take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
 tidypar <- function(stanframe, param, id) {
-
-    #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
-
     #wide to long format for parameters
-    par <- stanframe %>% dplyr::select(contains(param), iter) %>%
+    par <- stanframe %>%
+        dplyr::select(contains(param), iter) %>%
         tidyr::gather(key = key, value = value, contains("b_")) %>%
         dplyr::mutate(id = str_extract(key, "[0-9]{1,}"))
     colnames(par) <- c("iter", "name", param, id)
