@@ -1,5 +1,7 @@
 #### posterior predictive checks
 
+forcingtype = 'scaled_ristos'
+
 # Create datasets holding parameter values - fstart, fend, and f50s
 
 library(tidyverse)
@@ -73,16 +75,20 @@ build_par_df <- function(mcmcdf, datdf = udf, sex) {
         rename(kappa1 = `kappa[1]`) %>%
         rename(kappa2 = `kappa[2]`)
 
-    kappa <- dplyr::select(mcmcdf, contains("kappa")) #maybe extra?
+    #kappa <- dplyr::select(mcmcdf, contains("kappa")) #maybe extra?
     siteb <- tidypar(mcmcdf, "b_site[", "SiteID")
     provb <- tidypar(mcmcdf, "b_prov[", "ProvenanceID")
     cloneb <- tidypar(mcmcdf, "b_clone[", "CloneID")
     yearb <- tidypar(mcmcdf, "b_year[", "YearID")
 
     clonemerge <- left_join(udf, cloneb)
+
     provmerge <- left_join(udf, provb)
+
     sitemerge <- left_join(udf, siteb)
+
     yearmerge <- left_join(udf, yearb)
+
 
     pardf <- data.frame(udf,
                         iter = clonemerge$iter,
@@ -103,31 +109,33 @@ fmod <- readRDS("FEMALE_slopes_scaled.rds") %>%
 mmod <- readRDS("MALE_slopes_scaled.rds") %>%
     as.data.frame()
 
-#data
+# original data (this code should match relevant bits in run_stan)
 phenology_data <- read.csv("data/phenology_heatsum.csv",
-                           stringsAsFactors = FALSE,
-                           header = TRUE) %>%
-    filter(forcing_type=="scaled_ristos")
-
-clim <- read.csv("data/all_clim_PCIC.csv",
-                 stringsAsFactors = FALSE, header=TRUE) %>%
-    filter(forcing_type=="scaled_ristos")
+                           stringsAsFactors = FALSE, header = TRUE
+) %>%
+    filter(forcing_type == forcingtype)
 
 ## provenance
 SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
     dplyr::select(SPU_Name, Orchard)
 
+
+
 # Data Processing ##################
 # join provenance and phenology data
 
-phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+phendf <- phenology_data %>%
+    na.omit() %>%
+    left_join(SPU_dat) %>%
     unique()
+
 
 # identify combinations of effects that actually occur
 
 fdf <- splitsex(phendf, "FEMALE")
 mdf <- splitsex(phendf, "MALE")
+
 
 udf <- unique_grouper(fdf, mdf)
 
@@ -137,6 +145,7 @@ fpardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE")
 mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
 pardf <- rbind(fpardf, mpardf)
 
+# calculate transformed parameters ################
 # add transformed parameters fstart, fend, and f50s
 pardf_trans <- pardf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
@@ -153,6 +162,7 @@ tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, C
 tpars$param <- factor(tpars$param)
 tpars$param = factor(tpars$param,levels(tpars$param)[c(1,3,2,4)])
 
+write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
 
 
 # Get data for flowering periods
