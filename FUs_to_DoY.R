@@ -9,6 +9,8 @@ gclim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE)
 
 tpars <- read.csv("transformed_parameters.csv", header=TRUE, stringsAsFactors=FALSE)
 
+tpars <- arrange(tpars, sum_forcing)
+
 clim <- gclim
 clim$siteyear <- paste(clim$Site, clim$Year, sep='')
 
@@ -25,50 +27,34 @@ ggplot(clim, aes(x=DoY, y=sum_forcing, color=Site, group=siteyear)) +
 
 # index clim and tpars by Site-Year
 tparstoy <-tpars[1:3000,]
-KR2011 <- filter(clim, siteyear == "KettleRiver2011")
+KR2011 <- filter(clim, siteyear == "KettleRiver2011") %>%
+    arrange(sum_forcing)
+KAL1998 <- filter(clim, siteyear == "Kalamalka1998") %>%
+    arrange(sum_forcing)
 
-tpars <- tpars %>%
-    group_by(sum_forcing) %>%
-    mutate(closest_sum_forcing = min(KR2011$sum_forcing[KR2011$sum_forcing > sum_forcing])) %>%
-    mutate(DoY_KR2011 = KR2011$DoY[which(KR2011$sum_forcing == closest_sum_forcing)]) %>%
-    select(-closest_sum_forcing)
-
-climsplit <- clim %>%
-    split(.$siteyear)
-
-
-
-closestDoY <- data_frame
-for (i in 1:length(unique(tparstoy$siteyear))) {
-    climtemp <- filter(clim, siteyear==unique(tparstoy$siteyear)[i])
-    tparstemp <- filter(tparstoy, siteyear==unique(tparstoy$siteyear)[i])
-    for (j in 1:nrow(tparstemp)) {
-        closest_sum_forcing <- which.min(climtemp$sum_forcing_real[climtemp$sum_forcing_real > tparstemp$sum_forcing[j]])
-        climtemp$DoY[closest_sum_forcing]
-    }
+#THIS WORKS. This compares forcing units in tpars to sum_forcing in the climate dataset and finds the closest sum_forcing that's greater than a given tpars. Then it extracts they Day of Year that sum_forcing occured on. The additional "+ 1" that follows the findInterval call adds one to the index returned: findInterval by default returns the index of the left-hand (low) side of an interval, and we want the right-hand (high) side of the interval, which is the next index in the interval-vector from the indexes returned.
+tpars$DoY_KR2011 <- KR2011$DoY[findInterval(tpars$sum_forcing,
+                                                 KR2011$sum_forcing) + 1]
+tpars$DoY_KAL1998 <- KAL1998$DoY[findInterval(tpars$sum_forcing,
+                                            KAL1998$sum_forcing) + 1]
 
 
-}
+ggplot(filter(tpars, param %in% c("fstart", "fend")), aes(x=DoY_KR2011, color=Sex, linetype=param)) +
+    geom_density(alpha = 0.5) +
+    facet_grid(SPU_Name ~ .)
 
-find_closest_forcing <- function(transformed_pars, climsplit) {
-    # choose year site subset from model output
-    temptpars <- transformed_pars
-    # get correct year site subset from climsplit
+ggplot(filter(tpars, param %in% c("fstart", "fend")), aes(x=DoY_KAL1998, color=Sex, linetype=param)) +
+    geom_density(alpha = 0.5) +
+    facet_grid(SPU_Name ~ .)
 
-    loc <- which(names(climsplit) == names(temptpars))
-    tempclim <- climsplit[[loc]]
-    temptpars <- tparstoy[[1]]
+tparsgraph <- filter(tpars, param %in% c("fstart", "fend")) %>%
+    gather(key="WeatherRegime", value="DoY", DoY_KAL1998, DoY_KR2011)
 
-    DoYhold <- c()
-    for (i in 1:nrow(temptpars)) {
-        closest_sum_forcing <- min(tempclim$sum_forcing_real[tempclim$sum_forcing_real > temptpars$sum_forcing[i]])
-        DoYhold[i] <- tempclim$DoY[which(tempclim$sum_forcing_real == closest_sum_forcing)]
-    }
+ggplot(tparsgraph, aes(x=DoY, color=Sex, linetype=param)) +
+    geom_freqpoly(binwidth=1) +
+    scale_color_viridis_d(end = 0.9) +
+    facet_grid(WeatherRegime ~ .) +
+    theme_bw()
 
-    temptpars$DoY_model <- DoYhold
 
-    return(temptpars)
-}
-#
 
-map(tparstoy, find_closest_forcing, climsplit=climsplit)
