@@ -145,7 +145,7 @@ fpardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE")
 mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
 pardf <- rbind(fpardf, mpardf)
 
-# calculate transformed parameters ################
+# Calculate transformed parameters ################
 # add transformed parameters fstart, fend, and f50s
 pardf_trans <- pardf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
@@ -162,7 +162,31 @@ tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, C
 tpars$param <- factor(tpars$param)
 tpars$param = factor(tpars$param,levels(tpars$param)[c(1,3,2,4)])
 
-write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
+#write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
+
+# Calculate prob of flowering (S=2) over forcing units
+
+small_pars <- pardf_trans %>%
+    group_by(IndSexGroup, Year) %>%
+    sample_n(30, replace=TRUE) %>%
+    mutate(beta_tot = beta + b_site + b_prov + b_clone + b_year)
+small_pars$rows <- rownames(small_pars)
+fus <- seq(from=0, to=25, by=.5)
+
+fucalcstructure <- expand.grid(small_pars$rows, fus)
+colnames(fucalcstructure) <- c("rows", "fus")
+
+small_pars <- full_join(small_pars, fucalcstructure)
+
+small_pars$stage2prob <- logistic2(small_pars$fus, small_pars$beta, small_pars$kappa1) -
+    logistic2(small_pars$fus, small_pars$beta, small_pars$kappa2)
+
+ggplot(small_pars, aes(x=fus, y=stage2prob, color=Sex, group=rows)) +
+    geom_line(alpha=.1) +
+    facet_wrap(Sex ~ .) +
+    scale_color_viridis_d() +
+    xlab("Accumulated forcing units") +
+    theme_bw(base_size = 20)
 
 
 # Get data for flowering periods
