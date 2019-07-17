@@ -50,11 +50,14 @@ ggplot(filter(tpars, param %in% c("fstart", "fend")), aes(x=DoY_KAL1998, color=S
 tparsgraph <- filter(tpars, param %in% c("fstart", "fend")) %>%
     gather(key="WeatherRegime", value="DoY", DoY_KAL1998, DoY_KR2011)
 
-ggplot(tparsgraph, aes(x=DoY, color=Sex, linetype=param)) +
-    geom_freqpoly(binwidth=1) +
-    scale_color_viridis_d(end = 0.9) +
+ggplot(tparsgraph, aes(x=DoY, fill=Sex, linetype=param)) +
+    geom_histogram(alpha=0.5, binwidth=1) +
+    scale_fill_viridis_d(end = 0.9) +
     facet_grid(WeatherRegime ~ .) +
     theme_bw()
 
-
+ggplot(tparsgraph, aes(x=DoY, y=IndSexGroup, color=Sex)) +
+    geom_line(alpha=0.3) +
+    facet_grid(WeatherRegime ~ .) +
+    theme_bw()
 
