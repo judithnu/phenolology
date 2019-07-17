@@ -173,7 +173,7 @@ The model was fit separately to data for male strobili and female strobili.
 The likelihood of being in state $s \in \{1,2,3\}$ is
 
 
-$$\mathrm{Pr}(s=k)=\text{OrderedLogistic}(s~|~\eta,c) = \left\{ \begin{array}{ll} 1 -
+$$\mathrm{Pr}(S=s)=\text{OrderedLogistic}(s~|~\eta,\kappa) = \left\{ \begin{array}{ll} 1 -
 \text{logistic}(\eta - \kappa_1)  &  \text{if } s = 1 \\[4pt]
 \text{logistic}(\eta - \kappa_1) - \text{logistic}(\eta - \kappa_2)  &
 \text{if } s=2  \\[4pt] \text{logistic}(\eta -
