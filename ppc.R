@@ -171,7 +171,7 @@ small_pars <- pardf_trans %>%
     sample_n(30, replace=TRUE) %>%
     mutate(beta_tot = beta + b_site + b_prov + b_clone + b_year)
 small_pars$rows <- rownames(small_pars)
-fus <- seq(from=0, to=25, by=.5)
+fus <- seq(from=0, to=30, by=1.5)
 
 fucalcstructure <- expand.grid(small_pars$rows, fus)
 colnames(fucalcstructure) <- c("rows", "fus")
@@ -182,7 +182,7 @@ small_pars$stage2prob <- logistic2(small_pars$fus, small_pars$beta, small_pars$k
     logistic2(small_pars$fus, small_pars$beta, small_pars$kappa2)
 
 ggplot(small_pars, aes(x=fus, y=stage2prob, color=Sex, group=rows)) +
-    geom_line(alpha=.1) +
+    geom_line(alpha=.05) +
     facet_wrap(Sex ~ .) +
     scale_color_viridis_d() +
     xlab("Accumulated forcing units") +
