@@ -20,13 +20,18 @@ climsort <- filter(clim, DoY == 180) %>%
     arrange(sum_forcing)
 
 ggplot(clim, aes(x=DoY, y=sum_forcing, color=Site, group=siteyear)) +
-    geom_line() +
-    theme(legend.position = "bottom")
+    geom_line(alpha=0.5, size=1.5) +
+    theme(legend.position = "bottom") +
+    scale_color_viridis_d() +
+    theme_bw() +
+    ggtitle("Forcing accumulation at all sites between 1997 and 2012")+
+    theme(text=element_text(size=20))
+
 
 # KettleRiver 2011 is cold, Kalamalka 1998 is hot, and PRT 2008 is middle of the road.
 
 # index clim and tpars by Site-Year
-tparstoy <-tpars[1:3000,]
+
 KR2011 <- filter(clim, siteyear == "KettleRiver2011") %>%
     arrange(sum_forcing)
 KAL1998 <- filter(clim, siteyear == "Kalamalka1998") %>%
