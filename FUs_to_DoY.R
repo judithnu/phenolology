@@ -7,7 +7,7 @@ library(tidyverse)
 gclim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
     filter(forcing_type=="scaled_ristos")
 
-tpars <- read.csv("transformed_parameters.csv", header=TRUE, stringsAsFactors=FALSE)
+#tpars <- read.csv("transformed_parameters.csv", header=TRUE, stringsAsFactors=FALSE)
 
 tpars <- arrange(tpars, sum_forcing)
 
@@ -52,7 +52,7 @@ ggplot(filter(tpars, param %in% c("fstart", "fend")), aes(x=DoY_KAL1998, color=S
     geom_density(alpha = 0.5) +
     facet_grid(SPU_Name ~ .)
 
-tparsgraph <- filter(tpars, param %in% c("fstart", "fend")) %>%
+#tparsgraph <- filter(tpars, param %in% c("fstart", "fend")) %>%
     gather(key="WeatherRegime", value="DoY", DoY_KAL1998, DoY_KR2011)
 
 ggplot(tparsgraph, aes(x=DoY, fill=Sex, linetype=param)) +
@@ -66,3 +66,64 @@ ggplot(tparsgraph, aes(x=DoY, y=IndSexGroup, color=Sex)) +
     facet_grid(WeatherRegime ~ .) +
     theme_bw()
 
+## prov diff DoY
+
+# tparsgraph <- filter(tpars, str_detect(param, "half")) %>%
+#     gather(key="WeatherRegime", value="DoY", DoY_KAL1998, DoY_KR2011)
+#
+#
+# # subtract Provenance from all
+#
+# halfparams <- filter(tparsgraph, str_detect(param, "_")))
+#
+# ggplot(halfparams, aes(x=DoY, fill=Sex)) +
+#     geom_histogram(position="dodge") +
+#     scale_fill_viridis_d() +
+#     facet_grid(rows=vars(Sex,param), cols=vars(WeatherRegime), scales="free_y")
+
+# compare with and without provenance effect
+
+provnoprov <- filter(tpars, param %in% c("fstart", "fstart_noprov")) %>%
+    arrange(IndSexGroup, param, iter)
+
+alleffects <- filter(provnoprov, param=="fstart")
+noprov <- filter(provnoprov, param=="fstart_noprov")
+
+provdiffs_hot <- noprov$DoY_KAL1998 - alleffects$DoY_KAL1998
+provdiffs_cold <- noprov$DoY_KR2011 - alleffects$DoY_KR2011
+
+provdiffs <- data.frame(alleffects[,c(1:12)], provdiffs_cold, provdiffs_hot)
+
+HPDI(provdiffs_hot)
+HPDI(provdiffs_cold)
+
+ggplot(provdiffs, aes(x=provdiffs_cold, fill="cold")) +
+    geom_histogram(alpha=.5) +
+    geom_histogram(aes(x=provdiffs_hot, fill="hot"), alpha=0.5) +
+    scale_fill_viridis_d(option="C") +
+    facet_grid(SPU_Name ~ Sex, scales="free_y")
+   # geom_line(data = data.frame(x=c(1,5), y=c(1,1)), aes(x=x, y=y), size=2) +
+    #xlim(c(-7,15))
+
+# what about larger site effects
+sitenosite <- filter(tpars, param %in% c("fhalf1", "fhalf1_nosite")) %>%
+    arrange(IndSexGroup, param, iter)
+
+alleffects <- filter(sitenosite, param=="fhalf1")
+nosite <- filter(sitenosite, param=="fhalf1_nosite")
+
+sitediffs_hot <- nosite$DoY_KAL1998 - alleffects$DoY_KAL1998
+sitediffs_cold <- nosite$DoY_KR2011 - alleffects$DoY_KR2011
+
+sitediffs <- data.frame(alleffects[,c(1:12)], sitediffs_cold, sitediffs_hot)
+
+HPDI(sitediffs_hot)
+HPDI(sitediffs_cold)
+
+ggplot(sitediffs, aes(x=sitediffs_cold, fill="cold")) +
+    geom_histogram(alpha=.5) +
+    geom_histogram(aes(x=sitediffs_hot, fill="hot"), alpha=0.5) +
+    scale_fill_viridis_d(option="C") +
+    facet_grid(Site ~ Sex, scales="free_y")
+# geom_line(data = data.frame(x=c(1,5), y=c(1,1)), aes(x=x, y=y), size=2) +
+#xlim(c(-7,15))
