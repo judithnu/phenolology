@@ -74,31 +74,31 @@ build_par_df <- function(mcmcdf, datdf = udf, sex) {
         dplyr::select(iter, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa"), contains("mean")) %>%
         rename(kappa1 = `kappa[1]`) %>%
         rename(kappa2 = `kappa[2]`)
+    siteb <- tidypar(mcmcdf, "b_site", "SiteID")
+    provb <- tidypar(mcmcdf, "b_prov", "ProvenanceID")
+    cloneb <- tidypar(mcmcdf, "b_clone", "CloneID")
+    yearb <- tidypar(mcmcdf, "b_year", "YearID")
 
-    #kappa <- dplyr::select(mcmcdf, contains("kappa")) #maybe extra?
-    siteb <- tidypar(mcmcdf, "b_site[", "SiteID")
-    provb <- tidypar(mcmcdf, "b_prov[", "ProvenanceID")
-    cloneb <- tidypar(mcmcdf, "b_clone[", "CloneID")
-    yearb <- tidypar(mcmcdf, "b_year[", "YearID")
+    sitemerge <- left_join(udf, siteb) %>%
+        select(-name)
+    provmerge <- left_join(udf, provb) %>%
+        select(-name)
+    clonemerge <- left_join(udf, cloneb) %>%
+        select(-name)
+    yearmerge <- left_join(udf, yearb) %>%
+        select(-name)
 
-    clonemerge <- left_join(udf, cloneb)
-
-    provmerge <- left_join(udf, provb)
-
-    sitemerge <- left_join(udf, siteb)
-
-    yearmerge <- left_join(udf, yearb)
-
-
-    pardf <- data.frame(udf,
-                        iter = clonemerge$iter,
-                        b_clone = clonemerge$b_clone,
-                        b_prov = provmerge$b_prov,
-                        b_site = sitemerge$b_site,
-                        b_year = yearmerge$b_year) %>%
+    pardf <- left_join(udf, clonemerge) %>%
+        left_join(provmerge) %>%
+        left_join(sitemerge) %>%
+        left_join(yearmerge) %>%
         left_join(singledimpars)
 }
 
+calc_flowering_prob <- function(forcingaccum, beta, kappa1, kappa2) {
+    prob = logistic2(x=forcingaccum, b=beta, c=kappa1) - logistic2(forcingaccum, b=beta, c=kappa2)
+    return(prob)
+}
 
 # MODEL AND ORIGINAL DATA ############
 
