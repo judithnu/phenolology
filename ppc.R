@@ -1,5 +1,6 @@
 #### posterior predictive checks
 
+samples = 200
 forcingtype = 'scaled_ristos'
 
 # Create datasets holding parameter values - fstart, fend, and f50s
@@ -7,6 +8,7 @@ forcingtype = 'scaled_ristos'
 library(tidyverse)
 library(rstan)
 library(gtools)
+
 
 # FUNCTIONS ####################################
 
@@ -143,7 +145,9 @@ udf <- unique_grouper(fdf, mdf)
 
 fpardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE")
 mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
-pardf <- rbind(fpardf, mpardf)
+pardf <- rbind(fpardf, mpardf) %>%
+    group_by(IndSexGroup) %>%
+    sample_n(samples) #downsample
 
 # Calculate transformed parameters ################
 # add transformed parameters fstart, fend, and f50s
@@ -152,58 +156,40 @@ pardf_trans <- pardf %>%
     mutate(fstart = (logit(.2) + kappa1)/betas) %>%
     mutate(fend = (logit(.8) + kappa2)/betas) %>%
     mutate(fhalf1 = kappa1/betas) %>%
-    mutate(fhalf2 = kappa2/betas)
+    mutate(fhalf2 = kappa2/betas) #%>%
+    #mutate(fhalf1_pop = kappa1/beta) %>%
+    #mutate(fhalf2_pop = kappa2/beta) %>%
+    #mutate(fstart1_pop = (logit(.2) + kappa1)/beta) %>%
+    #mutate(fhalf1_noprov = kappa1/(betas-b_prov)) %>%
+    #mutate(fhalf2_noprov = kappa2/(betas-b_prov)) %>%
+    # mutate(fhalf1_nosite = kappa1/(betas-b_site)) %>%
+    # mutate(fstart_noprov = (logit(.2) + kappa1)/(betas-b_prov))
 
 #pardf has all parameters and transformed parameters
 
 tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, Clone, Year, contains("Ind"), starts_with("f")) %>%
     gather(key="param", value="sum_forcing", starts_with("f"))
 
-tpars$param <- factor(tpars$param)
-tpars$param = factor(tpars$param,levels(tpars$param)[c(1,3,2,4)])
+#tpars$param <- factor(tpars$param)
+#tpars$param = factor(tpars$param,levels(tpars$param)[c(1,3,2,4)])
 
 #write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
 
-# Calculate prob of flowering (S=2) over forcing units
-
-small_pars <- pardf_trans %>%
-    group_by(IndSexGroup, Year) %>%
-    sample_n(30, replace=TRUE) %>%
-    mutate(beta_tot = beta + b_site + b_prov + b_clone + b_year)
-small_pars$rows <- rownames(small_pars)
-fus <- seq(from=0, to=30, by=1.5)
-
-fucalcstructure <- expand.grid(small_pars$rows, fus)
-colnames(fucalcstructure) <- c("rows", "fus")
-
-small_pars <- full_join(small_pars, fucalcstructure)
-
-small_pars$stage2prob <- logistic2(small_pars$fus, small_pars$beta, small_pars$kappa1) -
-    logistic2(small_pars$fus, small_pars$beta, small_pars$kappa2)
-
-ggplot(small_pars, aes(x=fus, y=stage2prob, color=Sex, group=rows)) +
-    geom_line(alpha=.05) +
-    facet_wrap(Sex ~ .) +
-    scale_color_viridis_d() +
-    xlab("Accumulated forcing units") +
-    theme_bw(base_size = 20)
-
-
-# Get data for flowering periods
-fbloom <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
-    filter(Phenophase_Derived==2) %>%
-    rename(FUs = sum_forcing)
-
-mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
-    filter(Phenophase_Derived==2) %>%
-    rename(FUs = sum_forcing)
-
-bdat <- rbind(fbloom, mbloom) %>%
-    full_join(tpars) %>%
-    filter(param %in% c("fstart", "fend"))
-# bdat has forcing units (FUs) that the model estimates start and end to occur at as well as the actual forcing units (sum_forcing) that flowering was recorded at.
-
 # Plot transformed parameters #############
+
+halfparams <- filter(tpars, str_detect(param, "half"))
+
+ggplot(halfparams, aes(x=sum_forcing, fill=param)) +
+    geom_density(alpha=0.5) +
+    scale_fill_viridis_d()
+
+provhalf <- filter(tpars, param %in% c("fhalf1", "fhalf2", "fhalf1_noprov", "fhalf2_noprov"))
+ggplot(provhalf, aes(x=sum_forcing, fill=param)) +
+    geom_density(alpha=0.5) +
+    scale_fill_viridis_d() +
+    facet_grid(SPU_Name ~ Sex)
+
+
 
 hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
 hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
@@ -246,7 +232,7 @@ ggplot(bdat, aes(x=sum_forcing, fill=Sex, linetype=param)) +
     geom_density(alpha=0.5) +
     stat_ecdf(aes(x=FUs, color=Sex), alpha=.8)+
     theme_bw() +
-    facet_grid(Site ~ .) +
+    facet_grid(SPU_Name ~ .) +
     theme(strip.text.y = element_text(angle = 0)) +
     scale_fill_viridis_d()+
     scale_color_viridis_d() +
@@ -324,3 +310,62 @@ ggplot(filter(hpd_df_prov, interval==".99"), aes(x=value, y=SPU_Name, color=Sex,
     facet_grid(rows=vars(param, Sex) ) +
     theme_bw() +
     scale_color_viridis_d()
+
+# Calculate prob of flowering (S=2) over forcing units ############
+
+small_pars <- pardf_trans %>%
+    group_by(IndSexGroup, Year) %>%
+    sample_n(30, replace=TRUE) %>%
+    mutate(beta_tot = beta + b_site + b_prov + b_clone + b_year)
+small_pars$rows <- rownames(small_pars)
+fus <- seq(from=0, to=30, by=1.5)
+
+fucalcstructure <- expand.grid(small_pars$rows, fus)
+colnames(fucalcstructure) <- c("rows", "fus")
+
+small_pars <- full_join(small_pars, fucalcstructure)
+
+small_pars$stage2prob <- logistic2(small_pars$fus, small_pars$beta, small_pars$kappa1) -
+    logistic2(small_pars$fus, small_pars$beta, small_pars$kappa2)
+
+ggplot(small_pars, aes(x=fus, y=stage2prob, color=Sex, group=rows)) +
+    geom_line(alpha=.05) +
+    facet_wrap(Sex ~ .) +
+    scale_color_viridis_d() +
+    xlab("Accumulated forcing units") +
+    theme_bw(base_size = 20)
+
+
+# Get data for flowering periods
+fbloom <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
+    filter(Phenophase_Derived==2) %>%
+    rename(FUs = sum_forcing)
+
+mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
+    filter(Phenophase_Derived==2) %>%
+    rename(FUs = sum_forcing)
+
+bdat <- rbind(fbloom, mbloom) %>%
+    full_join(tpars) %>%
+    filter(param %in% c("fstart", "fend"))
+# bdat has forcing units (FUs) that the model estimates start and end to occur at as well as the actual forcing units (sum_forcing) that flowering was recorded at.
+
+# Calculate flowering period ############
+
+sum_forcing <- seq(from=4, to=20, by=.5)
+names(sum_forcing) <- sum_forcing
+
+
+flowerprob <- map_dfc(sum_forcing, calc_flowering_prob, beta=pardf_trans$betas, kappa1=pardf_trans$kappa1, kappa2=pardf_trans$kappa2)
+
+fprob <- data.frame(pardf, flowerprob) %>%
+    gather(key=sum_forcing, value=flowerprob, starts_with("X")) %>%
+    separate(sum_forcing, into=c("drop", "sum_forcing"), sep=1) %>%
+    select(-drop)
+fprob$index <- group_indices(fprob, IndSexGroup, iter)
+
+ggplot(fprob, aes(x=sum_forcing, y=flowerprob, group=index, color=Sex)) +
+    geom_line(alpha=0.3) +
+    facet_wrap("SPU_Name")
+
+
