@@ -232,7 +232,7 @@ ggplot(bdat, aes(x=sum_forcing, fill=Sex, linetype=param)) +
     geom_density(alpha=0.5) +
     stat_ecdf(aes(x=FUs, color=Sex), alpha=.8)+
     theme_bw() +
-    facet_grid(SPU_Name ~ .) +
+    facet_grid(Site ~ .) +
     theme(strip.text.y = element_text(angle = 0)) +
     scale_fill_viridis_d()+
     scale_color_viridis_d() +
