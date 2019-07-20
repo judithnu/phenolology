@@ -5,7 +5,7 @@
 sex <- "FEMALE"
 #sex <- "MALE"
 
-forcingtype <- "scaled_ristos"
+forcingtype <- "gdd"
 
 
 # Dependencies and options ##################
@@ -68,6 +68,10 @@ phenology_data <- read.csv("data/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE
 ) %>%
   filter(forcing_type == forcingtype)
+
+if(forcingtype == "gdd") { #scale growing degree days
+  phenology_data$sum_forcing <- phenology_data$sum_forcing/10
+}
 
 ## provenance
 SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
