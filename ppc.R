@@ -1,7 +1,7 @@
 #### posterior predictive checks
 
 samples = 200
-forcingtype = 'gdd'
+forcingtype = 'scaled_ristos'
 
 # Create datasets holding parameter values - fstart, fend, and f50s
 
@@ -105,11 +105,11 @@ calc_flowering_prob <- function(forcingaccum, beta, kappa1, kappa2) {
 # MODEL AND ORIGINAL DATA ############
 
 #model
-fmod <- readRDS("FEMALEslopes_gdd.rds") %>%
+fmod <- readRDS("FEMALE_slopes_scaled.rds") %>%
     as.data.frame()
 
-mmod <- NULL#readRDS("MALE_slopes_scaled.rds") %>%
-   # as.data.frame()
+mmod <- readRDS("MALE_slopes_scaled.rds") %>%
+    as.data.frame()
 
 # original data (this code should match relevant bits in run_stan)
 phenology_data <- read.csv("data/phenology_heatsum.csv",
@@ -145,7 +145,6 @@ udf <- unique_grouper(fdf, mdf)
 
 fpardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE")
 mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
-mpardf <- NULL
 pardf <- rbind(fpardf, mpardf) %>%
     group_by(IndSexGroup) %>%
     sample_n(samples) #downsample
@@ -157,12 +156,12 @@ pardf_trans <- pardf %>%
     mutate(fstart = (logit(.2) + kappa1)/betas) %>%
     mutate(fend = (logit(.8) + kappa2)/betas) %>%
     mutate(fhalf1 = kappa1/betas) %>%
-    mutate(fhalf2 = kappa2/betas) #%>%
+    mutate(fhalf2 = kappa2/betas) %>%
     #mutate(fhalf1_pop = kappa1/beta) %>%
     #mutate(fhalf2_pop = kappa2/beta) %>%
     #mutate(fstart1_pop = (logit(.2) + kappa1)/beta) %>%
-    #mutate(fhalf1_noprov = kappa1/(betas-b_prov)) %>%
-    #mutate(fhalf2_noprov = kappa2/(betas-b_prov)) %>%
+    mutate(fhalf1_noprov = kappa1/(betas-b_prov)) %>%
+    mutate(fhalf2_noprov = kappa2/(betas-b_prov))
     # mutate(fhalf1_nosite = kappa1/(betas-b_site)) %>%
     # mutate(fstart_noprov = (logit(.2) + kappa1)/(betas-b_prov))
 
@@ -178,17 +177,32 @@ tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, C
 
 # Plot transformed parameters #############
 
-halfparams <- filter(tpars, str_detect(param, "half"))
+# halfparams <- filter(tpars, str_detect(param, "half"))
+#
+# ggplot(halfparams, aes(x=sum_forcing, fill=param)) +
+#     geom_density(alpha=0.5) +
+#     scale_fill_viridis_d()
 
-ggplot(halfparams, aes(x=sum_forcing, fill=param)) +
-    geom_density(alpha=0.5) +
-    scale_fill_viridis_d()
+ph1 <- filter(tpars, param %in% c("fhalf1", "fhalf2")) %>%
+    mutate(transition = case_when(param=="fhalf1" ~ 1,
+                                  param=="fhalf2" ~ 2))
+ph2 <- filter(tpars, param %in% c("fhalf1_noprov", "fhalf2_noprov")) %>%
+    rename(no_prov=param, sum_forcing_noprov=sum_forcing) %>%
+    mutate(transition = case_when(no_prov=="fhalf1_noprov" ~ 1,
+                                  no_prov=="fhalf2_poprov" ~ 2))
 
-provhalf <- filter(tpars, param %in% c("fhalf1", "fhalf2", "fhalf1_noprov", "fhalf2_noprov"))
-ggplot(provhalf, aes(x=sum_forcing, fill=param)) +
-    geom_density(alpha=0.5) +
-    scale_fill_viridis_d() +
-    facet_grid(SPU_Name ~ Sex)
+#present
+provhalf <- full_join(ph1, ph2)
+ggplot(provhalf, aes(x=sum_forcing, fill="withprov", group=param)) +
+    geom_density() +
+    geom_density(aes(x=sum_forcing_noprov, fill="no_prov", linetype=param, group=no_prov), alpha=0.5) +
+    scale_fill_viridis_d(option="B") +
+    facet_grid(SPU_Name ~ Sex) +
+    ggtitle("Provenance effect on 50% forcing unit requirements") +
+    xlab("Forcing units") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top")
 
 
 
