@@ -1,11 +1,12 @@
 # match DoY to forcing units
 
 #needs tpars from ppc.R
+forcingtype = "gdd"
 
 library(tidyverse)
 
 gclim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
-    filter(forcing_type=="scaled_ristos")
+    filter(forcing_type==forcingtype)
 
 #tpars <- read.csv("transformed_parameters.csv", header=TRUE, stringsAsFactors=FALSE)
 

@@ -5,7 +5,7 @@
 sex <- "FEMALE"
 #sex <- "MALE"
 
-forcingtype <- "gdd"
+forcingtype <- "scaled_ristos"
 
 
 # Dependencies and options ##################
@@ -73,6 +73,21 @@ if(forcingtype == "gdd") { #scale growing degree days
   phenology_data$sum_forcing <- phenology_data$sum_forcing/10
 }
 
+## sample for less domination by PGTIS
+
+foo <- phenology_data %>%
+  filter(Site=="PGTIS" & Year %in% c(2006, 2007, 2010, 2011, 2005)) 
+           
+uclone <- unique(foo$Clone) %>%
+  base::sample(size=15)
+
+pgtis_sampled <- foo %>%
+  filter(Clone %in% uclone)
+
+nopgtis <- filter(phenology_data, Site != "PGTIS")
+
+phenology_data <- full_join(pgtis_sampled, nopgtis)
+
 ## provenance
 SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
@@ -125,17 +140,17 @@ rdump <- read_rdump(paste(sex, ".rdump", sep=""))
 
 # Fit model  #############
 test <- stan("slopes.stan",
-             model_name = paste(sex, "slopes with scaled ristos"),
+             model_name = paste(sex, "slopes gdd"),
              data = rdump,
              chains = 1, cores = 1, warmup = 20, iter = 25
 ) # quick check for small problems
 
 fit <- stan("slopes.stan",
-            model_name = paste(sex, "slopes with scaled ristos"),
+            model_name = paste(sex, "slopes gdd"),
             data = rdump,
             chains = 10, cores = 10, warmup = 1000, iter = 1300,
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste(sex, "_slopes_scaled.rds", sep=''))
+saveRDS(fit, file = paste(sex, "slopes_gdd.rds", sep=''))
 
