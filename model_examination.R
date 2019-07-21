@@ -21,7 +21,7 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 
 
 #ffit.stan <- readRDS("female_slopes.rds")
-ffit.stan <- readRDS("FEMALE_slopes_scaled.rds")
+ffit.stan <- readRDS("FEMALE_slopes_scaled_less_pgtis.rds")
 mfit.stan <- readRDS("MALE_slopes_scaled.rds")
 
 fshiny <- as.shinystan(ffit.stan)
@@ -161,6 +161,6 @@ mcmc_intervals(fpostdf, regex_pars = "a_provenance", point_est = "none")
 
 #NB
 mcmc_intervals(fpostdf, regex_pars = c("beta")) + ggtitle("Female and male transition speed")
-mcmc_intervals(fpostdf, regex_pars = c("provenance")) + ggtitle("Provenance intercepts")
+mcmc_intervals(fpostdf, regex_pars = c("prov", "site")) + ggtitle("Provenance intercepts")
 mcmc_intervals(fpostdf, regex_pars = c("clone")) + ggtitle("Clone intercepts")
 
