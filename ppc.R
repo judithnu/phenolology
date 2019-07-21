@@ -1,7 +1,7 @@
 #### posterior predictive checks
 
 samples = 200
-forcingtype = 'scaled_ristos'
+forcingtype = 'gdd'
 
 # Create datasets holding parameter values - fstart, fend, and f50s
 
@@ -105,11 +105,11 @@ calc_flowering_prob <- function(forcingaccum, beta, kappa1, kappa2) {
 # MODEL AND ORIGINAL DATA ############
 
 #model
-fmod <- readRDS("FEMALE_slopes_scaled.rds") %>%
+fmod <- readRDS("FEMALEslopes_gdd.rds") %>%
     as.data.frame()
 
-mmod <- readRDS("MALE_slopes_scaled.rds") %>%
-    as.data.frame()
+mmod <- NULL#readRDS("MALE_slopes_scaled.rds") %>%
+   # as.data.frame()
 
 # original data (this code should match relevant bits in run_stan)
 phenology_data <- read.csv("data/phenology_heatsum.csv",
@@ -145,6 +145,7 @@ udf <- unique_grouper(fdf, mdf)
 
 fpardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE")
 mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
+mpardf <- NULL
 pardf <- rbind(fpardf, mpardf) %>%
     group_by(IndSexGroup) %>%
     sample_n(samples) #downsample
@@ -352,7 +353,7 @@ bdat <- rbind(fbloom, mbloom) %>%
 
 # Calculate flowering period ############
 
-sum_forcing <- seq(from=4, to=20, by=.5)
+sum_forcing <- seq(from=4, to=35, by=.5)
 names(sum_forcing) <- sum_forcing
 
 
