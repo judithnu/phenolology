@@ -161,6 +161,6 @@ mcmc_intervals(fpostdf, regex_pars = "a_provenance", point_est = "none")
 
 #NB
 mcmc_intervals(fpostdf, regex_pars = c("beta")) + ggtitle("Female and male transition speed")
-mcmc_intervals(fpostdf, regex_pars = c("provenance")) + ggtitle("Provenance intercepts")
+mcmc_intervals(fpostdf, regex_pars = c("prov", "site", "sigma")) + ggtitle("Scaled ristos effects")
 mcmc_intervals(fpostdf, regex_pars = c("clone")) + ggtitle("Clone intercepts")
 
