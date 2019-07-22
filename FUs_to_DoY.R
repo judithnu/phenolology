@@ -45,7 +45,7 @@ tpars_clim$DoY_KAL1998 <- KAL1998$DoY[findInterval(tpars_clim$sum_forcing,
                                             KAL1998$sum_forcing) + 1]
 
 
-ggplot(filter(tpars_clim, param %in% c("fstart", "fend")), aes(x=DoY_KR2011, color=Sex, linetype=param)) +
+ggplot(filter(tpars_clim, effect == "all"), aes(x=DoY_KR2011, color=Sex, linetype=param)) +
     geom_density(alpha = 0.5) +
     facet_grid(SPU_Name ~ .)
 
@@ -55,9 +55,9 @@ ggplot(filter(tpars_clim, param %in% c("fstart", "fend")), aes(x=DoY_KAL1998, co
 
 tparsgraph <- gather(tpars_clim, key="WeatherRegime", value="DoY", DoY_KAL1998, DoY_KR2011)
 
-ggplot(tparsgraph, aes(x=DoY, fill=Sex, linetype=param)) +
-    geom_histogram(alpha=0.5, binwidth=1) +
-    scale_fill_viridis_d(end = 0.9) +
+ggplot(filter(tparsgraph, effect=="all"), aes(x=DoY, fill=Sex)) +
+    geom_histogram(alpha=0.7, binwidth=1) +
+    scale_fill_viridis_d() +
     facet_grid(WeatherRegime ~ .) +
     theme_bw()
 
@@ -78,24 +78,20 @@ ggplot(tparsgraph, aes(x=DoY, fill=Sex, linetype=param)) +
 
 # compare with and without provenance effect
 
-phd1 <- filter(tparsgraph, param %in% c("fhalf1", "fhalf2")) %>%
-    select(-sum_forcing) %>%
-    mutate(transition = case_when(param=="fhalf1" ~ 1,
-                                  param=="fhalf2" ~ 2))
-phd2 <- filter(tparsgraph, param %in% c("fhalf1_noprov", "fhalf2_noprov")) %>%
+phd1 <- filter(tparsgraph, effect == "all") %>%
+    select(-sum_forcing,  -effect)
+phd2 <- filter(tparsgraph, effect == "no_prov") %>%
     rename(no_prov=param, DoY_noprov=DoY) %>%
-    select(-sum_forcing) %>%
-    mutate(transition = case_when(no_prov=="fhalf1_noprov" ~ 1,
-                                  no_prov=="fhalf2_noprov" ~ 2))
-provhalfd <- full_join(phd1, phd2) %>%
-    mutate(daydiff = DoY_noprov-Doy)
+    select(-sum_forcing,  -effect)
+provcompd <- full_join(phd1, phd2) %>%
+    mutate(daydiff = DoY_noprov-DoY) #WRONG
 
-ggplot(provhalfd, aes(x=DoY, fill="withprov", group=param, linetype=WeatherRegime)) +
+ggplot(provcompd, aes(x=DoY, fill="prov", group=side, linetype=WeatherRegime)) +
     geom_density() +
-    geom_density(aes(x=DoY_noprov, fill="no_prov", group=no_prov, linetype=WeatherRegime), alpha=0.5) +
+    geom_density(aes(x=DoY_noprov, fill="no_prov", group=side, linetype=WeatherRegime), alpha=0.5) +
     scale_fill_viridis_d(option="B", begin = .1, end=.9) +
     facet_grid(SPU_Name ~ Sex) +
-    ggtitle("Provenance effect on 50% Day") +
+    ggtitle("Provenance effect DoY") +
     xlab("Day of Year") +
     theme_bw(base_size=18) +
     theme(strip.text.y = element_text(angle = 0)) +
