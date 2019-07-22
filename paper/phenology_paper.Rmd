@@ -166,8 +166,6 @@ The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and ve
 
 I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. A cumulative link function (in this case logistic) accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states and estimates intercepts (typically called "cutpoints" in ordered regression models) that separate each state. 
 
-
-
 The model was fit separately to data for male strobili and female strobili.
 
 The likelihood of being in state $s \in \{1,2,3\}$ is
