@@ -205,7 +205,7 @@ tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, C
 #tpars$param <- factor(tpars$param)
 #tpars$param = factor(tpars$param,levels(tpars$param)[c(1,3,2,4)])
 
-#write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
+write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
 
 # Plot raw data
 

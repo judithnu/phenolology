@@ -20,13 +20,6 @@ clim$siteyear <- paste(clim$Site, clim$Year, sep='')
 climsort <- filter(clim, DoY == 180) %>%
     arrange(sum_forcing)
 
-ggplot(clim, aes(x=DoY, y=sum_forcing, color=Site, group=siteyear)) +
-    geom_line(alpha=0.5, size=1.5) +
-    theme(legend.position = "bottom") +
-    scale_color_viridis_d() +
-    theme_bw() +
-    ggtitle("Forcing accumulation at all sites between 1997 and 2012")+
-    theme(text=element_text(size=20))
 
 
 # KettleRiver 2011 is cold, Kalamalka 1998 is hot, and PRT 2008 is middle of the road.
@@ -61,6 +54,24 @@ ggplot(filter(tparsgraph, effect=="all"), aes(x=DoY, fill=Sex)) +
     facet_grid(WeatherRegime ~ .) +
     theme_bw()
 
+## Calculate phenological period length ##############################
+
+tpars_wide <- select(tparsgraph, -param, -sum_forcing) %>%
+    spread(key=side, value=DoY)
+
+tpars_wide$length <- tpars_wide$end-tpars_wide$begin
+
+ggplot(filter(tpars_wide, effect=="all"), aes(x=Sex, y=length, fill=WeatherRegime)) +
+    geom_boxplot() +
+ #   facet_grid(WeatherRegime ~ Sex) +
+    scale_fill_viridis_d(option="C", end=0, begin=0.7, labels=c("hot year", "cold year")) +
+    theme_bw(base_size=20) +
+    ggtitle("Phenological period length in cold and hot years") +
+    facet_wrap(Site ~ SPU_Name)
+
+
+
+
 ## prov diff DoY
 
 # tparsgraph <- filter(tpars, str_detect(param, "half")) %>%
@@ -79,12 +90,12 @@ ggplot(filter(tparsgraph, effect=="all"), aes(x=DoY, fill=Sex)) +
 # compare with and without provenance effect
 
 phd1 <- filter(tparsgraph, effect == "all") %>%
-    select(-sum_forcing,  -effect)
+    select(-sum_forcing, -effect)
 phd2 <- filter(tparsgraph, effect == "no_prov") %>%
     rename(no_prov=param, DoY_noprov=DoY) %>%
-    select(-sum_forcing,  -effect)
+    select(-sum_forcing, -effect)
 provcompd <- full_join(phd1, phd2) %>%
-    mutate(daydiff = DoY_noprov-DoY) #WRONG
+    mutate(daydiff = DoY_noprov-DoY)
 
 ggplot(provcompd, aes(x=DoY, fill="prov", group=side, linetype=WeatherRegime)) +
     geom_density() +
@@ -109,13 +120,13 @@ ggplot(provhalfd, aes(x=param, y=daydiff, fill=WeatherRegime, color=WeatherRegim
 hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
 hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
 
-# calculate HPDIs for DoY diffs #############
+# calculate HPDIs for DoY diffs PROV #############
 
-full <- group_by(provhalfd, param, Sex, SPU_Name, WeatherRegime) %>%
+full <- group_by(provcompd, side, Sex, SPU_Name, WeatherRegime) %>%
     summarize(x=hpd_lower(daydiff, prob=.99), xend=hpd_upper(daydiff, prob=.99)) %>%
-    mutate(interval=".99")
+    mutate(interval="0.99")
 
-fifty <- group_by(provhalfd, param, Sex, SPU_Name, WeatherRegime) %>%
+fifty <- group_by(provcompd, side, Sex, SPU_Name, WeatherRegime) %>%
     summarize(x=hpd_lower(daydiff, prob=.75), xend=hpd_upper(daydiff, prob=.75)) %>%
     mutate(interval="0.75")
 
@@ -128,35 +139,95 @@ hpd_df <- mutate(hpd_df, y = case_when(WeatherRegime=="DoY_KAL1998" ~ 0,
 
 # How to do an interval plot
 
-trans1 <- filter(hpd_df, param=="fhalf1")
-ggplot(filter(trans1, interval==".99"), aes(x=value, y=y, color=WeatherRegime, size=interval)) +
+trans1 <- filter(hpd_df, side=="begin")
+ggplot(filter(trans1, interval=="0.99"), aes(x=value, y=y, color=WeatherRegime, size=1)) +
     geom_line() +
-    geom_line(data = filter(trans1, interval=="0.75"), aes(x=value, y=y)) +
-    facet_grid(rows=vars(SPU_Name), cols=vars(Sex)) +
+    geom_line(data = filter(trans1, interval=="0.75"), aes(x=value, y=y, size=1.5)) +
+    facet_grid(SPU_Name ~ Sex) +
     theme_bw(base_size=16) +
-    scale_color_viridis_d(option="C", end=0, begin=0.7) +
+    scale_color_viridis_d(option="C", end=0, begin=0.7, labels=c("hot year", "cold year")) +
     ylim(c(-1, 2)) +
     geom_vline(xintercept=0, alpha=0.7) +
-    ggtitle("Provenance Effects in Days in Cold and Hot Years", subtitle = "First 50% transition. HPDI. Negative is days earlier, positive is days later.") +
+    ggtitle("Provenance Effects in Days in Cold and Hot Years", subtitle = "Start Day. 75 and 95% HPDI. Negative is days earlier, positive is days later.") +
     theme(strip.text.y = element_text(angle = 0), axis.text.y = element_blank(), axis.ticks = element_blank(), legend.position="top") +
     xlab("Day Differences") +
-    ylab("")
+    ylab("") +
+    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3)))+
+    xlim(c(-20,20))
 
-trans2 <- filter(hpd_df, param=="fhalf2")
-ggplot(filter(trans1, interval==".99"), aes(x=value, y=y, color=WeatherRegime, size=interval)) +
+trans2 <- filter(hpd_df, side=="end")
+ggplot(filter(trans2, interval=="0.99"), aes(x=value, y=y, color=WeatherRegime, size=1)) +
     geom_line() +
-    geom_line(data = filter(trans2, interval=="0.75"), aes(x=value, y=y)) +
-    facet_grid(rows=vars(SPU_Name), cols=vars(Sex)) +
+    geom_line(data = filter(trans1, interval=="0.75"), aes(x=value, y=y, size=1.5)) +
+    facet_grid(SPU_Name ~ Sex) +
     theme_bw(base_size=16) +
-    scale_color_viridis_d(option="C", end=0, begin=0.7) +
+    scale_color_viridis_d(option="C", end=0, begin=0.7, labels=c("hot year", "cold year")) +
     ylim(c(-1, 2)) +
     geom_vline(xintercept=0, alpha=0.7) +
-    ggtitle("Provenance Effects in Days in Cold and Hot Years", subtitle = "Second 50% transition. HPDI. Negative is days earlier, positive is days later.") +
+    ggtitle("Provenance Effects in Days in Cold and Hot Years", subtitle = "End Day. 75 and 95% HPDI. Negative is days earlier, positive is days later.") +
     theme(strip.text.y = element_text(angle = 0), axis.text.y = element_blank(), axis.ticks = element_blank(), legend.position="top") +
     xlab("Day Differences") +
-    ylab("")
+    ylab("") +
+    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3)))
 
+# calculate HPDIs for DoY diffs SITE #############
 
+shd1 <- filter(tparsgraph, effect == "all") %>%
+    select(-sum_forcing, -effect)
+shd2 <- filter(tparsgraph, effect == "no_site") %>%
+    rename(no_site=param, DoY_nosite=DoY) %>%
+    select(-sum_forcing, -effect)
+sitecompd <- full_join(shd1, shd2) %>%
+    mutate(daydiff = DoY_nosite-DoY)
+
+full <- group_by(sitecompd, side, Sex, Site, WeatherRegime) %>%
+    summarize(x=hpd_lower(daydiff, prob=.99), xend=hpd_upper(daydiff, prob=.99)) %>%
+    mutate(interval="0.99")
+
+fifty <- group_by(sitecompd, side, Sex, Site, WeatherRegime) %>%
+    summarize(x=hpd_lower(daydiff, prob=.75), xend=hpd_upper(daydiff, prob=.75)) %>%
+    mutate(interval="0.75")
+
+hpd_df <- full_join(full, fifty) %>%
+    gather(key=end, value=value, x, xend) %>%
+    arrange(interval)
+
+hpd_df <- mutate(hpd_df, y = case_when(WeatherRegime=="DoY_KAL1998" ~ 0,
+                                       WeatherRegime=="DoY_KR2011" ~ 1))
+
+# How to do an interval plot
+
+trans1 <- filter(hpd_df, side=="begin")
+ggplot(filter(trans1, interval=="0.99"), aes(x=value, y=y, color=WeatherRegime, size=1)) +
+    geom_line() +
+    geom_line(data = filter(trans1, interval=="0.75"), aes(x=value, y=y, size=1.5)) +
+    facet_grid(Site ~ Sex) +
+    theme_bw(base_size=16) +
+    scale_color_viridis_d(option="C", end=0, begin=0.7, labels=c("hot year", "cold year")) +
+    ylim(c(-1, 2)) +
+    geom_vline(xintercept=0, alpha=0.7) +
+    ggtitle("Site Effects in Days in Cold and Hot Years", subtitle = "Start Day. 75 and 95% HPDI. Negative is days earlier, positive is days later.") +
+    theme(strip.text.y = element_text(angle = 0), axis.text.y = element_blank(), axis.ticks = element_blank(), legend.position="top") +
+    xlab("Day Differences") +
+    ylab("") +
+    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3))) +
+    xlim(c(-20,20))
+
+trans2 <- filter(hpd_df, side=="end")
+ggplot(filter(trans2, interval=="0.99"), aes(x=value, y=y, color=WeatherRegime, size=1)) +
+    geom_line() +
+    geom_line(data = filter(trans1, interval=="0.75"), aes(x=value, y=y, size=1.5)) +
+    facet_grid(Site ~ Sex) +
+    theme_bw(base_size=16) +
+    scale_color_viridis_d(option="C", end=0, begin=0.7, labels=c("hot year", "cold year")) +
+    ylim(c(-1, 2)) +
+    geom_vline(xintercept=0, alpha=0.7) +
+    ggtitle("Site Effects in Days in Cold and Hot Years", subtitle = "End Day. 75 and 95% HPDI. Negative is days earlier, positive is days later.") +
+    theme(strip.text.y = element_text(angle = 0), axis.text.y = element_blank(), axis.ticks = element_blank(), legend.position="top") +
+    xlab("Day Differences") +
+    ylab("") +
+    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3))) +
+    xlim(c(-20,20))
 
 # provhalf <- full_join(ph1, ph2)
 # provnoprov <- filter(tpars, param %in% c("fstart", "fstart_noprov")) %>%
