@@ -102,6 +102,24 @@ calc_flowering_prob <- function(forcingaccum, beta, kappa1, kappa2) {
     return(prob)
 }
 
+# This function calculates the forcing units required to reach p flowering started
+calcstage2start <- function(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2) {
+    x <- (exp(kappa2)*p - exp(kappa2) + exp(kappa1)*p + exp(kappa1))^2 - 4*(p^2)*exp(kappa1+kappa2)
+    y <- -exp(kappa2)*p + exp(kappa2) - exp(kappa1)*p - exp(kappa1)
+    f <- log((-sqrt(x) + y)/(2*p))/beta
+
+    return(f)
+}
+
+# This function calculates the forcing units required to reach p flowering left
+calcstage2end <- function(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2) {
+    x <- (exp(kappa2)*p - exp(kappa2) + exp(kappa1)*p + exp(kappa1))^2 - 4*(p^2)*exp(kappa1+kappa2)
+    y <- -exp(kappa2)*p + exp(kappa2) - exp(kappa1)*p - exp(kappa1)
+    f <- log((sqrt(x) + y)/(2*p))/beta
+
+    return(f)
+}
+
 # MODEL AND ORIGINAL DATA ############
 
 #model
@@ -153,22 +171,36 @@ pardf <- rbind(fpardf, mpardf) %>%
 # add transformed parameters fstart, fend, and f50s
 pardf_trans <- pardf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
-    mutate(fstart = (logit(.2) + kappa1)/betas) %>%
-    mutate(fend = (logit(.8) + kappa2)/betas) %>%
-    mutate(fhalf1 = kappa1/betas) %>%
-    mutate(fhalf2 = kappa2/betas) %>%
+    # mutate(fstart = (logit(.2) + kappa1)/betas) %>%
+    # mutate(fend = (logit(.8) + kappa2)/betas) %>%
+    # mutate(fhalf1 = kappa1/betas) %>%
+    # mutate(fhalf2 = kappa2/betas) %>%
     #mutate(fhalf1_pop = kappa1/beta) %>%
     #mutate(fhalf2_pop = kappa2/beta) %>%
     #mutate(fstart1_pop = (logit(.2) + kappa1)/beta) %>%
-    mutate(fhalf1_noprov = kappa1/(betas-b_prov)) %>%
-    mutate(fhalf2_noprov = kappa2/(betas-b_prov))
+    # mutate(fhalf1_noprov = kappa1/(betas-b_prov)) %>%
+    # mutate(fhalf2_noprov = kappa2/(betas-b_prov)) %>%
     # mutate(fhalf1_nosite = kappa1/(betas-b_site)) %>%
     # mutate(fstart_noprov = (logit(.2) + kappa1)/(betas-b_prov))
+mutate(fbegin_all = calcstage2start(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2)) %>%
+    mutate(fend_all = calcstage2end(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2)) %>%
+    mutate(fbegin_noprov = calcstage2start(p=0.2, beta=betas-b_prov, kappa1=kappa1, kappa2=kappa2)) %>%
+    mutate(fend_noprov = calcstage2end(p=0.2, beta=betas-b_prov, kappa1=kappa1, kappa2=kappa2)) %>%
+    mutate(fbegin_nosite = calcstage2start(p=0.2, beta=betas-b_site, kappa1=kappa1, kappa2=kappa2)) %>%
+    mutate(fend_nosite = calcstage2end(p=0.2, beta=betas-b_site, kappa1=kappa1, kappa2=kappa2)) %>%
+    mutate(fbegin_pop = calcstage2start(p=0.2, beta=beta, kappa1=kappa1, kappa2=kappa2)) %>%
+    mutate(fend_pop = calcstage2end(p=0.2, beta=beta, kappa1=kappa1, kappa2=kappa2))
 
 #pardf has all parameters and transformed parameters
 
 tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, Clone, Year, contains("Ind"), starts_with("f")) %>%
-    gather(key="param", value="sum_forcing", starts_with("f"))
+    gather(key="param", value="sum_forcing", starts_with("f")) %>%
+    mutate(side = case_when(str_detect(param, "begin") ~ "begin",
+                            str_detect(param, "end") ~ "end")) %>%
+    mutate(effect = case_when(str_detect(param, "all") ~ "all",
+                              str_detect(param, "pop") ~ "pop",
+                              str_detect(param, "noprov") ~ "no_prov",
+                              str_detect(param, "nosite") ~ "no_site"))
 
 #tpars$param <- factor(tpars$param)
 #tpars$param = factor(tpars$param,levels(tpars$param)[c(1,3,2,4)])
@@ -183,26 +215,59 @@ tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, C
 #     geom_density(alpha=0.5) +
 #     scale_fill_viridis_d()
 
-ph1 <- filter(tpars, param %in% c("fhalf1", "fhalf2")) %>%
-    mutate(transition = case_when(param=="fhalf1" ~ 1,
-                                  param=="fhalf2" ~ 2))
-ph2 <- filter(tpars, param %in% c("fhalf1_noprov", "fhalf2_noprov")) %>%
-    rename(no_prov=param, sum_forcing_noprov=sum_forcing) %>%
-    mutate(transition = case_when(no_prov=="fhalf1_noprov" ~ 1,
-                                  no_prov=="fhalf2_poprov" ~ 2))
-
-#present
-provhalf <- full_join(ph1, ph2)
-ggplot(provhalf, aes(x=sum_forcing, fill="withprov", group=param)) +
+ggplot(tpars, aes(x=sum_forcing, color=effect, linetype=side)) +
     geom_density() +
-    geom_density(aes(x=sum_forcing_noprov, fill="no_prov", linetype=param, group=no_prov), alpha=0.5) +
+    facet_grid(SPU_Name ~ Sex) +
+    scale_color_viridis_d() +
+    theme_bw()
+
+
+# ph1 <- filter(tpars, param %in% c("fhalf1", "fhalf2")) %>%
+#     mutate(transition = case_when(param=="fhalf1" ~ 1,
+#                                   param=="fhalf2" ~ 2))
+# ph2 <- filter(tpars, param %in% c("fhalf1_noprov", "fhalf2_noprov")) %>%
+#     rename(no_prov=param, sum_forcing_noprov=sum_forcing) %>%
+#     mutate(transition = case_when(no_prov=="fhalf1_noprov" ~ 1,
+#                                   no_prov=="fhalf2_poprov" ~ 2))
+
+provcomp <- filter(tpars, effect %in% c("all", "no_prov"))
+
+ggplot(provcomp, aes(x=sum_forcing, fill=effect, linetype=side)) +
+    geom_density(alpha=0.5) +
+    stat_ecdf(data=bdat, aes(x=FUs), inherit.aes=FALSE) +
     scale_fill_viridis_d(option="B") +
     facet_grid(SPU_Name ~ Sex) +
-    ggtitle("Provenance effect on 50% forcing unit requirements") +
+    ggtitle("Start and end by provenance") +
     xlab("Forcing units") +
     theme_bw(base_size=18) +
     theme(strip.text.y = element_text(angle = 0)) +
     theme(legend.position= "top")
+
+sitecomp <- filter(tpars, effect %in% c("all", "no_site"))
+
+ggplot(sitecomp, aes(x=sum_forcing, fill=effect, linetype=side)) +
+    geom_density(alpha=0.5) +
+    stat_ecdf(data=bdat, aes(x=FUs), inherit.aes=FALSE) +
+    scale_fill_viridis_d(option="A") +
+    facet_grid(Site ~ Sex) +
+    ggtitle("Start and end by site") +
+    xlab("Forcing units") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top")
+
+#present
+# provhalf <- full_join(ph1, ph2)
+# ggplot(provhalf, aes(x=sum_forcing, fill="withprov", group=param)) +
+#     geom_density() +
+#     geom_density(aes(x=sum_forcing_noprov, fill="no_prov", linetype=param, group=no_prov), alpha=0.5) +
+#     scale_fill_viridis_d(option="B") +
+#     facet_grid(SPU_Name ~ Sex) +
+#     ggtitle("Provenance effect on 50% forcing unit requirements") +
+#     xlab("Forcing units") +
+#     theme_bw(base_size=18) +
+#     theme(strip.text.y = element_text(angle = 0)) +
+#     theme(legend.position= "top")
 
 
 
@@ -360,9 +425,8 @@ mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Na
     filter(Phenophase_Derived==2) %>%
     rename(FUs = sum_forcing)
 
-bdat <- rbind(fbloom, mbloom) %>%
-    full_join(tpars) %>%
-    filter(param %in% c("fstart", "fend"))
+bdat <- rbind(fbloom, mbloom)# %>%
+    full_join(tpars)
 # bdat has forcing units (FUs) that the model estimates start and end to occur at as well as the actual forcing units (sum_forcing) that flowering was recorded at.
 
 # Calculate flowering period ############
