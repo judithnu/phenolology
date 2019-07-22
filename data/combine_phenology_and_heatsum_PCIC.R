@@ -104,12 +104,23 @@ ggplot(clim, aes(x=DoY, y=sum_ristos, color=Year)) +
     facet_wrap("Site") +
     theme_bw(base_size=18)
 
-ggplot(clim, aes(x=DoY, y=sum_scaled_ristos, color=Year)) +
+#present accummulation
+ggplot(filter(clim, DoY<180), aes(x=DoY, y=sum_scaled_ristos, color=Year)) +
     geom_point() +
     facet_wrap("Site") +
     theme_bw(base_size=18) +
     ggtitle("Risto Accumulation 1997-2012") +
     theme(legend.position="none")
+
+ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
+    geom_point(alpha = 0.4, pch=4, size=.8) +
+    facet_wrap("Site") +
+    scale_color_viridis_d(option="D", end=0.6) +
+    theme_bw(base_size=20) +
+    ylab("Accumulated Forcing Units") +
+    theme(legend.position = "none") +
+    geom_vline(aes(xintercept=122)) +
+    geom_vline(aes(xintercept =174))
 
 ggplot(clim, aes(x=sum_scaled_ristos, y=Heatsum, color=Year)) +
     geom_point()
@@ -117,7 +128,16 @@ ggplot(clim, aes(x=sum_scaled_ristos, y=Heatsum, color=Year)) +
 ggplot(clim, aes(x=ristos_scaled, y=Heat)) +
     geom_point()
 
-clim$gdd <- clim$he
+#present - how heat and gdd compare
+ggplot(clim, aes(x=mean_temp, y=ristos, color="ristos")) +
+    geom_line(size=2) +
+    geom_line(size=1.1, alpha=0.9, aes(x=mean_temp, y=Heat, color="GDD")) +
+    theme_bw(base_size=20) +
+    scale_color_viridis_d(option="D", end=0.6) +
+    ylab("Forcing Units") +
+    xlab("Mean Daily Temperature") +
+    theme(legend.position = "top")
+
 ggplot(clim, aes(x=mean_temp, y=ristos, color="ristos")) +
     geom_line(size=2) +
     geom_line(size=1.1, alpha=0.9, aes(x=mean_temp, y=Heat, color="GDD")) +
@@ -164,16 +184,6 @@ nrow(gclim) == nrow(ristoframe) + nrow(scaledristoframe) + nrow(gddframe)
 # Plot climate data ####################
 climdat$Year <- lubridate::year(climdat$Date)
 climdat$Month <- lubridate::month(climdat$Date)
-ggplot(climdat, aes(x=as.factor(Month), y=mean_temp, fill=Site)) +
-    geom_violin(draw_quantiles = c(0.5)) +
-    #theme_bw() +
-    xlab("Month") +
-    #theme(axis.text.x=element_blank()) +
-    theme_bw(base_size=20) +
-    #facet_wrap("Site") +
-    theme(legend.position = "top") +
-    scale_fill_viridis_d(option="A")+
-    ggtitle("Mean Temperature 1997-2011")
 
 ggplot(climdat, aes(x=DoY, y=min_temp, color="Min")) +
     geom_point(pch=1, alpha=0.7) +
@@ -183,37 +193,23 @@ ggplot(climdat, aes(x=DoY, y=min_temp, color="Min")) +
     geom_point(pch=1, aes(x=DoY, y=mean_temp, color="Mean", alpha=0.3)) +
     xlab("Temperature") +
     theme_bw(base_size=20)
-
+#present
 ggplot(climdat, aes(x=as.factor(Month), y=mean_temp, fill=Site, color=Site)) +
-    geom_violin(alpha=0.8, adjust=1) +
+    geom_violin(alpha=0.8) +
     xlab("Month") +
     theme_bw(base_size=20) +
     #facet_wrap("Site") +
     theme(legend.position = "top") +
-    scale_fill_viridis_d(option="A")+
-    scale_color_viridis_d(option="A") +
+    scale_fill_viridis_d(option="A", end=0.9)+
+    scale_color_viridis_d(option="A", end=0.9) +
     ggtitle("Mean Temperature 1997-2011") +
     ylab("Temperature (°C)")
 
 compclim <- filter(gclim,forcing_type %in% c("ristos", "gdd")) %>%
     filter(DoY < 180)
 
-ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
-    geom_point(alpha = 0.4, pch=4, size=.8) +
-    facet_wrap("Site") +
-    scale_color_viridis_d(option="D", end=0.6) +
-    theme_bw(base_size=20) +
-    ylab("Accumulated Forcing Units") +
-    theme(legend.position = "top")
 
-ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
-    geom_point(alpha = 0.4, pch=4, size=.8) +
-    facet_wrap("Site") +
-    scale_color_viridis_d(option="C", begin=0.1, end=0.9) +
-    theme_bw(base_size=20) +
-    ylab("Accumulated Forcing Units") +
-    theme(legend.position = "top")
-
+#present
 ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
     geom_point(alpha = 0.4, pch=4, size=.8) +
     facet_wrap("Site") +
@@ -224,7 +220,32 @@ ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
     geom_vline(aes(xintercept=122)) +
     geom_vline(aes(xintercept =174))
 
+ggplot(climdat, aes(x=DoY, y=mean_temp)) +
+    geom_point(pch=1, alpha=0.3)+
+    theme_bw(base_size=20) +
+    ylab("Temperature (°C)") +
+    ggtitle("Mean Temperatures 1997-2011")
 
+# plot forcing in years actually have data
+phenmet <- phendat %>%
+    select(Site, Year) %>%
+    distinct
+
+climreduced <- left_join(phenmet, clim)
+
+#present
+ggplot(climreduced, aes(x=DoY, y=sum_scaled_ristos, color=Site)) +
+    geom_point(alpha = 0.6) +
+    facet_wrap("Site") +
+    scale_color_viridis_d(option="A", begin=0, end=0.9) +
+    theme_bw(base_size=20) +
+    ylab("Accumulated Forcing Units") +
+    theme(legend.position = "none") +
+    #geom_vline(aes(xintercept=122)) +
+    geom_vline(aes(xintercept =174)) +
+    xlim(c(0,180)) +
+    ylim(c(0, 35)) +
+    ggtitle("Accumulated forcing units in years with phenology data")
 # Combine climate and phenology data ---------------
 
 # phenology data
@@ -244,6 +265,8 @@ phendf <- merge(phen, gclim) %>%
     filter(!Phenophase_Derived==0) # drop trees that didn't flower
 
 phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
+
+
 
 write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum.csv", row.names = FALSE)
 write.csv(gclim, "~/Documents/research_phenolology/data/all_clim_PCIC.csv", row.names=FALSE)

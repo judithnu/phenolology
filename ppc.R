@@ -175,6 +175,30 @@ tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, C
 
 #write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
 
+# Plot raw data
+
+#plot data #######################
+ggplot(phendf, aes(x=sum_forcing, color=Sex)) +
+    stat_ecdf(size=1.1) +
+    facet_wrap(SPU_Name ~ Site) +
+    scale_color_viridis_d() +
+    theme_bw(base_size=20) +
+    ggtitle("Flowering phenology data")
+
+ggplot(filter(phendf, Phenophase_Derived==2 & Site %in% c("PGTIS", "Kalamalka", "PRT", "Vernon")), aes(x=sum_forcing, color=Sex)) +
+    stat_ecdf(size=1.1) +
+    facet_grid(SPU_Name ~ Site) +
+    scale_color_viridis_d() +
+    theme_bw(base_size=20) +
+    ggtitle("Flowering - Provenance comparison")
+
+ggplot(filter(phendf, Phenophase_Derived==2 & SPU_Name %in% c("Bulkley Valley Low", "Central Plateau Low", "Prince George Low")), aes(x=sum_forcing, color=Sex)) +
+    stat_ecdf() +
+    facet_grid(Site ~ SPU_Name) +
+    scale_color_viridis_d() +
+    theme_bw(base_size=20) +
+    ggtitle("Flowering - Site comparison")
+
 # Plot transformed parameters #############
 
 # halfparams <- filter(tpars, str_detect(param, "half"))
