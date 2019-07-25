@@ -19,114 +19,135 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 
 # MODEL DATA #####################
 
-
-#ffit.stan <- readRDS("female_slopes.rds")
-
-ffit.stan <- readRDS("FEMALEslopes_gdd.rds")
-mfit.stan <- readRDS("MALE_slopes_scaled.rds")
+ffit.stan <- readRDS("slopes_ristos_scaled_FEMALE.rds")
+mfit.stan <- readRDS("slopes_ristos_scaled_MALE.rds")
 
 fshiny <- as.shinystan(ffit.stan)
 launch_shinystan(fshiny)
 
-mshiny <- as.shinystan(mfit.stan)
-launch_shinystan(mshiny)
+#mshiny <- as.shinystan(mfit.stan)
+#launch_shinystan(mshiny)
 
 # female model #########################################
 fsum <- rstan::summary(ffit.stan)$summary
 fsum <- as.data.frame(fsum)
-#postlist <- rstan::extract(ffit.stan)
-fpostdf <- as.data.frame(ffit.stan)
-#fpost_re <- extract.samples(ffit.stan)
+farray <- as.array(ffit.stan) # diagnostics
+#fpostdf <- as.data.frame(ffit.stan)
+#fpost_re <- extract.samples(ffit.stan) # requ
 #post <- as.array(ffit.stan)
 flp <- log_posterior(ffit.stan)
 #param_names <- attributes(postdf)$dimnames$parameters
-fparam_names <- colnames(fpostdf)
+#fparam_names <- colnames(fpostdf)
 fnp <- nuts_params(ffit.stan) #nuts params
+frhats <- rhat(ffit.stan)
+fratios <- neff_ratio(ffit.stan)
 
 ### Male model ############
 
 msum <- rstan::summary(mfit.stan)$summary
 msum <- as.data.frame(msum)
+marray <- as.array(ffit.stan) # diagnostics
 #postlist <- rstan::extract(ffit.stan)
-mpostdf <- as.data.frame(mfit.stan)
+#mpostdf <- as.data.frame(mfit.stan)
 #mpost_re <- extract.samples(mfit.stan)
 #post <- as.array(ffit.stan)
 mlp <- log_posterior(mfit.stan)
 #param_names <- attributes(postdf)$dimnames$parameters
-mparam_names <- colnames(mpostdf)
+#mparam_names <- colnames(mpostdf)
 mnp <- nuts_params(mfit.stan) #nuts params
+mrhats <- rhat(mfit.stan)
+mratios <- neff_ratio(mfit.stan)
 
 # Diagnostics #######################
-postdf <- fpostdf
-sex = "female"
+sex = "MALE"
 
-mcmc_trace(postdf, regex_pars = "site") + ggtitle(paste(sex, "site"))
-mcmc_trace(postdf, regex_pars = "prov") + ggtitle(paste(sex, "prov"))
-mcmc_trace(postdf, regex_pars = "sigma") + ggtitle(paste(sex, "sigma"))
-mcmc_trace(postdf, regex_pars = "year") + ggtitle(paste(sex, "year"))
-mcmc_trace(postdf, regex_pars = "kappa") + ggtitle(paste(sex, "kappa"))
-#mcmc_trace(post, regex_pars = "orch") + ggtitle(paste(sex, "orchard"))
+if (sex=="FEMALE") {
+    sarray <- farray
+    np <- fnp
+    # param_names <- fparam_names
+    lp <- flp
+    rhats <- frhats
+    ratios <- fratios
+    color_scheme_set("purple")
+}
+if (sex=="MALE") {
+    sarray <- marray
+    np <- mnp
+    #param_names <- mparam_names
+    lp <- mlp
+    rhats <- mrhats
+    ratios <- mratios
+    color_scheme_set("yellow")
+}
 
-divergences <- filter(fnp, Parameter=="divergent__" & Value==1)
+mcmc_trace(sarray, regex_pars = "site") + ggtitle(paste(sex, "site"))
+mcmc_trace(sarray, regex_pars = "prov") + ggtitle(paste(sex, "prov"))
+mcmc_trace(sarray, regex_pars = "sigma") + ggtitle(paste(sex, "sigma"))
+mcmc_trace(sarray, regex_pars = "year") + ggtitle(paste(sex, "year"))
+mcmc_trace(sarray, regex_pars = "kappa") + ggtitle(paste(sex, "kappa"))
+
+divergences <- filter(np, Parameter=="divergent__" & Value==1)
+print("divergences = ")
 nrow(divergences)
 
-color_scheme_set("darkgray")
-mcmc_parcoord(fpostdf, np = fnp, pars = fparam_names[c(3:16, 276:294)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
-mcmc_parcoord(fpostdf, np=fnp, regex_pars = c("clone"))
+#color_scheme_set("darkgray")
+# mcmc_parcoord(sarray, np = np, pars = param_names[c(3:16, 276:294)]) # parallel coordinates plot. show one line per iteration, connecting the parameter values at this iteration, with divergences in red. let's you see global patterns in divergences
+# mcmc_parcoord(sarray, np=np, regex_pars = c("clone"))
 
-mcmc_pairs(fpost_re, np = fnp, regex_pars = c("kappa")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
-mcmc_pairs(fpostdf, np = fnp, regex_pars = c("site"))
-mcmc_pairs(fpostdf, np=fnp, regex_pars="prov")
-mcmc_pairs(fpostdf, np =fnp, regex_pars = "sigma")
-mcmc_pairs(fpostdf, np=fnp, pars = c("b_year[1]", "b_year[2]", "b_year[3]", "b_year[4]", "sigma_year"))
-mcmc_pairs(fpostdf, np=fnp, pars=c("b_site[1]", "b_clone[1]", "b_prov[1]"))
+mcmc_pairs(sarray, np = np, regex_pars = c("kappa")) # show univariate histograms and bivariate scatter plots for selected parameters and is especially useful in identifying collinearity between variables (which manifests as narrow bivariate plots) as well as the presence of multiplicative non-identifiabilities (bananas). Each bivariate plot occurs twice and contains half the chains - so you can compare if chains produce similar results
+mcmc_pairs(sarray, np = np, regex_pars = c("site"))
+mcmc_pairs(sarray, np = np, regex_pars="prov")
+mcmc_pairs(sarray, np = np, regex_pars = "sigma")
+mcmc_pairs(sarray, np = np, pars = c("b_year[1]", "b_year[2]", "b_year[3]", "b_year[4]", "sigma_year"))
+mcmc_pairs(sarray, np=np, pars=c("b_site[1]", "b_clone[1]", "b_prov[1]"))
 
 
-color_scheme_set("red")
-mcmc_nuts_divergence(fnp, lp)
-mcmc_nuts_divergence(fnp, lp, chain = 1) # understand how divergences interact with the model globally. Identify light tails and incomplete exploration of target distribution. use chain argument to overlay the plot for a particular Markov chain on the plot
-mcmc_nuts_divergence(fnp, lp, chain = 2)
-mcmc_nuts_divergence(fnp, lp, chain = 3)
-mcmc_nuts_divergence(fnp, lp, chain = 4)
-mcmc_nuts_divergence(fnp, lp, chain = 5)
-mcmc_nuts_divergence(fnp, lp, chain = 6)
-mcmc_nuts_divergence(fnp, lp, chain = 7)
-mcmc_nuts_divergence(fnp, lp, chain = 8)
+mcmc_nuts_divergence(np, lp)
+mcmc_nuts_divergence(np, lp, chain = 1) # understand how divergences interact with the model globally. Identify light tails and incomplete exploration of target distribution. use chain argument to overlay the plot for a particular Markov chain on the plot
+mcmc_nuts_divergence(np, lp, chain = 2)
+mcmc_nuts_divergence(np, lp, chain = 3)
+mcmc_nuts_divergence(np, lp, chain = 4)
+mcmc_nuts_divergence(np, lp, chain = 5)
+mcmc_nuts_divergence(np, lp, chain = 6)
+mcmc_nuts_divergence(np, lp, chain = 7)
+mcmc_nuts_divergence(np, lp, chain = 8)
 
 ### ENERGY
-color_scheme_set("red")
-mcmc_nuts_energy(mnp) + ggtitle(paste(sex, "energy plot"))
+
+mcmc_nuts_energy(np) + ggtitle(paste(sex, "energy plot"))
 # energy plot. shows overlaid histograms of the marginal energy distribution piE and the first-differenced distribution pi_deltaE. id overly heavy tails (also challenging for sampling). the energy diagnostic for HMC (and the related energy-based Bayesian fraction of missing info) quantifies the heaviness of the tails of the posterior. Ideally the two histograms will look the same
 
 #Look at the pairs plot to see which primitive parameters are correlated with the energy__ margin. There should be a negative relationship between lp__ and energy__ in the pairs plot, which is not a concern because lp__ is the logarithm of the posterior kernel rather than a primitive parameter.
 
-energy <- dplyr::filter(fnp, Parameter== "energy__")
+energy <- dplyr::filter(np, Parameter== "energy__")
 
 
 # Rhat: potential scale reduction statistic
 # compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
 
-rhats <- rhat(ffit.stan)#, pars = param_names[1:10])
-color_scheme_set("brightblue")
+print("rhats > 1 for")
+names(which(rhats > 1.05))
+
+color_scheme_set("purple")
 mcmc_rhat(rhats) +
     yaxis_text(hjust = 1)
 
 # Effective sample size
 # estimate of the number of independent draws from the posterior dist of the estimand of interest. n_eff in stan is based on ability of draws to estimate the true mean value of the param. because draws are not independent if there is autocorrelation between draws, neff is usually smaller than total N. the larger the ration of n_eff to N, the better. ratios depend not just on the model but on the algorithm used to fit the model
 
-ratios <- neff_ratio(ffit.stan)#, param_names[270:295])
-print(ratios)
+print("Effective sample size < 0.5 for")
+names(which(ratios < 0.5))
 
-mcmc_neff(ratios, size = 2) +
+mcmc_neff(ratios, size = 1.5) +
     yaxis_text(hjust = 1)
 
 # Autocorrelation
 #n_eff/N decreases as autocorrelation becomes more extreme. Visualize autocorrelation using mcmc_acf or mcmc_acf_bar. Postive autocorrelation is bad because it means the chain gets stuck. Ideally, it drops quickly to zero as lag increasses. negative autocorrelation indicates fast convergence of sample mean towards true
 
-mcmc_acf(fpostdf, lags = 10, regex_pars = c("kappa"))
-mcmc_acf(fpostdf, lags=10, regex_pars = c('b_site'))
-mcmc_acf(fpostdf, lags=10, regex_pars=c('b_prov'))
-mcmc_acf(fpostdf, lags=10, regex_pars=c('b_year'))
+mcmc_acf(sarray, lags = 10, regex_pars = c("kappa"))
+mcmc_acf(sarray, lags=10, regex_pars = c('b_site'))
+mcmc_acf(sarray, lags=10, regex_pars=c('b_prov'))
+mcmc_acf(sarray, lags=10, regex_pars=c('b_year'))
 
 # Parameter Estimation ##################
 
