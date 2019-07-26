@@ -148,9 +148,9 @@ test <- stan("slopes.stan",
 fit <- stan("slopes.stan",
             model_name = paste(sex, "slopes", forcingtype),
             data = rdump,
-            chains = 10, cores = 10, warmup = 1000, iter = 1300,
+            chains = 8, cores = 8, warmup = 1500, iter = 2500,
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste("slopes_", forcingtype, "_", sex, ".rds", sep=''))
+saveRDS(fit, file = paste("slopes_", forcingtype, "_", sex, "newprior.rds", sep=''))
 
