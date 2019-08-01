@@ -123,10 +123,10 @@ calcstage2end <- function(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2) {
 # MODEL AND ORIGINAL DATA ############
 
 #model
-fmod <- readRDS("FEMALE_slopes_scaled.rds") %>%
+fmod <- readRDS("slopes_ristos_scaled_FEMALE.rds") %>%
     as.data.frame()
 
-mmod <- readRDS("MALE_slopes_scaled.rds") %>%
+mmod <- readRDS("slopes_ristos_scaled_MALE.rds") %>%
     as.data.frame()
 
 # original data (this code should match relevant bits in run_stan)
