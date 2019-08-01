@@ -462,8 +462,19 @@ mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Na
     rename(FUs = sum_forcing)
 
 bdat <- rbind(fbloom, mbloom)# %>%
-    full_join(tpars)
+    #full_join(tpars)
 # bdat has forcing units (FUs) that the model estimates start and end to occur at as well as the actual forcing units (sum_forcing) that flowering was recorded at.
+
+fbloomd <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, DoY) %>%
+    filter(Phenophase_Derived==2) %>%
+    rename(DoY_obs = DoY)
+
+mbloomd <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, DoY) %>%
+    filter(Phenophase_Derived==2) %>%
+    rename(DoY_obs = DoY)
+
+bdatd <- rbind(fbloomd, mbloomd)# %>%
+full_join(tpars)
 
 # Calculate flowering period ############
 
