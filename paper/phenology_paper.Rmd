@@ -77,9 +77,9 @@ This project takes advantage of an existing lodgepole pine pollination phenology
 
 
 ##### Sites
-Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 7 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another, but sites span about 5 $^\circ$ of latitude and are at elevations from 466 to 638 m.
+Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 7 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another around Vernon, BC, but sites span about 5 $^\circ$ of latitude and are at elevations from 466 to 638 m.
 
-![Map of seed orchard locations. Boxed area in map on left is shown in greater detail on the right.](/home/sus/Documents/research_phd/maps/SiteMaps/sitemap.png)
+![Map of seed orchard locations. Seed orchard locations are in red. Weather data gridpoints are in blue. Boxed area in map on left is shown in greater detail on the right. ](/home/sus/Documents/research_phd/maps/SiteMaps/sitemapwithPCIC.png)
 
 
 ##### Provenances
@@ -94,7 +94,7 @@ Most provenances are represented at 2 to 3 sites and have at least three years o
 ![Contingency table of years of data for Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](/home/sus/Documents/research_phd/phd_proposal/figure/contingencytable.png)
 
 
-![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPZ}](/home/sus/Documents/research_phd/maps/SPUmaps/SPUmap.png)
+![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPZ}](/home/sus/Documents/research_phd/maps/SPUmaps/SPUmap_subset.png)
 
 [table with Site Columns and SPU rows with years of data as values]
  [table of number of trees/clones in a given year for a given site/spu combo]
