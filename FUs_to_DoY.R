@@ -194,24 +194,62 @@ hpd_df <- full_join(full, fifty) %>%
 
 # Graph DoY start and finish ##################
 
-# sitenosite <- filter(tpars, param %in% c("fhalf1", "fhalf1_nosite")) %>%
-#     arrange(IndSexGroup, param, iter)
+doyprov <- filter(tparsgraph, effect %in% c("all", "no_prov"), Sex == "FEMALE")
+ggplot(doyprov, aes(x=DoY, color=effect, linetype=side)) +
+    geom_freqpoly(size=1.1, alpha=0.8) +
+    stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
+    scale_color_viridis_d(option="B", end=0.9) +
+    facet_grid(SPU_Name ~ WeatherRegime, scales = "free_y") +
+    ggtitle("FEMALE Start and end by provenance", subtitle = "in a hot and cold year") +
+    xlab("Forcing units") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top") +
+    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3)))
 
-alleffects <- filter(sitenosite, param=="fhalf1")
-nosite <- filter(sitenosite, param=="fhalf1_nosite")
+doysite <- filter(tparsgraph, effect %in% c("all", "no_site"), Sex == "FEMALE")
+ggplot(doysite, aes(x=DoY, color=effect, linetype=side)) +
+    geom_freqpoly(size=1.05, alpha=0.8) +
+    #stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
+    scale_color_viridis_d(option="B", end=.9) +
+    facet_grid(Site ~ WeatherRegime, scales = "free_y") +
+    ggtitle("FEMALE Start and end by site", subtitle = "in a hot and cold year") +
+    xlab("Forcing units") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top") +
+    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3)))
 
-sitediffs_hot <- nosite$DoY_KAL1998 - alleffects$DoY_KAL1998
-sitediffs_cold <- nosite$DoY_KR2011 - alleffects$DoY_KR2011
+doyprovcold <- filter(tparsgraph, effect %in% c("all", "no_prov"), WeatherRegime== "DoY_KR2011")
+ggplot(doyprovcold, aes(x=DoY, color=effect, linetype=side)) +
+    geom_freqpoly(alpha=0.8) +
+   # stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
+    scale_color_viridis_d(option="B", end=0.5) +
+    facet_grid(SPU_Name ~ Sex, scales = "free_y") +
+    ggtitle("Start and end by provenance in a cold year") +
+    xlab("Day of Year") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top")
 
-sitediffs <- data.frame(alleffects[,c(1:12)], sitediffs_cold, sitediffs_hot)
+doysitecold <- filter(tparsgraph, effect %in% c("all", "no_site"), WeatherRegime== "DoY_KR2011")
+ggplot(doysitecold, aes(x=DoY, color=effect, linetype=side)) +
+    geom_freqpoly(alpha=0.8) +
+    # stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
+    scale_color_viridis_d(option="B", end=0.5) +
+    facet_grid(SPU_Name ~ Sex, scales = "free_y") +
+    ggtitle("Start and end by site in a cold year") +
+    xlab("Day of Year") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top")
 
-HPDI(sitediffs_hot)
-HPDI(sitediffs_cold)
+timing <- filter(tparsgraph, effect == "all")
+ggplot(timing, aes(x=DoY, color=WeatherRegime, linetype=side)) +
+    geom_freqpoly(bins=40, size=1.5, alpha=0.8) +
+    scale_color_viridis_d(option="C", end=0, begin=0.7, labels=c("hot year", "cold year")) +
+    facet_grid(Sex ~ .) +
+    theme_bw(base_size=18) +
+    theme(legend.position= "top") +
+    ggtitle("Start and end of flowering in a cold and hot year")
 
-ggplot(sitediffs, aes(x=sitediffs_cold, fill="cold")) +
-    geom_histogram(alpha=.5) +
-    geom_histogram(aes(x=sitediffs_hot, fill="hot"), alpha=0.5) +
-    scale_fill_viridis_d(option="C") +
-    facet_grid(Site ~ Sex, scales="free_y")
-# geom_line(data = data.frame(x=c(1,5), y=c(1,1)), aes(x=x, y=y), size=2) +
-#xlim(c(-7,15))
