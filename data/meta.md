@@ -16,7 +16,7 @@ Forcing units at all sites for 1997-2011
 
 ## combine_phenology_and_heatsum_PCIC.R
 
-Combine phenology data and forcing unit data calculated from PCIC data. Writes to `phenology_heatsum.csv`
+Combine phenology data and forcing unit data calculated from PCIC data. Writes to `phenology_heatsum_all.csv`
 
 ## combine_phenology_and_heatsum_weather_station.R
 
@@ -28,4 +28,4 @@ Combined phenology and forcing unit data. Used by `run_stan.R` to calculate `.rd
 
 ## slim_data.R
 
-Prince George data is highly redundant due to method of recording data for all trees on all observation days. This script drops redundant data - keeping only records for the last recorded "not started" day, the first recorded "flowering" day, the last recorded "flowering" day, and the first recorded "done flowering" day. Reads in from and outputs to `phenology_heatsum.csv`
+Prince George data is highly redundant due to method of recording data for all trees on all observation days. This script drops redundant data - keeping only records for the last recorded "not started" day, the first recorded "flowering" day, the last recorded "flowering" day, and the first recorded "done flowering" day. Reads in from `phenology_heatsum_all.csv` and outputs to `phenology_heatsum.csv`

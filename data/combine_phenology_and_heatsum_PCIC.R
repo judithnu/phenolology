@@ -10,10 +10,10 @@ library(viridis)
 
 
 #rawdat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
-phendat <- read.csv('~/Documents/phd_sus/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv', stringsAsFactors = FALSE)
+phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv', stringsAsFactors = FALSE)
 phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 
-climdat <- read.csv('~/Documents/phd_sus/data/Climate/formatted/PCIC_all_seed_orchard_sites.csv', header = TRUE) %>%
+climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites.csv', header = TRUE) %>%
     mutate(DoY = yday(Date))
 
 # Functions ----------------------------------
@@ -268,7 +268,7 @@ phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
 
 
 
-write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum.csv", row.names = FALSE)
+write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum_all.csv", row.names = FALSE)
 write.csv(gclim, "~/Documents/research_phenolology/data/all_clim_PCIC.csv", row.names=FALSE)
 
 ## Checks ################
