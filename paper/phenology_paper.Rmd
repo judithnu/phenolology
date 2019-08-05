@@ -15,12 +15,37 @@ library(knitr)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r global}
+forcingtype = "scaled_ristos"
+```
+
 ```{r depends, echo=FALSE, warning=FALSE}
-library(dplyr)
+
 library(rstan)
 library(rethinking)
 library(bayesplot)
-library(stringr)
+library(tidyverse)
+```
+
+```{r data}
+# combined phenology and weather data 
+phenology_data <- read.csv("data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+  filter(forcing_type==forcingtype)
+
+# seed orchard provenances
+SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+                    header=TRUE, stringsAsFactors = FALSE) %>%
+  dplyr::select(SPU_Name, Orchard) %>%
+  rename(Provenance=SPU_Name)
+
+
+# join provenance and phenology data
+
+dat <- phenology_data %>%
+  na.omit() %>%
+  left_join(SPU_dat) %>%
+  unique()
+
 ```
 # Introduction
 As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
@@ -103,17 +128,35 @@ Most provenances are represented at 2 to 3 sites and have at least three years o
 Protocol C in [@Woods1996] was used as the basis for collecting pollen shed and cone receptivity data, though operational constraints led to some modifications. Workers monitored seed orchards for the beginning of pollen shed and cone receptivity. ~15 clones, usually represented by 2 trees each, were selected for specific observations. When the active period seemed to be starting, workers went into the orchard every few days to make observations on the selected trees.
 
 Stages of pollen and seed cone development are described by [Owens & Molder 1984 and updated in Owens2006] and were used as a general guide for determining the phenological state of pollen and seed cones. Pollen cones are flowering when tapping causes pollen to be released and seed cones are flowering when there are gaps between the bract-scale complexes. Pollination drops are also produced during flowering, though they recede midday if pollen is not present [@Owens2006]. 
+q8
 
 "Flowering" states were recorded for both pollen shed and cone receptivity at the level of each tree. Protocol C recommends marking the dates when 20% of the cones on a tree have begun flowering and when 80% of the cones on a tree have finished flowering. Operationally, there was some subjectivity and tree-level states for each cone type should be interpreted as "starting flowering" and "finished flowering." There is some subjectivity here. 
 
-[DESCRIBE SURVEY PERIODS, MAYBE MAKE A TABLE OR GRAPH OF OBSERVATION DATES?]
+[DESCRIBE SURVEY PERIODS]
+```{r surveys}
+# Index by Site, Provenance, and Year
+dat$spyind <- group_indices(dat, Site, Year, Provenance)
+
+surveydf <- select(dat, spyind, Year, Site, Provenance, DoY) %>%
+  distinct()
+
+ggplot(surveydf, aes(x=DoY, y=as.factor(spyind), color=Provenance, shape=Site)) +
+  geom_point() +
+  geom_line() +
+ facet_grid(rows=vars(Site,Year), scales="free_y") +
+  scale_color_viridis_d(option="C") +
+  scale_shape_manual(values=c(1:7)) +
+  theme_bw(base_size = 15) +
+  theme(strip.text.y = element_text(angle = 0), axis.text.y = element_blank(), axis.ticks = element_blank(), axis.title.y = element_blank(), panel.border=element_blank(), panel.grid.minor.y=element_blank(), panel.grid.major.y = element_blank()) +
+  ggtitle("Observation Dates")
+```
 
 Observations were not made every day and survey periods varied in length. At Prince George, not all trees have complete phenological records, *e.g* if a tree is not flowering on the first day of observation, the start date is unknown. 
 
 
 ##### Harmonization and cleaning
 
-Describe data transcription and cleaning.
+[DESCRIBE DATA TRANSCRIPTION AND CLEANING].
 
 There were some differences in how data was recorded at the Prince George Tree Improvement Station versus the other sites. At Prince George, trees were marked as flowering or not flowering on each day of observation. At other sites, only the first day observed flowering and the first day observed finished flowering were recorded. I inferred that trees were not yet flowering on observation days prior to their first recorded flowering date. I cleaned and harmonized the data for analysis in a single model using R scripts provided so that, for pollen cones and seed cones, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 finished flowering. 
 
