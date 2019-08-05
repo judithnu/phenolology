@@ -509,3 +509,6 @@ in the AdapTree project, lodgepole pine seedlings grown for three to four weeks 
 Thus, I expect to be able to disregard the state of chilling and fit only Equations \ref{forcing} and \ref{simp_force_amt}).
 Once the model is parameterized I will be able to calculate the timing of pollen shed and cone receptivity across the lodgepole pine species range using location specific climate data from seed orchards and ClimateWNA [@Wang2012]. 
 I will validate the model by comparing predictions to phenological measurements from the National Phenology Network.
+
+# Acknowledgements
+Thanks to R. Johnstone for help with transcription. GySgt T. Kerr, Ret. provided invaluable commentary on an earlier draft.
