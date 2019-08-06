@@ -31,6 +31,7 @@ library(tidyverse)
 # combined phenology and weather data 
 phenology_data <- read.csv("data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
   filter(forcing_type==forcingtype)
+phenology_data_model <- read.csv("data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
 
 # seed orchard provenances
 SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
@@ -47,6 +48,11 @@ dat <- phenology_data %>%
   unique()
 
 ```
+
+# Abstract
+
+I can take a record of daily temperature and estimate when a lodgepole pine will have receptive cones or be shedding pollen.
+
 # Introduction
 As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
 This effect is already obvious in many species [@Parmesan2006; @Franks2014]. 
@@ -81,8 +87,9 @@ Protandry occurs in particularly hot and dry years [@Owens2005]. If this pattern
 
 This paper relies on 15 year pollination phenology data set collected in British Columbia lodgepole pine seed orchards. Seed orchards produce seed for reforestation. While not set up as common gardens, several provenances are typically represented at each  site allowing testing for provenance effects and genetic x environmental interaction. and genotypes usually appear multiple times within a site and sometimes at multiple sites.
 
-I will use pollination phenology and temperature data to fit a mechanistic model predicting pollen shed and cone receptivity across the entire range of *Pinus contorta* var. *latifolia* and consider how the date and length of pollination phenology periods vary normally and under several climate change scenarios. 
-Specifically, I will answer 1) What is the relationship between temperature and pollen shed and temperature and cone receptivity timing and length? 2) Does provenance affect that relationship? 3) How many days will pollination phenology shift under the next 30, 60, and 90 years of climate change 4) Will protandry become more common?
+I will use pollination phenology and temperature data to fit a model predicting pollen shed and cone receptivity in *Pinus contorta* var. *latifolia*.
+
+Specifically, I will answer 1) What is the relationship between temperature and pollen shed and temperature and cone receptivity timing and length? 2) Does provenance affect that relationship? 3) How does pollination phenology vary between cold and hot years? 4) Will protandry become more common?
 
 # Methods
 
@@ -90,7 +97,7 @@ My aim was to model pollination phenology in lodgepole pine and calculate synchr
 
 ## Study species
 
-Lodgepole pine is a wind-pollinated conifer with an extensive range and well documented local adaptation. While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Pollen and seed cone buds differentiate in late summer and early fall, then go dormant. As temperatures warm the following year, buds resume development and strobili "flower"; receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
+Lodgepole pine is a wind-pollinated monecious conifer with an extensive range and well documented local adaptation. While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Pollen and seed cone buds differentiate in late summer and early fall, then go dormant. As temperatures warm the following year, buds resume development and strobili "flower"; receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
 
 ![Rangemap of lodgepole pine. After @Little1971 \label{range}.](/home/sus/Documents/research_phd/maps/SpeciesDistribution/distmap_pincon.png)
 
@@ -98,28 +105,28 @@ Lodgepole pine is a wind-pollinated conifer with an extensive range and well doc
 
 #### Phenology Data
 
-This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards. Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. In the 90s, it became apparent that seed yields at seed orchards in the southern interior were much lower than in more northern seed orchards. To plan for future seed production and orchard establishment and management, seed orchard managers monitored pollination phenology and seed production to understand why seed yields at north Okanagan orchards were lower than at the Prince George Tree Improvement Station orchards. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@Webber2007]. 
+This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards. Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. To plan for future seed production and orchard establishment and management, seed orchard managers monitored pollination phenology and seed production. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@Webber2007]. Collection continued intermittently through 2012.
 
 
 ##### Sites
-Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 7 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another around Vernon, BC, but sites span about 5 $^\circ$ of latitude and are at elevations from 466 to 638 m.
+Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 7 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another around Vernon, BC. Sites span about 5 $^\circ$ of latitude and are at elevations from 466 to 638 m.
 
-![Map of seed orchard locations. Seed orchard locations are in red. Weather data gridpoints are in blue. Boxed area in map on left is shown in greater detail on the right. ](/home/sus/Documents/research_phd/maps/SiteMaps/sitemapwithPCIC.png)
+![Map of seed orchard locations. Seed orchard locations are in red. Weather data gridpoints are in blue. Boxed area in map on left is shown in greater detail on the right. \label{Sites} ](/home/sus/Documents/research_phd/maps/SiteMaps/sitemapwithPCIC.png)
 
 
 ##### Provenances
-Trees grown at the seed orchard sites were sourced from 6 biogeoclimate regions known as Seed Planning Units (SPUs). Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
+Trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
-I obtained pollination phenology records from 17 of the 26 lodgepole pine seed orchards in British Columbia. Orchards include the offspring of trees from 6 of the 7 BC seed planning zones (SPZs) (Figure \ref{SPZ}) grown at at 7 sites across BC. SPZs are biogeoclimatic and political units used for seed planting purposes by British Columbia. SPZs are divided into elevation bands called Seed Planning Units (SPUs), which form this project's provenances. 
+I obtained pollination phenology records from 17 of the 26 lodgepole pine seed orchards in British Columbia. Orchards include the offspring of trees from 5 of the 13 BC seed planning zones (SPZs) [SPZ REFERENCE OR FIGURE?] grown at at 7 sites across BC. SPZs are biogeoclimatic and political units used for seed planting purposes by British Columbia. SPZs are divided into elevation bands called Seed Planning Units (SPUs), which form this project's 7 provenances \ref{SPU}. 
 
 Thirteen out of 17 orchards in my data set are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.
 
-Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology.
+Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone, PGTIS typically observed 2-4 ramets per clone.
 
 ![Contingency table of years of data for Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](/home/sus/Documents/research_phd/phd_proposal/figure/contingencytable.png)
 
 
-![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPZ}](/home/sus/Documents/research_phd/maps/SPUmaps/SPUmap_subset.png)
+![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPU}](/home/sus/Documents/research_phd/maps/SPUmaps/SPUmap_subset.png)
 
 [table with Site Columns and SPU rows with years of data as values]
  [table of number of trees/clones in a given year for a given site/spu combo]
@@ -168,6 +175,10 @@ There are three phenological stages of interest each for a tree's male and femal
 
 Phenophases in the field were recorded using different symbol sets and resolutions. I assigned each symbol to one of the phenophases above. Trees that did not produce cones are assigned phenological stage 0.
 
+In total, there were `r nrow(phenology_data)` usable observations of phenological state.
+
+Some observations at the Prince George Tree Improvement Station Site were redundant and were dropped for modeling. For example, if a tree's pollen cones were recorded as "finished flowering" for 3 days, only the first observation was kept - phenological states are not reversible. This improved the speed of model fitting.
+
 
 ```{r phenophase_derivation, echo=FALSE}
 no_flowers <- '0'
@@ -188,21 +199,22 @@ kable(phenophase_legend, padding = 0)
 
 #### Weather data
 
-Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet was used for each station. Mean daily temperature was calculated from the minimum and maximum daily temperatures.
+Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each station \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures provided by PNWNAmet.
 
-![Map of Sites with nearest climate gridpoints](/home/sus/Documents/research_phd/maps/SiteMaps/siteswithclimategrid.png)
+FIGURE SUMMARIZING RAW MEAN TEMPERATURES?
 
 #### Forcing units
 
-The relative effect of mean daily temperature $t$ on the rate of forcing was calculated with
+Flowering is a developmental process that speeds up and slows down according to the current temperature. Forcing units describe the relative effect of temperature on development and observable phenological events occur only after a certain amount of forcing has accumulated. The mean daily temperature $t$ was mapped to forcing units with a function that describes the relationship between temperature and development rate.
 
-$$R(t) = \frac{28.4}{1+ e^{-0.185*t-18.4}}$$
-which describes the relationship between temperature and development rate. This equation for forcing units is based on experimental work from Risto Sarvas with in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990]. @Chuine1999 found this calculation of forcing units superior to degree day calculations.  
+$$R(t) = \frac{1}{1+ e^{-0.185*t-18.4}}$$
+This equation for forcing units is based on experimental work from in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990] and is verified to perform better than growing degree day models by Chuine [@Chuine1999].
+
 Forcing Units on day $d$ ($f_d$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
 
 $$f(d) = \sum_{i=1}^d R_d(x)$$
 
-The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and verified to perform better than growing degree day models by Chuine [@Chuine1999]
+The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and 
 
 
 ## Phenology Modeling 
