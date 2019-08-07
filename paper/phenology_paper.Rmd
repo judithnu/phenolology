@@ -208,23 +208,21 @@ FIGURE SUMMARIZING RAW MEAN TEMPERATURES?
 Flowering is a developmental process that speeds up and slows down according to the current temperature. Forcing units describe the relative effect of temperature on development and observable phenological events occur only after a certain amount of forcing has accumulated. The mean daily temperature $t$ was mapped to forcing units with a function that describes the relationship between temperature and development rate.
 
 $$R(t) = \frac{1}{1+ e^{-0.185*t-18.4}}$$
-This equation for forcing units is based on experimental work from in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990] and is verified to perform better than growing degree day models by Chuine [@Chuine1999].
+This equation for forcing units is based on experimental work in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990] and is verified to perform better than growing degree day models by Chuine [@Chuine1999].
 
-Forcing Units on day $d$ ($f_d$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
+Accumulated forcing units on day $d$ ($f(d)$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
 
 $$f(d) = \sum_{i=1}^d R_d(x)$$
 
-The rate of forcing was experimentally determined by Sarvas [@Sarvas1972] and 
+Cooler sites, like Prince George, accumulate forcing slower than warmer sites like Kalamalka.
 
+ACCUMULATED FORCING UNITS FIGURE
 
 ## Phenology Modeling 
 
-I modeled the derived phenological states with a Bayesian multilevel ordered logistic model fit in Stan with the no-u-turn sampler [@standevelopmentteamRStanInterfaceStan2018]. A cumulative link function (in this case logistic) accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states and estimates intercepts (typically called "cutpoints" in ordered regression models) that separate each state. 
-
-The model was fit separately to data for male strobili and female strobili.
+I modeled phenological states as a function of accumulated forcing units with a Bayesian multilevel ordinal logistic model fit in Stan with the No-U-Turn Sampler [@standevelopmentteamRStanInterfaceStan2018]. The model was fit separately to data for male strobili and female strobili. A logistic cumulative link function accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states. The model parameters describe a probability function for each state. Cutpoints $\kappa$ separate each state while the slope parameter of the linear model influences the steepness of the curves. Transitions between phenological states happen rapidly when the slope is large and slowly when it is small. 
 
 The likelihood of being in state $s \in \{1,2,3\}$ is
-
 
 $$\mathrm{Pr}(S=s)=\text{OrderedLogistic}(s~|~\eta,\kappa) = \left\{ \begin{array}{ll} 1 -
 \text{logistic}(\eta - \kappa_1)  &  \text{if } s = 1 \\[4pt]
@@ -232,16 +230,9 @@ $$\mathrm{Pr}(S=s)=\text{OrderedLogistic}(s~|~\eta,\kappa) = \left\{ \begin{arra
 \text{if } s=2  \\[4pt] \text{logistic}(\eta -
 \kappa_2) - 0  &  \text{if } s = 3 \end{array} \right.$$
 
-where the cutpoints $\kappa_s < \kappa_{s+1}$ and $\eta$ is a linear model relating forcing units to phenological state. $\beta$ parameters in $\eta$
+where the cutpoints $\kappa_s < \kappa_{s+1}$ and $\eta$ is a linear model.
 
-Slope parameters ($\beta_{foo}$) in $\eta$
-
-Cumulative probability curves can be plotted for each transition
-
-probability transitioned = pOrderedLogistic(kappa_{i}, \eta)
-
-
-
+[CORRECT THIS TO MATCH STAN CODE]
 $$\begin{array}{rlr}
 S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \eta_i & = (\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
@@ -257,43 +248,29 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{clone} & \sim \mathrm{exponential}(3) \\
 \end{array}$$
 
-I tried to use weakly informative priors, but simulations or more reading are required to decide if these are actually weakly informative or if they are too diffuse. Plotting the prior distributions with the parameter values would also probably help. 
-
-Another way to think about the probabilities in this model:
-
-$$\begin{array}{rll}
-S_i&\sim \mathrm{Categorical}(\bf{p}) &\text{probability of data} \\
-p_1 & = q_1 &\text{probabilities of each value of } k\\
-p_2 & = q_2 - q_1 \\
-p_3 & = 1-q_3 \\
-logit(q_k) &= \kappa_k - \eta_i &\text{cumulative logit link} \\
-\eta_i&= (\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model} &\text{linear model}\\
-\\
-\end{array}$$
-
-
-To quantify accuracy of the model, I will calculate the difference in variance within and between populations. Only phenological differences larger than the within population variance will be considered. The maps and parameters of these models can be compared to answer the following questions.
+The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. 
 
 #### Flowering period timing and length
 
-Forcing units required to induce cone receptivity and pollen shed.
+I defined the beginning of the flowering period as the point at which a tree was 20% likely to have passed out of stage 1 and the end of the flowering period as the probability at which a tree was 80% likely to have passed out of stage 2. This is equivalent to 20% of the trees in the population having reached stage 2 and 80% having reached stage 3.
 
-I considered the beginning of the phenological period as the probability at which a tree was 20% likely to have passed out of stage 1 and the end of the phenological period as the probability at which a tree was 80% likely to have passed out of stage 2. This is equivalent to 20% of the trees in the population having reached stage 2 and 80% having reached stage 3.
-
-The probability that a tree has passed out of a given stage $k$ is
-
-$$Pr(s_i > k) = \mathrm{logistic}(\vec{\beta}f_i-\kappa_k)$$
-The accumulated forcing units at which flowering is considered to start $f_{start}$ is 
-
-$$ \mathrm{Pr}(s_i>1) = 0.2 = \mathrm{logistic}(\mathbf{\vec\beta f_{start}}-\kappa_1)\\
-f_{start} = \frac{\log(\frac{.2}{1-.2}) + \kappa_1}{\vec\beta}
+The accumulated forcing units required to reach the beginning of the flowering period, $fbegin_i$, is 
+$$ \begin{array}{rl}
+\mathrm{Pr}(s_i > 1) = 0.2 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f_i) \\
+fbegin_i & = \frac{\mathrm{logit}(0.2)}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
+\end{array}
 $$
 
-and, similarly $f_end$ is
-$$ 
 
-f_{end} = \frac{\log(\frac{.8}{1-.8}) + \kappa_1}{\vec\beta}
+The accumulated forcing units required to reach the end of the flowering period, $fend_i$, is 
+
+$$ \begin{array}{rl}
+\mathrm{Pr}(s_i > 2) = 0.8 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f_i - \kappa_1) \\
+fend_i & = \frac{\mathrm{logit}(0.8) + \kappa_1}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
+\end{array}
 $$
+
+STOP
 
 I calculated $f_{start}$ and $f_{end}$ for all clone site provenance year groupings in the dataset for all draws. The range of forcing units that stage 2 occurs over, *i.e.* the active phenological period, is 
 
@@ -325,6 +302,8 @@ $$\mathrm{H50}_{prov_i} - \mathrm{H50}_{prov_j} = \beta_{prov_j} - \beta_{prov_2
 Chilling requirements are met and chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Both phases occur at the same rate.
 
 # Results
+
+[FIGURE SHOWING THE PROPORTION OF TREES THAT HAVE REACHED STAGE 2 AND STAGE 3 AT EACH SITE/PROV COMBINATION over forcing units]
 
 1) How strong are the genetic vs. environmental effects on pollination phenology?
 
