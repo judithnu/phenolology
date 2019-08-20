@@ -51,7 +51,36 @@ dat <- phenology_data %>%
 
 # Abstract
 
-I can take a record of daily temperature and estimate when a lodgepole pine will have receptive cones or be shedding pollen.
+The timing and duration of pollen shed and cone receptivity in lodgepole pine affects fecundity, gene flow, and adaptation in the species. Being able to predict floering phenology in the past and present will help us understand patterns of local adaptation and population structure. Using a 14 year dataset collected at 7 sites, I built a multilevel Bayesian model of lodgepole pine flowering phenology and used it to determine the amount of forcing required to begin and end the flowering period for both male and female strobili. With this method, any record of mean daily temperature can be used to estimate lodgepole pine flowering phenology. 
+
+# Outline intro
+Pollination phenology is important because
+- gene flow, dispersal - spatial and temporal variation
+- reproduction, demography
+- assisted migration, conservation
+- seed orchard operations, commercial/agricultural/breeding
+
+While vegetative phenology has been the focus of much research, pollination phenology is relatively unexplored in conifers. The focus is usually on day of year and comparing provenances, looking for local adaptation. They aren't predictive. 
+- examples
+
+Benefits of predictive/mechanistic models
+- climate change
+- predict out of dataset
+
+Predictive models are scarce because they rely on excellent phenological records with high quality temperature datasets.
+- counterexamples with strengths and weaknesses
+
+Such a record does exist for lodgepole pine in British Columbia.
+- BC seed orchards, collection rationale, existing dataset
+
+Understanding the precise relationship between temperature and pollination phenology is valuable in lodgepole because
+- it's an economically important species with lots of replanting and we need to understand how populations we're planting on the landscape will interact with local populations
+- lots of phenotypic and genomic data available in lodgepole pine. Local adaptation, population structure. Understanding temporal and spatial variation in pollination phenology could help disentangle effects on population differentation (local adaptation, gene flow, etc) and explain population structure.
+- Pine pollen can be an allergan and appears to be made worse of one when it interacts with certain kinds of pollution. Knowing when pollen will be produced is very helpful for people with allergies, esp since medication works best if taken in advance.
+
+In this paper, I build a predictive model of pollination phenology in lodgepole pine that estimates the amount of forcing required to cause lodgepole pine to begin and end flowering. Using these estimates, any record of mean daily temperature can be used to predict the timing and duration of flowering in lodgepole pine.
+
+I confirm that pollination phenology in lodgepole pine is not strongly influenced by provenance, then used the model results to calculate variation in the timing and length of phenological period at 7 sites in British Columbia between 1997 and 2011. Last, I considered how a business-as-usual climate change scenario may affect pollination phenology throughout this century.
 
 # Introduction
 As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
@@ -197,15 +226,23 @@ phenophase_legend <- data.frame(Phenophase = derived_phenophase, Symbols = recor
 kable(phenophase_legend, padding = 0)
 ```
 
+[Figure showing phenology data somehow]
+
 #### Weather data
 
 Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each station \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures provided by PNWNAmet.
 
+As the PNWNAmet gridpoints do not exactly align with the sites, a correction for elevation was applied using the dry adiabatic lapse rate.
+
+$$t_{site} = t_{gridpoint} + \left(\frac{10^{\circ}\mathrm{C}}{1000 \mathrm{m}}\right)\left(elevation_{site} - elevation_{gridpoint}\right)$$
+
 FIGURE SUMMARIZING RAW MEAN TEMPERATURES?
+
+Figure X shows the corrected and uncorrected temperatures with temperatures collected by seed orchard workers at the sites using automated data loggers. In the figure, PNWNAmet temperatures have been translated to growing degree days with a 5$^{\circ}$C threshold because only GDD calculated from the logged data was available from the sites.
 
 #### Forcing units
 
-Flowering is a developmental process that speeds up and slows down according to the current temperature. Forcing units describe the relative effect of temperature on development and observable phenological events occur only after a certain amount of forcing has accumulated. The mean daily temperature $t$ was mapped to forcing units with a function that describes the relationship between temperature and development rate.
+Flowering is a developmental process that speeds up and slows down according to the current temperature. Forcing units describe the relative effect of temperature on development. Observable phenological events occur only after a certain amount of forcing has accumulated. The mean daily temperature $t$ was mapped to forcing units with a function that describes the relationship between temperature and development rate.
 
 $$R(t) = \frac{1}{1+ e^{-0.185*t-18.4}}$$
 This equation for forcing units is based on experimental work in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990] and is verified to perform better than growing degree day models by Chuine [@Chuine1999].
@@ -216,7 +253,7 @@ $$f(d) = \sum_{i=1}^d R_d(x)$$
 
 Cooler sites, like Prince George, accumulate forcing slower than warmer sites like Kalamalka.
 
-ACCUMULATED FORCING UNITS FIGURE
+[ACCUMULATED FORCING UNITS FIGURE]
 
 ## Phenology Modeling 
 
@@ -248,12 +285,20 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{clone} & \sim \mathrm{exponential}(3) \\
 \end{array}$$
 
-The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. 
+The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
+
+Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run for [X] iterations of which [Y] were warmup [See code].
+
+#### Model Assumptions 
+I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for how very cold temperatures and very warm temperatures damage tissues and cause abnormal development. [Cite Sarvas's weird hot stuff and some late spring phenology]
+
+#### Model diagnostics
 
 #### Flowering period timing and length
 
 I defined the beginning of the flowering period as the point at which a tree was 20% likely to have passed out of stage 1 and the end of the flowering period as the probability at which a tree was 80% likely to have passed out of stage 2. This is equivalent to 20% of the trees in the population having reached stage 2 and 80% having reached stage 3.
 
+##### Begin and end of flowering period
 The accumulated forcing units required to reach the beginning of the flowering period, $fbegin_i$, is 
 $$ \begin{array}{rl}
 \mathrm{Pr}(s_i > 1) = 0.2 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f_i) \\
@@ -270,15 +315,35 @@ fend_i & = \frac{\mathrm{logit}(0.8) + \kappa_1}{\beta + \beta_{site} +\beta_{pr
 \end{array}
 $$
 
-STOP
 
-I calculated $f_{start}$ and $f_{end}$ for all clone site provenance year groupings in the dataset for all draws. The range of forcing units that stage 2 occurs over, *i.e.* the active phenological period, is 
+I calculated $f_{start}$ and $f_{end}$ for all combinations of clone, site, provenance, and year that occur in the dataset for all samples from the posterior. The range of forcing units that stage 2 occurs over, *i.e.* the flowering period, is 
 
-$$ range = f_{start} - f_{end}$$
+$$ frange = fend-fbegin$$
 
-#### Dates
 
-$f_{start}$ and $f_{end}$ were matched to corresponding dates. Because $\beta_{year}$ is included as an effect, $f_{start}$ and $f_{end}$ are specific to the year the data was collected.
+##### Translating between accumulated forcing units and days
+While $fbegin$ and $fend$ are constant for a given combination of clone, site, provenance, (and year???), $dbegin$ and $dend$ differ from year to year and location to location. For years and locations of interest, accumulated forcing units were calculated from mean daily temperatures and used to translate between accumulated forcing units and day of year. The day of year that the accummulated forcing unit reached at least $fbegin$ or $fend$ was $dbegin$ or $dend$. The length of the phenological period was then calculated as
+
+$$length=dend-dbegin$$
+
+???Because $\beta_{year}$ is included as an effect, $f_{start}$ and $f_{end}$ are specific to the year the data was collected.???
+
+#### Model checking/Posterior predictive checks
+
+To check the usefulness of the model, the data was compared to model predictions. I calculated the point at which at least 50% of trees of a given sex in a given year at a given site from a given provenance had begun flowering ($f50_{obs}$). Then, 30 phenological states were simulated from the model at [Z] accumulated forcing units between [X] and [Y] for each set of parameter values (model configurations) sampled from the posterior distribution . 
+
+$$s^{\prime}_i \sim \mathrm{OrderedLogistic}(\eta_i,\kappa | s) $$
+
+[Draw a diagram to explain this]
+
+The predicted accumulated forcing at which at least 50% of the trees have begun flowering $f50_{pred}$ is the lowest accumulated forcing where at least half of simulations return stage 2 or greater.
+
+Then I checked to see whether $f50_{obs}$ was in the 90% highest density interval of $f50_{pred}$.
+
+
+
+#### Average predictive comparisons
+
 
 #### Differences between provenances
 
@@ -298,10 +363,21 @@ Were calculated according to [@vandermijnsbruggeVariationBudBurst2015] - "differ
 
 $$\mathrm{H50}_{prov_i} - \mathrm{H50}_{prov_j} = \beta_{prov_j} - \beta_{prov_2}/\beta$$
 
-#### Assumptions 
-Chilling requirements are met and chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Both phases occur at the same rate.
+
 
 # Results
+
+## Model parameters
+
+## fstart and fend
+
+## Posterior predictive checks
+
+[See p. 81 in lab notebook for figure idea]
+
+## Average Predictive Comparison
+
+## Provenance differences
 
 [FIGURE SHOWING THE PROPORTION OF TREES THAT HAVE REACHED STAGE 2 AND STAGE 3 AT EACH SITE/PROV COMBINATION over forcing units]
 
