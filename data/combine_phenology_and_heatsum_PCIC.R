@@ -109,16 +109,6 @@ ggplot(filter(clim, DoY<180), aes(x=DoY, y=sum_scaled_ristos, color=Year)) +
     ggtitle("Risto Accumulation Jan-June 1997-2012") +
     theme(legend.position="none")
 
-ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
-    geom_point(alpha = 0.4, pch=4, size=.8) +
-    facet_wrap("Site") +
-    scale_color_viridis_d(option="D", end=0.6) +
-    theme_bw(base_size=20) +
-    ylab("Accumulated Forcing Units Jan-June") +
-    theme(legend.position = "none") +
-    geom_vline(aes(xintercept=122)) +
-    geom_vline(aes(xintercept =174))
-
 ggplot(clim, aes(x=ristos, y=Heat)) +
     geom_point() +
     geom_abline(slope=1, intercept=0)

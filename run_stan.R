@@ -73,23 +73,8 @@ if(forcingtype == "gdd") { #scale growing degree days
   phenology_data$sum_forcing <- phenology_data$sum_forcing/10
 }
 
-## sample for less domination by PGTIS
-
-# foo <- phenology_data %>%
-#   filter(Site=="PGTIS" & Year %in% c(2006, 2007, 2010, 2011, 2005))
-#
-# uclone <- unique(foo$Clone) %>%
-#   base::sample(size=15)
-#
-# pgtis_sampled <- foo %>%
-#   filter(Clone %in% uclone)
-#
-# nopgtis <- filter(phenology_data, Site != "PGTIS")
-#
-# phenology_data <- full_join(pgtis_sampled, nopgtis)
-
 ## provenance
-SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard)
 
