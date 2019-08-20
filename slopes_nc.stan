@@ -18,7 +18,7 @@ parameters{
     positive_ordered[K-1] kappa;
     real<lower=0> beta;
     vector[Nsite] b_site;
-    vector[Nprovenance] b_prov;
+    vector[Nprovenance] z_prov;
     vector[Nclone] b_clone;
     vector[Nyear] z_year;
     real<lower=0> sigma_site;
@@ -29,12 +29,15 @@ parameters{
 
 transformed parameters{
   real b_site_mean;
-  real b_prov_mean;
   real b_clone_mean;
+  vector[Nprovenance] b_prov;
   vector[Nyear] b_year;
   real b_year_mean;
+  real b_prov_mean;
   
+  b_prov = z_prov*sigma_prov;
   b_year = z_year*sigma_year;
+  
   b_site_mean = mean(b_site);
   b_prov_mean = mean(b_prov);
   b_clone_mean = mean(b_clone);
@@ -52,12 +55,12 @@ model{
     sigma_clone ~ exponential( 5 );
     sigma_year ~ exponential( 5 );
     b_site ~ normal( 0 , sigma_site );
-    b_prov ~ normal( 0 , sigma_prov );
+    z_prov ~ normal( 0 , 1 );
     b_clone ~ normal( 0 , sigma_clone );
     z_year ~ normal( 0 , 1 );
 
     for ( i in 1:N ) {
-        phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]] + b_clone[CloneID[i]] + z_year[YearID[i]]*sigma_year);
+        phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + z_prov[ProvenanceID[i]]*sigma_prov + b_clone[CloneID[i]] + z_year[YearID[i]]*sigma_year);
     }
     for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );
 }
