@@ -19,7 +19,8 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 
 # MODEL DATA #####################
 
-ffit.stan <- readRDS("slopes_ristos_scaled_FEMALE.rds")
+#ffit.stan <- readRDS("slopes_ristos_scaled_FEMALE.rds")
+ffit.stan <- readRDS("slopes_scaled_ristos_FEMALEnc_yp.rds")
 mfit.stan <- readRDS("slopes_ristos_scaled_MALE.rds")
 
 fshiny <- as.shinystan(ffit.stan)
@@ -59,7 +60,7 @@ mrhats <- rhat(mfit.stan)
 mratios <- neff_ratio(mfit.stan)
 
 # Diagnostics #######################
-sex = "MALE"
+sex = "FEMALE"
 
 if (sex=="FEMALE") {
     sarray <- farray
@@ -137,8 +138,9 @@ mcmc_rhat(rhats) +
 
 print("Effective sample size < 0.5 for")
 names(which(ratios < 0.5))
+badratios <- ratios[which(ratios<0.5)]
 
-mcmc_neff(ratios, size = 1.5) +
+mcmc_neff(badratios, size = 1.5) +
     yaxis_text(hjust = 1)
 
 # Autocorrelation
