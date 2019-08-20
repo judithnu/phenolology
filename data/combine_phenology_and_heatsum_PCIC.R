@@ -13,8 +13,11 @@ library(viridis)
 phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv', stringsAsFactors = FALSE)
 phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 
-climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites.csv', header = TRUE) %>%
-    mutate(DoY = yday(Date))
+#UPDATE IF MODEL WORKS WELL
+climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_corrected.csv', header = TRUE) %>%
+    mutate(DoY = yday(Date)) %>%
+    select(-mean_temp) %>%
+    rename(mean_temp = mean_temp_dry_correction)
 
 # Functions ----------------------------------
 
@@ -99,17 +102,11 @@ ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
     ggtitle("Heatsum Accumulation 1997-2012") +
     theme(legend.position="none")
 
-ggplot(clim, aes(x=DoY, y=sum_ristos, color=Year)) +
-    geom_point() +
-    facet_wrap("Site") +
-    theme_bw(base_size=18)
-
-#present accummulation
 ggplot(filter(clim, DoY<180), aes(x=DoY, y=sum_scaled_ristos, color=Year)) +
     geom_point() +
     facet_wrap("Site") +
     theme_bw(base_size=18) +
-    ggtitle("Risto Accumulation 1997-2012") +
+    ggtitle("Risto Accumulation Jan-June 1997-2012") +
     theme(legend.position="none")
 
 ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
@@ -117,27 +114,16 @@ ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
     facet_wrap("Site") +
     scale_color_viridis_d(option="D", end=0.6) +
     theme_bw(base_size=20) +
-    ylab("Accumulated Forcing Units") +
+    ylab("Accumulated Forcing Units Jan-June") +
     theme(legend.position = "none") +
     geom_vline(aes(xintercept=122)) +
     geom_vline(aes(xintercept =174))
 
-ggplot(clim, aes(x=sum_scaled_ristos, y=Heatsum, color=Year)) +
-    geom_point()
-
-ggplot(clim, aes(x=ristos_scaled, y=Heat)) +
-    geom_point()
+ggplot(clim, aes(x=ristos, y=Heat)) +
+    geom_point() +
+    geom_abline(slope=1, intercept=0)
 
 #present - how heat and gdd compare
-ggplot(clim, aes(x=mean_temp, y=ristos, color="ristos")) +
-    geom_line(size=2) +
-    geom_line(size=1.1, alpha=0.9, aes(x=mean_temp, y=Heat, color="GDD")) +
-    theme_bw(base_size=20) +
-    scale_color_viridis_d(option="D", end=0.6) +
-    ylab("Forcing Units") +
-    xlab("Mean Daily Temperature") +
-    theme(legend.position = "top")
-
 ggplot(clim, aes(x=mean_temp, y=ristos, color="ristos")) +
     geom_line(size=2) +
     geom_line(size=1.1, alpha=0.9, aes(x=mean_temp, y=Heat, color="GDD")) +
@@ -185,15 +171,7 @@ nrow(gclim) == nrow(ristoframe) + nrow(scaledristoframe) + nrow(gddframe)
 climdat$Year <- lubridate::year(climdat$Date)
 climdat$Month <- lubridate::month(climdat$Date)
 
-ggplot(climdat, aes(x=DoY, y=min_temp, color="Min")) +
-    geom_point(pch=1, alpha=0.7) +
-    facet_wrap("Site") +
-    scale_color_viridis_d(option="B", begin=0.3) +
-    geom_point(pch=1, aes(x=DoY, y=max_temp, color="Max"), alpha=0.5) +
-    geom_point(pch=1, aes(x=DoY, y=mean_temp, color="Mean", alpha=0.3)) +
-    xlab("Temperature") +
-    theme_bw(base_size=20)
-#present
+#by site
 ggplot(climdat, aes(x=as.factor(Month), y=mean_temp, fill=Site, color=Site)) +
     geom_violin(alpha=0.8) +
     xlab("Month") +
@@ -205,21 +183,7 @@ ggplot(climdat, aes(x=as.factor(Month), y=mean_temp, fill=Site, color=Site)) +
     ggtitle("Mean Temperature 1997-2011") +
     ylab("Temperature (°C)")
 
-compclim <- filter(gclim,forcing_type %in% c("ristos", "gdd")) %>%
-    filter(DoY < 180)
-
-
-#present
-ggplot(compclim, aes(x=DoY, y=sum_forcing, color=forcing_type)) +
-    geom_point(alpha = 0.4, pch=4, size=.8) +
-    facet_wrap("Site") +
-    scale_color_viridis_d(option="D", end=0.6) +
-    theme_bw(base_size=20) +
-    ylab("Accumulated Forcing Units") +
-    theme(legend.position = "none") +
-    geom_vline(aes(xintercept=122)) +
-    geom_vline(aes(xintercept =174))
-
+#overall
 ggplot(climdat, aes(x=DoY, y=mean_temp)) +
     geom_point(pch=1, alpha=0.3)+
     theme_bw(base_size=20) +
@@ -241,7 +205,7 @@ ggplot(climreduced, aes(x=DoY, y=sum_scaled_ristos, color=Site)) +
     theme_bw(base_size=20) +
     ylab("Accumulated Forcing Units") +
     theme(legend.position = "none") +
-    #geom_vline(aes(xintercept=122)) +
+    geom_vline(aes(xintercept=122)) +
     geom_vline(aes(xintercept =174)) +
     xlim(c(0,180)) +
     ylim(c(0, 35)) +
@@ -272,7 +236,3 @@ write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum_all.c
 write.csv(gclim, "~/Documents/research_phenolology/data/all_clim_PCIC.csv", row.names=FALSE)
 
 ## Checks ################
-
-
-#Test that no data dropped unintentionally
-nrow(mdf) + nrow(fdf) == nrow(phendf)
