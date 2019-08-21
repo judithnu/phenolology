@@ -7,7 +7,7 @@ output:
     toc: TRUE
   pdf_document:
     fig_caption: yes
-
+bibliography: full_zotero_library.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -29,12 +29,12 @@ library(tidyverse)
 
 ```{r data}
 # combined phenology and weather data 
-phenology_data <- read.csv("data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+phenology_data <- read.csv("../data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
   filter(forcing_type==forcingtype)
-phenology_data_model <- read.csv("data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
+phenology_data_model <- read.csv("../data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
 
 # seed orchard provenances
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard) %>%
   rename(Provenance=SPU_Name)
@@ -402,36 +402,36 @@ I will examine the variability of the start date across the range ($t_1$) to see
 ## Model summary
 
 ```{r model data}
-ffit.stan <- readRDS("FEMALE_slopes_scaled.rds")
-mfit.stan <- readRDS("MALE_slopes_scaled.rds")
-
-fsum <- rstan::summary(ffit.stan)$summary
-fsum <- as.data.frame(fsum)
-fsum$par <- rownames(fsum)
-fpost <- as.data.frame(ffit.stan)
-fpost_re <- extract.samples(ffit.stan)
-fparam_names <- colnames(fpost)
-
-flp <- log_posterior(ffit.stan)
-fnp <- nuts_params(ffit.stan) #nuts params
-
-msum <- rstan::summary(mfit.stan)$summary
-msum <- as.data.frame(msum)
-msum$par <- rownames(msum)
-mpost <- as.data.frame(mfit.stan)
-mpost_re <- extract.samples(mfit.stan)
-mparam_names <- colnames(mpost)
-
-mlp <- log_posterior(mfit.stan)
-mnp <- nuts_params(mfit.stan) #nuts params
-
-#mf
-fpost$sex <- 0
-mpost$sex <- 1
-
-
-post <- full_join(mpost, fpost) %>%
-    select(-`b_clone[260]`)
+# ffit.stan <- readRDS("../FEMALE_slopes_scaled.rds")
+# mfit.stan <- readRDS("../MALE_slopes_scaled.rds")
+# 
+# fsum <- rstan::summary(ffit.stan)$summary
+# fsum <- as.data.frame(fsum)
+# fsum$par <- rownames(fsum)
+# fpost <- as.data.frame(ffit.stan)
+# fpost_re <- extract.samples(ffit.stan)
+# fparam_names <- colnames(fpost)
+# 
+# flp <- log_posterior(ffit.stan)
+# fnp <- nuts_params(ffit.stan) #nuts params
+# 
+# msum <- rstan::summary(mfit.stan)$summary
+# msum <- as.data.frame(msum)
+# msum$par <- rownames(msum)
+# mpost <- as.data.frame(mfit.stan)
+# mpost_re <- extract.samples(mfit.stan)
+# mparam_names <- colnames(mpost)
+# 
+# mlp <- log_posterior(mfit.stan)
+# mnp <- nuts_params(mfit.stan) #nuts params
+# 
+# #mf
+# fpost$sex <- 0
+# mpost$sex <- 1
+# 
+# 
+# post <- full_join(mpost, fpost) %>%
+#     select(-`b_clone[260]`)
 ```
 
 ### Parameter estimates
@@ -440,92 +440,92 @@ Clones not included
 
 *Female*
 ```{r param female table}
-kable(
-fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
+# kable(
+# fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
 ```
 
 *Male*
 ```{r param male table}
-kable(
-msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
+# kable(
+# msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
 ```
 
 ```{r compare plot function}
 
-compare_fm <- function(femplot, mplot, nrow = 2, ...) {
-    bayesplot_grid(
-        femplot, mplot,
-        grid_args = list(nrow = nrow),
-        subtitles = c("Female",
-                      "Male"),
-        ...
-    )
-}
-
-compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
-    bayesplot_grid(
-        femplot, mplot,
-        grid_args = list(ncol = ncol),
-        subtitles = c("Female",
-                      "Male"),
-        ...
-    )
-}
+# compare_fm <- function(femplot, mplot, nrow = 2, ...) {
+#     bayesplot_grid(
+#         femplot, mplot,
+#         grid_args = list(nrow = nrow),
+#         subtitles = c("Female",
+#                       "Male"),
+#         ...
+#     )
+# }
+# 
+# compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
+#     bayesplot_grid(
+#         femplot, mplot,
+#         grid_args = list(ncol = ncol),
+#         subtitles = c("Female",
+#                       "Male"),
+#         ...
+#     )
+# }
 ```
 
 
 ```{r compare site and prov intervals}
-ggplot(post, aes(x=beta, fill=as.factor(sex))) +
-    geom_density(alpha=0.5) + 
-    ggtitle("male and female speed of transition estimates")
-
-fint_beta <- mcmc_areas(fpost, regex_pars = "beta") + ggtitle("beta")
-mint_beta <- mcmc_areas(mpost, regex_pars = "beta")
-
-compare_fm(fint_beta, mint_beta, xlim=c(0.05, 0.10))
-
-fkap <- mcmc_areas(fpost, regex_pars = "kappa")
-mkap <- mcmc_areas(mpost, regex_pars = "kappa")
-
-compare_fm_wide(fkap, mkap, xlim=c(18, 29))
-
-color_scheme_set("blue")
-fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
-mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
-
-compare_fm_wide(fint_site, mint_site) 
-
-fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
-ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
-
-compare_fm_wide(fa_sigma, ma_sigma)
-
-fa_y <- mcmc_areas(fpost, regex_pars = "year") + ggtitle("year")
-ma_y <- mcmc_areas(mpost, regex_pars = "year")
-
-compare_fm_wide(fa_y, ma_y)
+# ggplot(post, aes(x=beta, fill=as.factor(sex))) +
+#     geom_density(alpha=0.5) + 
+#     ggtitle("male and female speed of transition estimates")
+# 
+# fint_beta <- mcmc_areas(fpost, regex_pars = "beta") + ggtitle("beta")
+# mint_beta <- mcmc_areas(mpost, regex_pars = "beta")
+# 
+# compare_fm(fint_beta, mint_beta, xlim=c(0.05, 0.10))
+# 
+# fkap <- mcmc_areas(fpost, regex_pars = "kappa")
+# mkap <- mcmc_areas(mpost, regex_pars = "kappa")
+# 
+# compare_fm_wide(fkap, mkap, xlim=c(18, 29))
+# 
+# color_scheme_set("blue")
+# fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
+# mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
+# 
+# compare_fm_wide(fint_site, mint_site) 
+# 
+# fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
+# ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
+# 
+# compare_fm_wide(fa_sigma, ma_sigma)
+# 
+# fa_y <- mcmc_areas(fpost, regex_pars = "year") + ggtitle("year")
+# ma_y <- mcmc_areas(mpost, regex_pars = "year")
+# 
+# compare_fm_wide(fa_y, ma_y)
 
 ```
 
 ```{r compare clones}
-fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
-mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
-
-compare_fm_wide(fint_c, mint_c)
-```
-
-### Sex diff
-
-```{r half transitions - no effects}
-fpost$f1 <- fpost$`kappa[1]`/fpost$beta
-fpost$f2 <- fpost$`kappa[2]`/fpost$beta
-mpost$f1 <- mpost$`kappa[1]`/mpost$beta
-mpost$f2 <- mpost$`kappa[2]`/mpost$beta
-
-ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
-mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
-
-compare_fm(ff, mf)
+# fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
+# mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
+# 
+# compare_fm_wide(fint_c, mint_c)
+# ```
+# 
+# ### Sex diff
+# 
+# ```{r half transitions - no effects}
+# fpost$f1 <- fpost$`kappa[1]`/fpost$beta
+# fpost$f2 <- fpost$`kappa[2]`/fpost$beta
+# mpost$f1 <- mpost$`kappa[1]`/mpost$beta
+# mpost$f2 <- mpost$`kappa[2]`/mpost$beta
+# 
+# ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
+# mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
+# 
+# compare_fm(ff, mf)
 ```
 
 
