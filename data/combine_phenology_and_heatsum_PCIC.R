@@ -14,9 +14,9 @@ phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data
 phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 
 #UPDATE IF MODEL WORKS WELL
-climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_corrected.csv', header = TRUE) %>%
+climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_corrected.csv', header = TRUE, stringsAsFactors=FALSE) %>%
     mutate(DoY = yday(Date)) %>%
-    select(-mean_temp) %>%
+    rename(mean_temp_uncorrected = mean_temp) %>%
     rename(mean_temp = mean_temp_dry_correction)
 
 # Functions ----------------------------------
@@ -82,8 +82,6 @@ clim <- mutate(climdat, Year = year(Date))
 clim <- subset(clim, Year %in% unique(phendat$Year)) # drop climate data not in phenology dataset
 
 
-
-
 # Calculate Forcing Units and Forcing sums
 
 risto <- calculate_ristos(climate_df = clim)
@@ -147,14 +145,8 @@ colnames(gddframe)[c(5,6)] <- c("forcing", "sum_forcing")
 gclim <- rbind(ristoframe, scaledristoframe)
 gclim <- rbind(gclim, gddframe)
 
-#test
+#tests
 nrow(gclim) == nrow(ristoframe) + nrow(scaledristoframe) + nrow(gddframe)
-# gclim <- clim %>%
-#     gather(key=daily_forcing_type, value=daily_forcing, ristos, Heat, ristos_scaled) %>%
-#     tidyr::gather(key=cummulation_type, value=forcing_accum, sum_ristos, sum_scaled_ristos, Heatsum) #%>%
-#     dplyr::filter(!(daily_forcing_type == "ristos" & cummulation_type == "Heatsum")) %>%
-#     dplyr::filter(!(daily_forcing_type == "ristos" & cummulation))
-#     dplyr::filter(!(daily_forcing_type == "Heat" & cummulation_type == "forcing_units"))
 
 
 # Plot climate data ####################
@@ -212,15 +204,13 @@ phen <- phendat
 # fdat <- subset(rawdat, Sex == "FEMALE" & Source == "Rita Wagner") #female
 
 
-phendf <- merge(phen, gclim) %>%
+phendf <- dplyr::left_join(phen, gclim) %>%
     dplyr::select(-Tree, -X, -Y, -Source, -First_RF, -Last_RF) %>%
     #select(Site, Sex, Year, DoY, Index, Clone, TreeID, Phenophase_Derived, Heat, Heatsum, Orchard) %>%
     arrange(forcing_type, Site, Year, Sex, Index, Clone, DoY) %>%
     filter(!Phenophase_Derived==0) # drop trees that didn't flower
 
 phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
-
-
 
 write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum_all.csv", row.names = FALSE)
 write.csv(gclim, "~/Documents/research_phenolology/data/all_clim_PCIC.csv", row.names=FALSE)
