@@ -14,7 +14,7 @@ source('data/combine_phenology_and_heatsum_PCIC.R')
 
 # Remove redundant data
 
-# Reads in ~/Documents/research_phenolology/data/phenology_heatsum.csv"
+# Reads in ~/Documents/research_phenolology/data/phenology_heatsum_all.csv"
 
 source('data/slim_data.R')
 

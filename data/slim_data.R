@@ -9,7 +9,7 @@
 library(tidyverse)
 
 
-data <- read.csv("~/Documents/research_phenolology/data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
+data <- read.csv("~/Documents/research_phenolology/data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE)
 data$Phenophase_Derived <- as.factor(data$Phenophase_Derived)
 
 # Drop redundant data from PGTIS
