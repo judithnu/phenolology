@@ -74,7 +74,7 @@ if(forcingtype == "gdd") { #scale growing degree days
 }
 
 ## provenance
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard)
 
@@ -124,18 +124,18 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 
 
 # Fit model  #############
-test <- stan("slopes.stan",
-             model_name = paste(sex, "slopes", forcingtype),
+test <- stan("slopes_nc.stan",
+             model_name = paste(sex, "slopes_nc", forcingtype),
              data = rdump,
              chains = 1, cores = 1, warmup = 20, iter = 25
 ) # quick check for small problems
 
-fit <- stan("slopes.stan",
-            model_name = paste(sex, "slopes", forcingtype),
+fit <- stan("slopes_nc.stan",
+            model_name = paste(sex, "slopes_nc", forcingtype),
             data = rdump,
-            chains = 10, cores = 10, warmup = 1000, iter = 1300,
+            chains = 10, cores = 10, warmup = 1500, iter = 1800,
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste("slopes_", forcingtype, "_", sex, ".rds", sep=''))
+saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, ".rds", sep=''))
 
