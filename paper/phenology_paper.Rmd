@@ -230,11 +230,11 @@ kable(phenophase_legend, padding = 0)
 
 #### Weather data
 
-Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each station \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures provided by PNWNAmet.
+Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ (~ 6km) over northwest North America  [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each station \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures provided by PNWNAmet.
 
-As the PNWNAmet gridpoints do not exactly align with the sites, a correction for elevation was applied using the dry adiabatic lapse rate.
+As the PNWNAmet gridpoints do not exactly align with the sites, a correction for elevation was applied using an adiabatic lapse rate of 6.4$^{\circ}$C per 1000 m.
 
-$$t_{site} = t_{gridpoint} + \left(\frac{10^{\circ}\mathrm{C}}{1000 \mathrm{m}}\right)\left(elevation_{site} - elevation_{gridpoint}\right)$$
+$$t_{site} = t_{gridpoint} + \left(\frac{6.4^{\circ}\mathrm{C}}{1000 \mathrm{m}}\right)\left(elevation_{site} - elevation_{gridpoint}\right)$$
 
 FIGURE SUMMARIZING RAW MEAN TEMPERATURES?
 
@@ -273,21 +273,21 @@ where the cutpoints $\kappa_s < \kappa_{s+1}$ and $\eta$ is a linear model.
 $$\begin{array}{rlr}
 S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \eta_i & = (\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
-\kappa_k & \sim \mathrm{gamma}(7.5,1) & \text{fixed priors}\\
+\kappa_k & \sim \mathrm{gamma}(20,1) & \text{fixed priors}\\
 \beta & \sim \mathrm{exponential}(2) & \text{}\\
 \beta_{site} & \sim \mathrm{normal}(0,\sigma_{site}) & \text{adaptive priors}\\
 \beta_{prov} & \sim \mathrm{normal}(0,\sigma_{prov}) & \text{}\\
 \beta_{year} & \sim \mathrm{normal}(0, \sigma_{year}) \\
 \beta_{clone} & \sim \mathrm{normal}(0, \sigma_{clone}) \\
-\sigma_{site} & \sim \mathrm{exponential}(3) & \text{hyperpriors}\\
-\sigma_{prov} & \sim \mathrm{exponential}(3) \\
-\sigma_{year} & \sim \mathrm{exponential}(3) \\
-\sigma_{clone} & \sim \mathrm{exponential}(3) \\
+\sigma_{site} & \sim \mathrm{exponential}(5) & \text{hyperpriors}\\
+\sigma_{prov} & \sim \mathrm{exponential}(5) \\
+\sigma_{year} & \sim \mathrm{exponential}(5) \\
+\sigma_{clone} & \sim \mathrm{exponential}(5) \\
 \end{array}$$
 
 The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
-Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run for [X] iterations of which [Y] were warmup [See code].
+Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run [Z] chains for [X] iterations of which [Y] were warmup [See code].
 
 #### Model Assumptions 
 I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for how very cold temperatures and very warm temperatures damage tissues and cause abnormal development. [Cite Sarvas's weird hot stuff and some late spring phenology]
