@@ -37,22 +37,22 @@ tpars_clim$DoY_KR2011 <- KR2011$DoY[findInterval(tpars_clim$sum_forcing,
 tpars_clim$DoY_KAL1998 <- KAL1998$DoY[findInterval(tpars_clim$sum_forcing,
                                             KAL1998$sum_forcing) + 1]
 
-
-ggplot(filter(tpars_clim, effect == "all"), aes(x=DoY_KR2011, color=Sex, linetype=param)) +
-    geom_density(alpha = 0.5) +
-    facet_grid(SPU_Name ~ .)
-
-ggplot(filter(tpars_clim, param %in% c("fstart", "fend")), aes(x=DoY_KAL1998, color=Sex, linetype=param)) +
-    geom_density(alpha = 0.5) +
-    facet_grid(SPU_Name ~ .)
+#
+# ggplot(filter(tpars_clim, effect == "all"), aes(x=DoY_KR2011, color=Sex, linetype=param)) +
+#     geom_density(alpha = 0.5) +
+#     facet_grid(SPU_Name ~ .)
+#
+# ggplot(filter(tpars_clim, param %in% c("fstart", "fend")), aes(x=DoY_KAL1998, color=Sex, linetype=param)) +
+#     geom_density(alpha = 0.5) +
+#     facet_grid(SPU_Name ~ .)
 
 tparsgraph <- gather(tpars_clim, key="WeatherRegime", value="DoY", DoY_KAL1998, DoY_KR2011)
 
-ggplot(filter(tparsgraph, effect=="all"), aes(x=DoY, fill=Sex)) +
-    geom_histogram(alpha=0.7, binwidth=1) +
-    scale_fill_viridis_d() +
-    facet_grid(WeatherRegime ~ .) +
-    theme_bw()
+# ggplot(filter(tparsgraph, effect=="all"), aes(x=DoY, fill=Sex)) +
+#     geom_histogram(alpha=0.7, binwidth=1) +
+#     scale_fill_viridis_d() +
+#     facet_grid(WeatherRegime ~ .) +
+#     theme_bw()
 
 ## Calculate phenological period length ##############################
 
@@ -192,85 +192,64 @@ hpd_df <- full_join(full, fifty) %>%
     gather(key=end, value=value, x, xend) %>%
     arrange(interval)
 
-hpd_df <- mutate(hpd_df, y = case_when(WeatherRegime=="DoY_KAL1998" ~ 0,
-                                       WeatherRegime=="DoY_KR2011" ~ 1))
+# Graph DoY start and finish ##################
 
-# How to do an interval plot
+doyprov <- filter(tparsgraph, effect %in% c("all", "no_prov"), Sex == "FEMALE")
+ggplot(doyprov, aes(x=DoY, color=effect, linetype=side)) +
+    geom_freqpoly(size=1.1, alpha=0.8) +
+    stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
+    scale_color_viridis_d(option="B", end=0.9) +
+    facet_grid(SPU_Name ~ WeatherRegime, scales = "free_y") +
+    ggtitle("FEMALE Start and end by provenance", subtitle = "in a hot and cold year") +
+    xlab("Forcing units") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top") +
+    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3)))
 
-trans1 <- filter(hpd_df, side=="begin")
-ggplot(filter(trans1, interval=="0.99"), aes(x=value, y=y, color=WeatherRegime, size=1)) +
-    geom_line() +
-    geom_line(data = filter(trans1, interval=="0.75"), aes(x=value, y=y, size=1.5)) +
-    facet_grid(Site ~ Sex) +
-    theme_bw(base_size=16) +
+doysite <- filter(tparsgraph, effect %in% c("all", "no_site"), Sex == "FEMALE")
+ggplot(doysite, aes(x=DoY, color=effect, linetype=side)) +
+    geom_freqpoly(size=1.05, alpha=0.8) +
+    #stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
+    scale_color_viridis_d(option="B", end=.9) +
+    facet_grid(Site ~ WeatherRegime, scales = "free_y") +
+    ggtitle("FEMALE Start and end by site", subtitle = "in a hot and cold year") +
+    xlab("Forcing units") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top") +
+    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3)))
+
+doyprovcold <- filter(tparsgraph, effect %in% c("all", "no_prov"), WeatherRegime== "DoY_KR2011")
+ggplot(doyprovcold, aes(x=DoY, color=effect, linetype=side)) +
+    geom_freqpoly(alpha=0.8) +
+   # stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
+    scale_color_viridis_d(option="B", end=0.5) +
+    facet_grid(SPU_Name ~ Sex, scales = "free_y") +
+    ggtitle("Start and end by provenance in a cold year") +
+    xlab("Day of Year") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top")
+
+doysitecold <- filter(tparsgraph, effect %in% c("all", "no_site"), WeatherRegime== "DoY_KR2011")
+ggplot(doysitecold, aes(x=DoY, color=effect, linetype=side)) +
+    geom_freqpoly(alpha=0.8) +
+    # stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
+    scale_color_viridis_d(option="B", end=0.5) +
+    facet_grid(SPU_Name ~ Sex, scales = "free_y") +
+    ggtitle("Start and end by site in a cold year") +
+    xlab("Day of Year") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top")
+
+timing <- filter(tparsgraph, effect == "all")
+ggplot(timing, aes(x=DoY, color=WeatherRegime, linetype=side)) +
+    geom_freqpoly(bins=40, size=1.5, alpha=0.8) +
     scale_color_viridis_d(option="C", end=0, begin=0.7, labels=c("hot year", "cold year")) +
-    ylim(c(-1, 2)) +
-    geom_vline(xintercept=0, alpha=0.7) +
-    ggtitle("Site Effects in Days in Cold and Hot Years", subtitle = "Start Day. 75 and 95% HPDI. Negative is days earlier, positive is days later.") +
-    theme(strip.text.y = element_text(angle = 0), axis.text.y = element_blank(), axis.ticks = element_blank(), legend.position="top") +
-    xlab("Day Differences") +
-    ylab("") +
-    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3))) +
-    xlim(c(-20,20))
+    facet_grid(Sex ~ .) +
+    theme_bw(base_size=18) +
+    theme(legend.position= "top") +
+    ggtitle("Start and end of flowering in a cold and hot year")
 
-trans2 <- filter(hpd_df, side=="end")
-ggplot(filter(trans2, interval=="0.99"), aes(x=value, y=y, color=WeatherRegime, size=1)) +
-    geom_line() +
-    geom_line(data = filter(trans1, interval=="0.75"), aes(x=value, y=y, size=1.5)) +
-    facet_grid(Site ~ Sex) +
-    theme_bw(base_size=16) +
-    scale_color_viridis_d(option="C", end=0, begin=0.7, labels=c("hot year", "cold year")) +
-    ylim(c(-1, 2)) +
-    geom_vline(xintercept=0, alpha=0.7) +
-    ggtitle("Site Effects in Days in Cold and Hot Years", subtitle = "End Day. 75 and 95% HPDI. Negative is days earlier, positive is days later.") +
-    theme(strip.text.y = element_text(angle = 0), axis.text.y = element_blank(), axis.ticks = element_blank(), legend.position="top") +
-    xlab("Day Differences") +
-    ylab("") +
-    guides(size=FALSE, colour=guide_legend(override.aes = list(size=3))) +
-    xlim(c(-20,20))
-
-# provhalf <- full_join(ph1, ph2)
-# provnoprov <- filter(tpars, param %in% c("fstart", "fstart_noprov")) %>%
-#     arrange(IndSexGroup, param, iter)
-
-alleffects <- filter(provnoprov, param=="fstart")
-noprov <- filter(provnoprov, param=="fstart_noprov")
-
-provdiffs_hot <- noprov$DoY_KAL1998 - alleffects$DoY_KAL1998
-provdiffs_cold <- noprov$DoY_KR2011 - alleffects$DoY_KR2011
-
-provdiffs <- data.frame(alleffects[,c(1:12)], provdiffs_cold, provdiffs_hot)
-
-HPDI(provdiffs_hot)
-HPDI(provdiffs_cold)
-
-ggplot(provdiffs, aes(x=provdiffs_cold, fill="cold")) +
-    geom_histogram(alpha=.5) +
-    geom_histogram(aes(x=provdiffs_hot, fill="hot"), alpha=0.5) +
-    scale_fill_viridis_d(option="C") +
-    facet_grid(SPU_Name ~ Sex, scales="free_y")
-   # geom_line(data = data.frame(x=c(1,5), y=c(1,1)), aes(x=x, y=y), size=2) +
-    #xlim(c(-7,15))
-
-# what about larger site effects
-# sitenosite <- filter(tpars, param %in% c("fhalf1", "fhalf1_nosite")) %>%
-#     arrange(IndSexGroup, param, iter)
-
-alleffects <- filter(sitenosite, param=="fhalf1")
-nosite <- filter(sitenosite, param=="fhalf1_nosite")
-
-sitediffs_hot <- nosite$DoY_KAL1998 - alleffects$DoY_KAL1998
-sitediffs_cold <- nosite$DoY_KR2011 - alleffects$DoY_KR2011
-
-sitediffs <- data.frame(alleffects[,c(1:12)], sitediffs_cold, sitediffs_hot)
-
-HPDI(sitediffs_hot)
-HPDI(sitediffs_cold)
-
-ggplot(sitediffs, aes(x=sitediffs_cold, fill="cold")) +
-    geom_histogram(alpha=.5) +
-    geom_histogram(aes(x=sitediffs_hot, fill="hot"), alpha=0.5) +
-    scale_fill_viridis_d(option="C") +
-    facet_grid(Site ~ Sex, scales="free_y")
-# geom_line(data = data.frame(x=c(1,5), y=c(1,1)), aes(x=x, y=y), size=2) +
-#xlim(c(-7,15))

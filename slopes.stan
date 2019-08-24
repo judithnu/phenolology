@@ -42,13 +42,13 @@ transformed parameters{
 model{
     vector[N] phi;
     beta ~ exponential(2);
-    kappa ~ gamma( 7.5 , 1 );
+    kappa ~ gamma( 20 , 1 );
 
     // adaptive priors on effects
-    sigma_site ~ exponential( 6 );
-    sigma_prov ~ exponential( 6 );
-    sigma_clone ~ exponential( 6 );
-    sigma_year ~ exponential( 6 );
+    sigma_site ~ exponential( 5 );
+    sigma_prov ~ exponential( 5 );
+    sigma_clone ~ exponential( 5 );
+    sigma_year ~ exponential( 5 );
     b_site ~ normal( 0 , sigma_site );
     b_prov ~ normal( 0 , sigma_prov );
     b_clone ~ normal( 0 , sigma_clone );

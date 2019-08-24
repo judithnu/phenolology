@@ -655,5 +655,15 @@ If cutpoints prior is a single gamma distribution, cutpoints are not returned we
 
 Also want to try 
 - modeling cutpoints with separate linear models
- 
 
+## What about a model with real data?
+ 
+```{r real data}
+maledat <- dplyr::filter(phendf, Sex == "MALE")
+rfit <- bayespolr(as.factor(Phenophase_Derived) ~ forcing + as.factor(Site) + as.factor(SPU_Name) + as.factor(Site)*as.factor(SPU_Name), data=maledat)
+summary(rfit)
+
+rfit <- bayespolr(as.factor(Phenophase_Derived) ~ forcing * as.factor(Site) * as.factor(SPU_Name), data=maledat)
+
+rfit <- bayespolr(as.factor(Phenophase_Derived) ~ forcing * as.factor(Site) * as.factor(SPU_Name) - as.factor(Site) - as.factor(SPU_Name), data=maledat) 
+```
