@@ -14,10 +14,10 @@ phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data
 phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 
 #UPDATE IF MODEL WORKS WELL
-climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_corrected.csv', header = TRUE, stringsAsFactors=FALSE) %>%
+climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_orcharddatacorrection.csv', header = TRUE, stringsAsFactors=FALSE) %>%
     mutate(DoY = yday(Date)) %>%
     rename(mean_temp_uncorrected = mean_temp) %>%
-    rename(mean_temp = mean_temp_dry_correction)
+    rename(mean_temp = mean_temp_corrected)
 
 # Functions ----------------------------------
 
@@ -79,7 +79,10 @@ calculate_scaled_ristos <- function(climate_df) {
 
 # Climate data processing
 clim <- mutate(climdat, Year = year(Date))
-clim <- subset(clim, Year %in% unique(phendat$Year)) # drop climate data not in phenology dataset
+ clim <- subset(clim, Year %in% unique(phendat$Year)) # drop climate data not in phenology dataset
+
+
+
 
 
 # Calculate Forcing Units and Forcing sums
@@ -93,12 +96,13 @@ clim <- dplyr::full_join(risto, clim5) %>%
     dplyr::full_join(risto_scaled)
 
 #check nothing weird happened
-ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
-    geom_point() +
-    facet_wrap("Site") +
-    theme_bw(base_size=20) +
-    ggtitle("Heatsum Accumulation 1997-2012") +
-    theme(legend.position="none")
+#very slow
+# ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
+#     geom_point() +
+#     facet_wrap("Site") +
+#     theme_bw(base_size=20) +
+#     ggtitle("Heatsum Accumulation 1997-2012") +
+#     theme(legend.position="none")
 
 ggplot(filter(clim, DoY<180), aes(x=DoY, y=sum_scaled_ristos, color=Year)) +
     geom_point() +
@@ -154,17 +158,17 @@ climdat$Year <- lubridate::year(climdat$Date)
 climdat$Month <- lubridate::month(climdat$Date)
 
 #by site
-ggplot(climdat, aes(x=as.factor(Month), y=mean_temp, fill=Site, color=Site)) +
-    geom_violin(alpha=0.8) +
-    xlab("Month") +
-    theme_bw(base_size=20) +
-    #facet_wrap("Site") +
-    theme(legend.position = "top") +
-    scale_fill_viridis_d(option="A", end=0.9)+
-    scale_color_viridis_d(option="A", end=0.9) +
-    ggtitle("Mean Temperature 1997-2011") +
-    ylab("Temperature (°C)")
-
+# ggplot(climdat, aes(x=as.factor(Month), y=mean_temp, fill=Site, color=Site)) +
+#     geom_violin(alpha=0.8) +
+#     xlab("Month") +
+#     theme_bw(base_size=20) +
+#     #facet_wrap("Site") +
+#     theme(legend.position = "top") +
+#     scale_fill_viridis_d(option="A", end=0.9)+
+#     scale_color_viridis_d(option="A", end=0.9) +
+#     ggtitle("Mean Temperature 1997-2011") +
+#     ylab("Temperature (°C)")
+#
 #overall
 ggplot(climdat, aes(x=DoY, y=mean_temp)) +
     geom_point(pch=1, alpha=0.3)+
