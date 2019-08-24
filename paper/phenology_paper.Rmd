@@ -3,10 +3,10 @@ title: "Predicting pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
 date: May 8, 2019
 output:
-  html_document: 
-    toc: TRUE
   pdf_document:
     fig_caption: yes
+  html_document: 
+    toc: TRUE
 bibliography: full_zotero_library.bib
 ---
 
