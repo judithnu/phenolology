@@ -75,18 +75,18 @@ if(forcingtype == "gdd") { #scale growing degree days
 
 ## sample for less domination by PGTIS
 
-foo <- phenology_data %>%
-  filter(Site=="PGTIS" & Year %in% c(2006, 2007, 2010, 2011, 2005)) 
-           
-uclone <- unique(foo$Clone) %>%
-  base::sample(size=15)
-
-pgtis_sampled <- foo %>%
-  filter(Clone %in% uclone)
-
-nopgtis <- filter(phenology_data, Site != "PGTIS")
-
-phenology_data <- full_join(pgtis_sampled, nopgtis)
+# foo <- phenology_data %>%
+#   filter(Site=="PGTIS" & Year %in% c(2006, 2007, 2010, 2011, 2005))
+#
+# uclone <- unique(foo$Clone) %>%
+#   base::sample(size=15)
+#
+# pgtis_sampled <- foo %>%
+#   filter(Clone %in% uclone)
+#
+# nopgtis <- filter(phenology_data, Site != "PGTIS")
+#
+# phenology_data <- full_join(pgtis_sampled, nopgtis)
 
 ## provenance
 SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
@@ -108,9 +108,9 @@ df <- filter(phendf, Sex == sex)
 df <- stanindexer(df)
 
 # write out and read in data structured for stan
-prepforstan(df, paste(sex, ".rdump", sep=""))
+prepforstan(df, paste("data/stan_input/", sex, ".rdump", sep=""))
 
-rdump <- read_rdump(paste(sex, ".rdump", sep=""))
+rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 
 # Draft stan code using rethinking ####
 # slopedraft <- ulam(
@@ -140,17 +140,17 @@ rdump <- read_rdump(paste(sex, ".rdump", sep=""))
 
 # Fit model  #############
 test <- stan("slopes.stan",
-             model_name = paste(sex, "slopes gdd"),
+             model_name = paste(sex, "slopes", forcingtype),
              data = rdump,
              chains = 1, cores = 1, warmup = 20, iter = 25
 ) # quick check for small problems
 
 fit <- stan("slopes.stan",
-            model_name = paste(sex, "slopes gdd"),
+            model_name = paste(sex, "slopes", forcingtype),
             data = rdump,
             chains = 10, cores = 10, warmup = 1000, iter = 1300,
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste(sex, "slopes_gdd.rds", sep=''))
+saveRDS(fit, file = paste("slopes_", forcingtype, "_", sex, ".rds", sep=''))
 

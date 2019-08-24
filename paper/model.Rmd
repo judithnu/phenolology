@@ -14,10 +14,8 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
 
 ```{r depends}
 library(rethinking)
-library(dplyr)
 library(bayesplot)
-library(tidyr)
-library(summarytools)
+library(tidyverse)
 
 ```
 
@@ -30,10 +28,11 @@ Pollination phenology in lodgepole pine refers to the timing of two events - pol
 
 ```{r data, echo=FALSE, results="asis"}
 
-phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
-    filter(forcing_type=="ristos") %>%
-  filter(Site!="Tolko")
-# phenology_data <- read.csv("../data/stan_input/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+forcingtype <- "ristos_scaled"
+
+phenology_data <- read.csv("data/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
+    filter(forcing_type==forcingtype) 
+# phenology_data <- read.csv("../data/phenology_heatsum.csv", stringsAsFactors = FALSE, header = TRUE) %>%
 #   dplyr::filter(forcing_type=="ristos")
 
  SPU_dat <- read.csv("~/Documents/research_phd/data/OrchardInfo/LodgepoleSPUs.csv", header=TRUE, stringsAsFactors = FALSE) %>%
@@ -44,21 +43,17 @@ phenology_data <- read.csv("data/stan_input/phenology_heatsum.csv", stringsAsFac
  #   dplyr::select(SPU_Name, Orchard) #add provenance information
 
 phendf <- phenology_data %>%
-    na.omit()
-phendf <- dplyr::left_join(phenology_data, SPU_dat) %>%
+    na.omit() %>%
+  dplyr::left_join(SPU_dat) %>%
     unique()
 
-view(dfSummary(phendf))
-
-# summary(phendf)
+summary(phendf)
 
 ```
 
 
 
 ```{r data}
-# view(dfSummary(fdf))
-# view(dfSummary(mdf))
 
 ggplot(phendf, aes(x=Sex, y=sum_forcing, fill=as.factor(Phenophase_Derived))) +
     geom_violin() +

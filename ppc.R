@@ -212,16 +212,16 @@ write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
 #plot data #######################
 ggplot(phendf, aes(x=sum_forcing, color=Sex)) +
     stat_ecdf(size=1.1) +
-    facet_wrap(SPU_Name ~ Site) +
+    facet_wrap(Site ~ SPU_Name) +
     scale_color_viridis_d() +
-    theme_bw(base_size=20) +
+    theme_bw(base_size=18) +
     ggtitle("Flowering phenology data")
 
 ggplot(filter(phendf, Phenophase_Derived==2 & Site %in% c("PGTIS", "Kalamalka", "PRT", "Vernon")), aes(x=sum_forcing, color=Sex)) +
     stat_ecdf(size=1.1) +
     facet_grid(SPU_Name ~ Site) +
     scale_color_viridis_d() +
-    theme_bw(base_size=20) +
+    theme_bw(base_size=18) +
     ggtitle("Flowering - Provenance comparison")
 
 ggplot(filter(phendf, Phenophase_Derived==2 & SPU_Name %in% c("Bulkley Valley Low", "Central Plateau Low", "Prince George Low")), aes(x=sum_forcing, color=Sex)) +
@@ -262,6 +262,18 @@ ggplot(provcomp, aes(x=sum_forcing, fill=effect, linetype=side)) +
     scale_fill_viridis_d(option="B") +
     facet_grid(SPU_Name ~ Sex) +
     ggtitle("Start and end by provenance") +
+    xlab("Forcing units") +
+    theme_bw(base_size=18) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme(legend.position= "top")
+
+temp <- filter(provcomp, effect=="all")
+ggplot(provcomp, aes(x=sum_forcing, fill=effect, linetype=side)) +
+    geom_density(alpha=0.5) +
+    stat_ecdf(data=bdat, aes(x=FUs), inherit.aes=FALSE) +
+    scale_fill_viridis_d(option="B") +
+    #facet_grid(SPU_Name ~ Sex) +
+    ggtitle("Start and end") +
     xlab("Forcing units") +
     theme_bw(base_size=18) +
     theme(strip.text.y = element_text(angle = 0)) +
