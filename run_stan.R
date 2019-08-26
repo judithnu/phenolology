@@ -67,7 +67,8 @@ prepforstan <- function(df, file) {
 phenology_data <- read.csv("data/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE
 ) %>%
-  filter(forcing_type == forcingtype)
+  filter(forcing_type == forcingtype) %>%
+  filter(!(Year==2011 & Site=="KettleRiver"))
 
 if(forcingtype == "gdd") { #scale growing degree days
   phenology_data$sum_forcing <- phenology_data$sum_forcing/10
@@ -83,10 +84,14 @@ SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
 # Data Processing ##################
 # join provenance and phenology data
 
+
 phendf <- phenology_data %>%
   na.omit() %>%
   left_join(SPU_dat) %>%
   unique()
+
+select(phendf, Year, Site, SPU_Name) %>%
+  distinct() # dropping Kettle River 2011?
 
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)
@@ -133,9 +138,9 @@ test <- stan("slopes_nc.stan",
 fit <- stan("slopes_nc.stan",
             model_name = paste(sex, "slopes_nc", forcingtype),
             data = rdump,
-            chains = 10, cores = 10, warmup = 1500, iter = 1800,
+            chains = 8, cores = 8, warmup = 1500, iter = 1800,
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, ".rds", sep=''))
+saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, "2019-08-26sitexpciccorrection_dropKR2011", ".rds", sep=''))
 

@@ -20,14 +20,14 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 # MODEL DATA #####################
 
 #ffit.stan <- readRDS("slopes_ristos_scaled_FEMALE.rds")
-ffit.stan <- readRDS("slopes_nc_scaled_ristos_FEMALE.rds")
-mfit.stan <- readRDS("slopes_ristos_scaled_MALE.rds")
+ffit.stan <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-08-25sitexpciccorrection_dropKR2011.rds")
+mfit.stan <- readRDS("slopes_nc_scaled_ristos_MALE2019-08-25sitexpciccorrection_dropKR2011.rds")
 
 fshiny <- as.shinystan(ffit.stan)
 launch_shinystan(fshiny)
 
-#mshiny <- as.shinystan(mfit.stan)
-#launch_shinystan(mshiny)
+mshiny <- as.shinystan(mfit.stan)
+launch_shinystan(mshiny)
 
 # female model #########################################
 fsum <- rstan::summary(ffit.stan)$summary
