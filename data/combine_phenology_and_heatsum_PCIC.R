@@ -15,8 +15,8 @@ phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 
 #UPDATE IF MODEL WORKS WELL
 climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_orcharddatacorrection.csv', header = TRUE, stringsAsFactors=FALSE) %>%
+#climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites.csv', header = TRUE, stringsAsFactors=FALSE) %>%
     mutate(DoY = yday(Date)) %>%
-    rename(mean_temp_uncorrected = mean_temp) %>%
     rename(mean_temp = mean_temp_corrected)
 
 # Functions ----------------------------------
@@ -79,7 +79,7 @@ calculate_scaled_ristos <- function(climate_df) {
 
 # Climate data processing
 clim <- mutate(climdat, Year = year(Date))
- clim <- subset(clim, Year %in% unique(phendat$Year)) # drop climate data not in phenology dataset
+clim <- subset(clim, Year %in% unique(phendat$Year)) # drop climate data not in phenology dataset
 
 
 
@@ -97,12 +97,12 @@ clim <- dplyr::full_join(risto, clim5) %>%
 
 #check nothing weird happened
 #very slow
-# ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
-#     geom_point() +
-#     facet_wrap("Site") +
-#     theme_bw(base_size=20) +
-#     ggtitle("Heatsum Accumulation 1997-2012") +
-#     theme(legend.position="none")
+ggplot(clim, aes(x=DoY, y=Heatsum, color = Year)) +
+    geom_point() +
+    facet_wrap("Site") +
+    theme_bw(base_size=20) +
+    ggtitle("Heatsum Accumulation 1997-2012") +
+    theme(legend.position="none")
 
 ggplot(filter(clim, DoY<180), aes(x=DoY, y=sum_scaled_ristos, color=Year)) +
     geom_point() +
@@ -220,3 +220,4 @@ write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum_all.c
 write.csv(gclim, "~/Documents/research_phenolology/data/all_clim_PCIC.csv", row.names=FALSE)
 
 ## Checks ################
+
