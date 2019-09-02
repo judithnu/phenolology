@@ -9,13 +9,11 @@ library(viridis)
 # Data --------------------------------------------------------------------
 
 
-#rawdat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/from Rita Wagner/data_cleaned/PGTIS_pheno_1997_2012_cleaned.csv', stringsAsFactors = FALSE)
 phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv', stringsAsFactors = FALSE)
 phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 
 #UPDATE IF MODEL WORKS WELL
-climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_orcharddatacorrection.csv', header = TRUE, stringsAsFactors=FALSE) %>%
-#climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites.csv', header = TRUE, stringsAsFactors=FALSE) %>%
+climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_adjusted.csv', header = TRUE, stringsAsFactors=FALSE) %>%
     mutate(DoY = yday(Date)) %>%
     rename(mean_temp = mean_temp_corrected)
 

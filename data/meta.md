@@ -16,7 +16,7 @@ Forcing units at all sites for 1997-2011
 
 ## combine_phenology_and_heatsum_PCIC.R
 
-Combine phenology data and forcing unit data calculated from PCIC data. Writes to `phenology_heatsum_all.csv`
+Calculate forcing unit data and combine with phenology data. Reads in `research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv` and `PCIC_all_seed_orchard_sites_adjusted.csv` Writes combined phenology and heatsum to `phenology_heatsum_all.csv` and only the weather and forcing unit data to `all_clim_PCIC.csv`
 
 ## combine_phenology_and_heatsum_weather_station.R
 
