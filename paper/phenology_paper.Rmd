@@ -3,11 +3,11 @@ title: "Predicting pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
 date: May 8, 2019
 output:
-  html_document: 
-    toc: TRUE
   pdf_document:
     fig_caption: yes
-
+  html_document: 
+    toc: TRUE
+bibliography: full_zotero_library.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -29,12 +29,12 @@ library(tidyverse)
 
 ```{r data}
 # combined phenology and weather data 
-phenology_data <- read.csv("data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+phenology_data <- read.csv("../data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
   filter(forcing_type==forcingtype)
-phenology_data_model <- read.csv("data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
+phenology_data_model <- read.csv("../data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
 
 # seed orchard provenances
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard) %>%
   rename(Provenance=SPU_Name)
@@ -230,15 +230,33 @@ kable(phenophase_legend, padding = 0)
 
 #### Weather data
 
-Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each station \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures provided by PNWNAmet.
+Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ (~ 6km) over northwest North America  [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each site \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures. 
 
-As the PNWNAmet gridpoints do not exactly align with the sites, a correction for elevation was applied using the dry adiabatic lapse rate.
+Gridpoint data was adjusted using monthly site data. As gridpoints did not align exactly with site locations and there were significant elevation differences between many of the sites and gridpoints, PNWNAmet data did not accurately represent the temperature at sites. Monthly site specific data was regressed on monthly PNWNAmet data to determine a correction factor for PNWNAmet data. Mean monthly temperatures for the sites were generated using the ClimateNA v5.10 software package [@wang2016]. For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package.
 
-$$t_{site} = t_{gridpoint} + \left(\frac{10^{\circ}\mathrm{C}}{1000 \mathrm{m}}\right)\left(elevation_{site} - elevation_{gridpoint}\right)$$
+$$T = \alpha + \beta t$$
+Table of intercepts $\alpha$ and slopes $\beta$ for each site.
+```
+          Site             term estimate std.error statistic p.value
+1    Kalamalka      (Intercept)    -0.23      0.06     -3.71 < 0.001
+2    Kalamalka meantempgridPCIC     0.99      0.01    187.18 < 0.001
+3  KettleRiver      (Intercept)     1.16      0.06     18.28 < 0.001
+4  KettleRiver meantempgridPCIC     1.03      0.01     159.8 < 0.001
+5        PGTIS      (Intercept)     0.26      0.04      6.43 < 0.001
+6        PGTIS meantempgridPCIC     0.98         0    232.72 < 0.001
+7          PRT      (Intercept)    -0.04      0.06     -0.72    0.47
+8          PRT meantempgridPCIC     0.99      0.01    189.28 < 0.001
+9     Sorrento      (Intercept)     1.46      0.06     25.43 < 0.001
+10    Sorrento meantempgridPCIC     1.02      0.01    172.05 < 0.001
+11       Tolko      (Intercept)    -0.45      0.06     -7.67 < 0.001
+12       Tolko meantempgridPCIC     0.99      0.01     192.7 < 0.001
+13      Vernon      (Intercept)    -0.23      0.06     -3.59 < 0.001
+14      Vernon meantempgridPCIC     0.99      0.01    186.15 < 0.001
+```
 
-FIGURE SUMMARIZING RAW MEAN TEMPERATURES?
-
-Figure X shows the corrected and uncorrected temperatures with temperatures collected by seed orchard workers at the sites using automated data loggers. In the figure, PNWNAmet temperatures have been translated to growing degree days with a 5$^{\circ}$C threshold because only GDD calculated from the logged data was available from the sites.
+For each site, daily mean temperature  was estimated by 
+$$T_{site, date} = \alpha_{site} + \beta_{site} t_{site, date}$$
+where $t$ are the mean daily temperatures extracted from PNWNAmet.
 
 #### Forcing units
 
@@ -269,25 +287,24 @@ $$\mathrm{Pr}(S=s)=\text{OrderedLogistic}(s~|~\eta,\kappa) = \left\{ \begin{arra
 
 where the cutpoints $\kappa_s < \kappa_{s+1}$ and $\eta$ is a linear model.
 
-[CORRECT THIS TO MATCH STAN CODE]
 $$\begin{array}{rlr}
 S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \eta_i & = (\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
-\kappa_k & \sim \mathrm{gamma}(7.5,1) & \text{fixed priors}\\
+\kappa_k & \sim \mathrm{gamma}(20,1) & \text{fixed priors}\\
 \beta & \sim \mathrm{exponential}(2) & \text{}\\
 \beta_{site} & \sim \mathrm{normal}(0,\sigma_{site}) & \text{adaptive priors}\\
 \beta_{prov} & \sim \mathrm{normal}(0,\sigma_{prov}) & \text{}\\
 \beta_{year} & \sim \mathrm{normal}(0, \sigma_{year}) \\
 \beta_{clone} & \sim \mathrm{normal}(0, \sigma_{clone}) \\
-\sigma_{site} & \sim \mathrm{exponential}(3) & \text{hyperpriors}\\
-\sigma_{prov} & \sim \mathrm{exponential}(3) \\
-\sigma_{year} & \sim \mathrm{exponential}(3) \\
-\sigma_{clone} & \sim \mathrm{exponential}(3) \\
+\sigma_{site} & \sim \mathrm{exponential}(5) & \text{hyperpriors}\\
+\sigma_{prov} & \sim \mathrm{exponential}(5) \\
+\sigma_{year} & \sim \mathrm{exponential}(5) \\
+\sigma_{clone} & \sim \mathrm{exponential}(5) \\
 \end{array}$$
 
 The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
-Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run for [X] iterations of which [Y] were warmup [See code].
+Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run [Z] chains for [X] iterations of which [Y] were warmup [See code].
 
 #### Model Assumptions 
 I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for how very cold temperatures and very warm temperatures damage tissues and cause abnormal development. [Cite Sarvas's weird hot stuff and some late spring phenology]
@@ -402,36 +419,36 @@ I will examine the variability of the start date across the range ($t_1$) to see
 ## Model summary
 
 ```{r model data}
-ffit.stan <- readRDS("FEMALE_slopes_scaled.rds")
-mfit.stan <- readRDS("MALE_slopes_scaled.rds")
-
-fsum <- rstan::summary(ffit.stan)$summary
-fsum <- as.data.frame(fsum)
-fsum$par <- rownames(fsum)
-fpost <- as.data.frame(ffit.stan)
-fpost_re <- extract.samples(ffit.stan)
-fparam_names <- colnames(fpost)
-
-flp <- log_posterior(ffit.stan)
-fnp <- nuts_params(ffit.stan) #nuts params
-
-msum <- rstan::summary(mfit.stan)$summary
-msum <- as.data.frame(msum)
-msum$par <- rownames(msum)
-mpost <- as.data.frame(mfit.stan)
-mpost_re <- extract.samples(mfit.stan)
-mparam_names <- colnames(mpost)
-
-mlp <- log_posterior(mfit.stan)
-mnp <- nuts_params(mfit.stan) #nuts params
-
-#mf
-fpost$sex <- 0
-mpost$sex <- 1
-
-
-post <- full_join(mpost, fpost) %>%
-    select(-`b_clone[260]`)
+# ffit.stan <- readRDS("../FEMALE_slopes_scaled.rds")
+# mfit.stan <- readRDS("../MALE_slopes_scaled.rds")
+# 
+# fsum <- rstan::summary(ffit.stan)$summary
+# fsum <- as.data.frame(fsum)
+# fsum$par <- rownames(fsum)
+# fpost <- as.data.frame(ffit.stan)
+# fpost_re <- extract.samples(ffit.stan)
+# fparam_names <- colnames(fpost)
+# 
+# flp <- log_posterior(ffit.stan)
+# fnp <- nuts_params(ffit.stan) #nuts params
+# 
+# msum <- rstan::summary(mfit.stan)$summary
+# msum <- as.data.frame(msum)
+# msum$par <- rownames(msum)
+# mpost <- as.data.frame(mfit.stan)
+# mpost_re <- extract.samples(mfit.stan)
+# mparam_names <- colnames(mpost)
+# 
+# mlp <- log_posterior(mfit.stan)
+# mnp <- nuts_params(mfit.stan) #nuts params
+# 
+# #mf
+# fpost$sex <- 0
+# mpost$sex <- 1
+# 
+# 
+# post <- full_join(mpost, fpost) %>%
+#     select(-`b_clone[260]`)
 ```
 
 ### Parameter estimates
@@ -440,92 +457,92 @@ Clones not included
 
 *Female*
 ```{r param female table}
-kable(
-fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
+# kable(
+# fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
 ```
 
 *Male*
 ```{r param male table}
-kable(
-msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
+# kable(
+# msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
 ```
 
 ```{r compare plot function}
 
-compare_fm <- function(femplot, mplot, nrow = 2, ...) {
-    bayesplot_grid(
-        femplot, mplot,
-        grid_args = list(nrow = nrow),
-        subtitles = c("Female",
-                      "Male"),
-        ...
-    )
-}
-
-compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
-    bayesplot_grid(
-        femplot, mplot,
-        grid_args = list(ncol = ncol),
-        subtitles = c("Female",
-                      "Male"),
-        ...
-    )
-}
+# compare_fm <- function(femplot, mplot, nrow = 2, ...) {
+#     bayesplot_grid(
+#         femplot, mplot,
+#         grid_args = list(nrow = nrow),
+#         subtitles = c("Female",
+#                       "Male"),
+#         ...
+#     )
+# }
+# 
+# compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
+#     bayesplot_grid(
+#         femplot, mplot,
+#         grid_args = list(ncol = ncol),
+#         subtitles = c("Female",
+#                       "Male"),
+#         ...
+#     )
+# }
 ```
 
 
 ```{r compare site and prov intervals}
-ggplot(post, aes(x=beta, fill=as.factor(sex))) +
-    geom_density(alpha=0.5) + 
-    ggtitle("male and female speed of transition estimates")
-
-fint_beta <- mcmc_areas(fpost, regex_pars = "beta") + ggtitle("beta")
-mint_beta <- mcmc_areas(mpost, regex_pars = "beta")
-
-compare_fm(fint_beta, mint_beta, xlim=c(0.05, 0.10))
-
-fkap <- mcmc_areas(fpost, regex_pars = "kappa")
-mkap <- mcmc_areas(mpost, regex_pars = "kappa")
-
-compare_fm_wide(fkap, mkap, xlim=c(18, 29))
-
-color_scheme_set("blue")
-fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
-mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
-
-compare_fm_wide(fint_site, mint_site) 
-
-fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
-ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
-
-compare_fm_wide(fa_sigma, ma_sigma)
-
-fa_y <- mcmc_areas(fpost, regex_pars = "year") + ggtitle("year")
-ma_y <- mcmc_areas(mpost, regex_pars = "year")
-
-compare_fm_wide(fa_y, ma_y)
+# ggplot(post, aes(x=beta, fill=as.factor(sex))) +
+#     geom_density(alpha=0.5) + 
+#     ggtitle("male and female speed of transition estimates")
+# 
+# fint_beta <- mcmc_areas(fpost, regex_pars = "beta") + ggtitle("beta")
+# mint_beta <- mcmc_areas(mpost, regex_pars = "beta")
+# 
+# compare_fm(fint_beta, mint_beta, xlim=c(0.05, 0.10))
+# 
+# fkap <- mcmc_areas(fpost, regex_pars = "kappa")
+# mkap <- mcmc_areas(mpost, regex_pars = "kappa")
+# 
+# compare_fm_wide(fkap, mkap, xlim=c(18, 29))
+# 
+# color_scheme_set("blue")
+# fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
+# mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
+# 
+# compare_fm_wide(fint_site, mint_site) 
+# 
+# fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
+# ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
+# 
+# compare_fm_wide(fa_sigma, ma_sigma)
+# 
+# fa_y <- mcmc_areas(fpost, regex_pars = "year") + ggtitle("year")
+# ma_y <- mcmc_areas(mpost, regex_pars = "year")
+# 
+# compare_fm_wide(fa_y, ma_y)
 
 ```
 
 ```{r compare clones}
-fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
-mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
-
-compare_fm_wide(fint_c, mint_c)
-```
-
-### Sex diff
-
-```{r half transitions - no effects}
-fpost$f1 <- fpost$`kappa[1]`/fpost$beta
-fpost$f2 <- fpost$`kappa[2]`/fpost$beta
-mpost$f1 <- mpost$`kappa[1]`/mpost$beta
-mpost$f2 <- mpost$`kappa[2]`/mpost$beta
-
-ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
-mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
-
-compare_fm(ff, mf)
+# fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
+# mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
+# 
+# compare_fm_wide(fint_c, mint_c)
+# ```
+# 
+# ### Sex diff
+# 
+# ```{r half transitions - no effects}
+# fpost$f1 <- fpost$`kappa[1]`/fpost$beta
+# fpost$f2 <- fpost$`kappa[2]`/fpost$beta
+# mpost$f1 <- mpost$`kappa[1]`/mpost$beta
+# mpost$f2 <- mpost$`kappa[2]`/mpost$beta
+# 
+# ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
+# mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
+# 
+# compare_fm(ff, mf)
 ```
 
 

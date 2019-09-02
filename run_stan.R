@@ -2,8 +2,8 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-sex <- "FEMALE"
-#sex <- "MALE"
+#sex <- "FEMALE"
+sex <- "MALE"
 
 forcingtype <- "scaled_ristos"
 
@@ -67,29 +67,15 @@ prepforstan <- function(df, file) {
 phenology_data <- read.csv("data/phenology_heatsum.csv",
                            stringsAsFactors = FALSE, header = TRUE
 ) %>%
-  filter(forcing_type == forcingtype)
+  filter(forcing_type == forcingtype) %>%
+  filter(!(Year==2011 & Site=="KettleRiver"))
 
 if(forcingtype == "gdd") { #scale growing degree days
   phenology_data$sum_forcing <- phenology_data$sum_forcing/10
 }
 
-## sample for less domination by PGTIS
-
-# foo <- phenology_data %>%
-#   filter(Site=="PGTIS" & Year %in% c(2006, 2007, 2010, 2011, 2005))
-#
-# uclone <- unique(foo$Clone) %>%
-#   base::sample(size=15)
-#
-# pgtis_sampled <- foo %>%
-#   filter(Clone %in% uclone)
-#
-# nopgtis <- filter(phenology_data, Site != "PGTIS")
-#
-# phenology_data <- full_join(pgtis_sampled, nopgtis)
-
 ## provenance
-SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard)
 
@@ -98,10 +84,14 @@ SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
 # Data Processing ##################
 # join provenance and phenology data
 
+
 phendf <- phenology_data %>%
   na.omit() %>%
   left_join(SPU_dat) %>%
   unique()
+
+select(phendf, Year, Site, SPU_Name) %>%
+  distinct() # dropping Kettle River 2011?
 
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)
@@ -139,18 +129,19 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 
 
 # Fit model  #############
-test <- stan("slopes.stan",
-             model_name = paste(sex, "slopes", forcingtype),
+test <- stan("slopes_nc.stan",
+             model_name = paste(sex, "slopes_nc", forcingtype),
              data = rdump,
              chains = 1, cores = 1, warmup = 20, iter = 25
 ) # quick check for small problems
 
-fit <- stan("slopes.stan",
-            model_name = paste(sex, "slopes", forcingtype),
+fit <- stan("slopes_nc.stan",
+            model_name = paste(sex, "slopes_nc", forcingtype),
             data = rdump,
-            chains = 8, cores = 8, warmup = 1500, iter = 2500,
+            chains = 8, cores = 8, warmup = 1500, iter = 1800,
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste("slopes_", forcingtype, "_", sex, "newprior.rds", sep=''))
+saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, "2019-08-27_climatena", ".rds", sep=''))
+
 

@@ -34,10 +34,12 @@ transformed parameters{
   vector[Nyear] b_year;
   real b_year_mean;
   real b_prov_mean;
-  
+
+  // recalculate b parameters that were un-centered
+
   b_prov = z_prov*sigma_prov;
   b_year = z_year*sigma_year;
-  
+
   b_site_mean = mean(b_site);
   b_prov_mean = mean(b_prov);
   b_clone_mean = mean(b_clone);
@@ -58,6 +60,8 @@ model{
     z_prov ~ normal( 0 , 1 );
     b_clone ~ normal( 0 , sigma_clone );
     z_year ~ normal( 0 , 1 );
+
+    // model
 
     for ( i in 1:N ) {
         phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + z_prov[ProvenanceID[i]]*sigma_prov + b_clone[CloneID[i]] + z_year[YearID[i]]*sigma_year);

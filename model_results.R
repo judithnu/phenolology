@@ -1,6 +1,5 @@
 #### posterior predictive checks
 
-samples = 200
 forcingtype = 'scaled_ristos'
 
 # Create datasets holding parameter values - fstart, fend, and f50s
@@ -123,7 +122,7 @@ calcstage2end <- function(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2) {
 # MODEL AND ORIGINAL DATA ############
 
 #model
-fmod <- readRDS("slopes_ristos_scaled_FEMALE.rds") %>%
+fmod <- readRDS("slopes_nc_ristos_scaled_FEMALE.rds") %>%
     as.data.frame()
 
 mmod <- readRDS("slopes_ristos_scaled_MALE.rds") %>%
