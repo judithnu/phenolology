@@ -95,8 +95,6 @@ Pollen is shed from male strobili and must arrive at receptive female strobili f
 Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed production declines. 
 [Also affects gene flow now and is important for understanding current spatial genetic structure and local adaptation] 
 
-
-
 Lodgepole pine is a good representative of these issues - an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
 Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Figure \ref{range}) with widespread and significant local adaptation in many traits. 
 For example, populations from both northern interior British Columbia and northern Idaho can survive in areas with mean annual temperatures between -4 and 6 $^\circ\mathrm{C}$, but the northern British Columbia population survives best where mean annual temperatures are ~ 1 $^\circ\mathrm{C}$ and the Idaho population best at ~ 4 $^\circ\mathrm{C}$ [@Rehfeldt1999a]. 
@@ -302,12 +300,12 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{clone} & \sim \mathrm{exponential}(5) \\
 \end{array}$$
 
-The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
+The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ were designed to force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
 Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run [Z] chains for [X] iterations of which [Y] were warmup [See code].
 
 #### Model Assumptions 
-I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for how very cold temperatures and very warm temperatures damage tissues and cause abnormal development. [Cite Sarvas's weird hot stuff and some late spring phenology]
+I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for damage and abnormal development from very cold and very warm temperatures.  [Cite Sarvas's weird hot stuff and some late spring phenology]
 
 #### Model diagnostics
 
@@ -316,32 +314,32 @@ I assume that chilling requirements are always met and that chilling and forcing
 I defined the beginning of the flowering period as the point at which a tree was 20% likely to have passed out of stage 1 and the end of the flowering period as the probability at which a tree was 80% likely to have passed out of stage 2. This is equivalent to 20% of the trees in the population having reached stage 2 and 80% having reached stage 3.
 
 ##### Begin and end of flowering period
-The accumulated forcing units required to reach the beginning of the flowering period, $fbegin_i$, is 
+The accumulated forcing units required to reach the beginning of the flowering period, $f_{begin}$, is 
 $$ \begin{array}{rl}
-\mathrm{Pr}(s_i > 1) = 0.2 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f_i) \\
-fbegin_i & = \frac{\mathrm{logit}(0.2)}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
+\mathrm{Pr}(s > 1) = 0.2 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f - \kappa_1) \\
+f_{begin} & = \frac{\mathrm{logit}(0.2) + \kappa_1}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
 \end{array}
 $$
 
 
-The accumulated forcing units required to reach the end of the flowering period, $fend_i$, is 
+The accumulated forcing units required to reach the end of the flowering period, $f_{end}$, is 
 
 $$ \begin{array}{rl}
-\mathrm{Pr}(s_i > 2) = 0.8 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f_i - \kappa_1) \\
-fend_i & = \frac{\mathrm{logit}(0.8) + \kappa_1}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
+\mathrm{Pr}(s > 2) = 0.8 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f - \kappa_2) \\
+f_{end} & = \frac{\mathrm{logit}(0.8) + \kappa_2}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
 \end{array}
 $$
 
 
 I calculated $f_{start}$ and $f_{end}$ for all combinations of clone, site, provenance, and year that occur in the dataset for all samples from the posterior. The range of forcing units that stage 2 occurs over, *i.e.* the flowering period, is 
 
-$$ frange = fend-fbegin$$
+$$ f_{range} = f_{end}-f_{begin}$$
 
 
 ##### Translating between accumulated forcing units and days
-While $fbegin$ and $fend$ are constant for a given combination of clone, site, provenance, (and year???), $dbegin$ and $dend$ differ from year to year and location to location. For years and locations of interest, accumulated forcing units were calculated from mean daily temperatures and used to translate between accumulated forcing units and day of year. The day of year that the accummulated forcing unit reached at least $fbegin$ or $fend$ was $dbegin$ or $dend$. The length of the phenological period was then calculated as
+While $fbegin$ and $fend$ are constant for a given combination of clone, site, provenance, (and year???), $dbegin$ and $dend$ differ from year to year and location to location. For years and locations of interest, accumulated forcing units were calculated from mean daily temperatures and used to translate between accumulated forcing units and day of year. The day of year that the accummulated forcing unit reached at least $f_{begin}$ or $f_{end}$ was $d_{begin}$ or $d_{end}$. The length of the phenological period was then calculated as
 
-$$length=dend-dbegin$$
+$$length=d_{end}-d_{begin}$$
 
 ???Because $\beta_{year}$ is included as an effect, $f_{start}$ and $f_{end}$ are specific to the year the data was collected.???
 
@@ -419,36 +417,35 @@ I will examine the variability of the start date across the range ($t_1$) to see
 ## Model summary
 
 ```{r model data}
-# ffit.stan <- readRDS("../FEMALE_slopes_scaled.rds")
-# mfit.stan <- readRDS("../MALE_slopes_scaled.rds")
-# 
-# fsum <- rstan::summary(ffit.stan)$summary
-# fsum <- as.data.frame(fsum)
-# fsum$par <- rownames(fsum)
-# fpost <- as.data.frame(ffit.stan)
-# fpost_re <- extract.samples(ffit.stan)
-# fparam_names <- colnames(fpost)
-# 
-# flp <- log_posterior(ffit.stan)
-# fnp <- nuts_params(ffit.stan) #nuts params
-# 
-# msum <- rstan::summary(mfit.stan)$summary
-# msum <- as.data.frame(msum)
-# msum$par <- rownames(msum)
-# mpost <- as.data.frame(mfit.stan)
-# mpost_re <- extract.samples(mfit.stan)
-# mparam_names <- colnames(mpost)
-# 
-# mlp <- log_posterior(mfit.stan)
-# mnp <- nuts_params(mfit.stan) #nuts params
-# 
-# #mf
-# fpost$sex <- 0
-# mpost$sex <- 1
-# 
-# 
-# post <- full_join(mpost, fpost) %>%
-#     select(-`b_clone[260]`)
+ffit.stan <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-08-27_climatena.rds")
+mfit.stan <- readRDS("slopes_nc_scaled_ristos_MALE2019-08-27_climatena.rds")
+
+#need to drop noncentered parameters. model_examination.R is more uptodate
+
+fsum <- rstan::summary(ffit.stan)$summary
+fsum <- as.data.frame(fsum)
+farray <- as.array(ffit.stan)
+
+fsum <- rstan::summary(ffit.stan)$summary
+fsum <- as.data.frame(fsum)
+fsum$par <- rownames(fsum)
+fpost <- as.data.frame(ffit.stan) %>%
+  select(-contains("z"))
+fparam_names <- colnames(fpost)
+
+
+msum <- rstan::summary(mfit.stan)$summary
+msum <- as.data.frame(msum)
+msum$par <- rownames(msum)
+mpost <- as.data.frame(mfit.stan) %>%
+  select(-contains("z"))
+mparam_names <- colnames(mpost)
+
+#mf
+fpost$sex <- 0
+mpost$sex <- 1
+
+post <- full_join(mpost, fpost) 
 ```
 
 ### Parameter estimates
@@ -457,37 +454,37 @@ Clones not included
 
 *Female*
 ```{r param female table}
-# kable(
-# fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
+kable(
+fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
 ```
 
 *Male*
 ```{r param male table}
-# kable(
-# msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
+kable(
+msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
 ```
 
 ```{r compare plot function}
 
-# compare_fm <- function(femplot, mplot, nrow = 2, ...) {
-#     bayesplot_grid(
-#         femplot, mplot,
-#         grid_args = list(nrow = nrow),
-#         subtitles = c("Female",
-#                       "Male"),
-#         ...
-#     )
-# }
-# 
-# compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
-#     bayesplot_grid(
-#         femplot, mplot,
-#         grid_args = list(ncol = ncol),
-#         subtitles = c("Female",
-#                       "Male"),
-#         ...
-#     )
-# }
+compare_fm <- function(femplot, mplot, nrow = 2, ...) {
+    bayesplot_grid(
+        femplot, mplot,
+        grid_args = list(nrow = nrow),
+        subtitles = c("Female",
+                      "Male"),
+        ...
+    )
+}
+
+compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
+    bayesplot_grid(
+        femplot, mplot,
+        grid_args = list(ncol = ncol),
+        subtitles = c("Female",
+                      "Male"),
+        ...
+    )
+}
 ```
 
 
