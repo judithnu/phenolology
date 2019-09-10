@@ -138,10 +138,11 @@ test <- stan("slopes_nc.stan",
 fit <- stan("slopes_nc.stan",
             model_name = paste(sex, "slopes_nc", forcingtype),
             data = rdump,
+            pars = c("z_prov", "z_year", "forcingest"), include=FALSE,
             chains = 8, cores = 8, warmup = 1500, iter = 1800,
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, "2019-08-27_climatena", ".rds", sep=''))
+saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, "2019-09_10climatena", ".rds", sep=''))
 
 
