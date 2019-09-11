@@ -25,7 +25,6 @@ parameters{
     real<lower=0> sigma_prov;
     real<lower=0> sigma_clone;
     real<lower=0> sigma_year;
-    vector[N] forcingest;
 }
 
 transformed parameters{
@@ -62,13 +61,10 @@ model{
     b_clone ~ normal( 0 , sigma_clone );
     z_year ~ normal( 0 , 1 );
 
-    // error model
-    forcing ~ normal(forcingest, 1);
-
     // model
 
     for ( i in 1:N ) {
-        phi[i] = forcingest[i] * (beta + b_site[SiteID[i]] + z_prov[ProvenanceID[i]]*sigma_prov + b_clone[CloneID[i]] + z_year[YearID[i]]*sigma_year);
+        phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + z_prov[ProvenanceID[i]]*sigma_prov + b_clone[CloneID[i]] + z_year[YearID[i]]*sigma_year);
     }
     for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );
 }

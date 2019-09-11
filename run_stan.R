@@ -2,8 +2,8 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-#sex <- "FEMALE"
-sex <- "MALE"
+sex <- "FEMALE"
+#sex <- "MALE"
 
 forcingtype <- "scaled_ristos"
 
@@ -75,7 +75,7 @@ if(forcingtype == "gdd") { #scale growing degree days
 }
 
 ## provenance
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard)
 
