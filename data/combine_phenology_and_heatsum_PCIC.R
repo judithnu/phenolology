@@ -5,6 +5,8 @@ library(tidyverse)
 library(lubridate)
 library(viridis)
 
+forcingtype = "scaled_ristos" # choose forcing type for use in phendf output for modeling with stan
+
 
 # Data --------------------------------------------------------------------
 
@@ -210,7 +212,8 @@ phendf <- dplyr::left_join(phen, gclim) %>%
     dplyr::select(-Tree, -X, -Y, -Source, -First_RF, -Last_RF) %>%
     #select(Site, Sex, Year, DoY, Index, Clone, TreeID, Phenophase_Derived, Heat, Heatsum, Orchard) %>%
     arrange(forcing_type, Site, Year, Sex, Index, Clone, DoY) %>%
-    filter(!Phenophase_Derived==0) # drop trees that didn't flower
+    filter(!Phenophase_Derived==0) %>% # drop trees that didn't flower
+    filter(forcing_type == forcingtype)
 
 phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
 
