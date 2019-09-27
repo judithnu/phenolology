@@ -1,37 +1,17 @@
 #### model results
 
-forcingtype <- 'scaled_ristos'
-
 # Create datasets holding parameter values - fstart, fend, and f50s
 
 library(tidyverse)
 library(rstan)
 library(gtools)
 
+source('phenology_functions.R')
 
 # FUNCTIONS ####################################
 
-# Add grouping columns that stan will tolerate.
-stanindexer <- function(df) {
-    df$CloneID <- group_indices(df, Clone)
-    df$OrchardID <- group_indices(df, Orchard)
-    df$ProvenanceID <- group_indices(df, SPU_Name)
-    df$SiteID <- group_indices(df, Site)
-    df$YearID <- group_indices(df, Year)
-    df$TreeID <- group_indices(df,TreeUnique)
-    return(df)
-}
 
-logistic2 <- function(x,b,c) {
-    1/(1 + exp(-(b * (x-(c/b)))))
-}
 
-pdflogistic <- function(x,b,c) {
-    num <- b * exp(-b*(x-(c/b)))
-    denom <- (1 + exp(-(b * (x-(c/b)))))^2
-    val <- num/denom
-    return(val)
-}
 
 #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
 tidypar <- function(stanframe, param, id) {
@@ -132,35 +112,14 @@ calcstageforcing <- function(p=0.2, beta=betas, kappa) {
 # MODEL AND ORIGINAL DATA ############
 
 #model
-fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-08-27_climatena.rds") %>%
+fmod <- readRDS("slopes_nc_FEMALE2019-09-16gq.rds") %>%
     as.data.frame()
 
-mmod <- readRDS("slopes_nc_scaled_ristos_MALE2019-08-27_climatena.rds") %>%
+mmod <- readRDS("slopes_nc_MALE2019-09-16gq.rds") %>%
     as.data.frame()
 
 # original data (this code should match relevant bits in run_stan)
-phenology_data <- read.csv("data/phenology_heatsum.csv",
-                           stringsAsFactors = FALSE, header = TRUE
-) %>%
-    filter(forcing_type == forcingtype)
-
-## provenance
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
-                    header=TRUE, stringsAsFactors = FALSE) %>%
-    dplyr::select(SPU_Name, Orchard)
-
-
-
-# Data Processing ##################
-# join provenance and phenology data
-
-phendf <- phenology_data %>%
-    na.omit() %>%
-    left_join(SPU_dat) %>%
-    unique() %>%
-    mutate(Phenophase = as.factor(Phenophase_Derived)) %>%
-    select(-Phenophase_Derived)
-
+phendf <- read_data()
 
 # identify combinations of effects that actually occur
 
@@ -173,7 +132,7 @@ rm(fdf, mdf)
 
 #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
 
-fpardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE")
+fpardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE")
 mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
 pardf <- rbind(fpardf, mpardf) %>%
     group_by(IndSexGroup) %>%

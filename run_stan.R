@@ -2,42 +2,23 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-#sex <- "FEMALE"
-sex <- "MALE"
-
-forcingtype <- "scaled_ristos"
-
+sex <- "FEMALE"
+#sex <- "MALE"
 
 # Dependencies and options ##################
 # library(rethinking)
 library(tidyverse)
 library(rstan)
 
+source('phenology_functions.R')
+
 # rstan options
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
+# functions ################
 
-# Functions #################
-
-# Stan can only take consecutive integers for factors, so turn factors into consecutive integers
-stanindexer <- function(df) {
-  df$CloneID <- group_indices(df, Clone)
-  df$OrchardID <- group_indices(df, Orchard)
-  df$ProvenanceID <- group_indices(df, SPU_Name)
-  df$SiteID <- group_indices(df, Site)
-  df$YearID <- group_indices(df, Year)
-  df$TreeID <- group_indices(df, TreeUnique)
-  return(df)
-}
-
-# Drop non-integer columns. Necessary if using rethinking to draft new stan code
-# stancleaner <- function(df) {
-#     df <- dplyr::select(df, -Site, -SPU_Name, -Sex, -TreeID, -Phenophase, -Date, -Clone, -forcing_type)
-#     return(df)
-# }
-
-# write file that stan can actually use
+# write data file that stan can actually use
 prepforstan <- function(df, file) {
   N <- nrow(df)
   K <- length(unique(df$Phenophase_Derived))
@@ -61,37 +42,8 @@ prepforstan <- function(df, file) {
   rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Nyear", "SiteID", "ProvenanceID", "CloneID", "YearID", "forcing", "state"), file)
 }
 
-
-# Read in data ##################
-## phenology
-phenology_data <- read.csv("data/phenology_heatsum.csv",
-                           stringsAsFactors = FALSE, header = TRUE
-) %>%
-  filter(forcing_type == forcingtype) %>%
-  filter(!(Year==2011 & Site=="KettleRiver"))
-
-if(forcingtype == "gdd") { #scale growing degree days
-  phenology_data$sum_forcing <- phenology_data$sum_forcing/10
-}
-
-## provenance
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
-                    header=TRUE, stringsAsFactors = FALSE) %>%
-  dplyr::select(SPU_Name, Orchard)
-
-
-
-# Data Processing ##################
-# join provenance and phenology data
-
-
-phendf <- phenology_data %>%
-  na.omit() %>%
-  left_join(SPU_dat) %>%
-  unique()
-
-select(phendf, Year, Site, SPU_Name) %>%
-  distinct() # dropping Kettle River 2011?
+# Read in and process data
+phendf <- read_data()
 
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)
@@ -127,6 +79,7 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 #
 # # write(stancode(fit_draft), file="slopes.stan")
 
+################
 
 # Fit model  #############
 test <- stan("slopes_nc.stan",
