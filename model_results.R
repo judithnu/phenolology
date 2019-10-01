@@ -25,25 +25,6 @@ tidypar <- function(stanframe, param, id) {
     return(par)
 }
 
-# Filter the phenology dataframe by sex. Add grouping vars a la stan and extract unique combinations of grouping variables. df is a dataframe and sex is "MALE" or "FEMALE". Stan requires grouping vars to be consecutive integers, so indexes will differ/represent different underlying groups for any groups that are not identical across sexes
-splitsex <- function(df = phendf, sex) {
-    df <- filter(phendf, Sex == sex)
-    # add grouping columns to match with stan output
-    df <- stanindexer(df)
-}
-
-# join male and female sex
-unique_grouper <- function(df1 = fdf, df2 = mdf) {
-    df <- full_join(df1, df2)
-    #extract unique groups
-    udf <- df %>%
-        dplyr::select(Sex, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID) %>%
-        distinct()
-# Group by individual clone and group by individuals WITH sex
-    udf$IndGroup <- group_indices(udf, SiteID, ProvenanceID, YearID, CloneID)
-    udf$IndSexGroup <- group_indices(udf, Sex, IndGroup)
-    return(udf)
-}
 
 # Build a dataframe where each row is a unique combination of parameters for each unique combination of sex, site, clone, year, and provenance that occurs in the data (IndSexGroup). #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
 build_par_df <- function(mcmcdf, datdf = udf, sex) {
