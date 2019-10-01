@@ -33,13 +33,48 @@ phendf <- read_data()
 fdf <- splitsex(phendf, "FEMALE")
 mdf <- splitsex(phendf, "MALE")
 
+#merge data and predicted phenological states
 postcheckf <- cbind(fdf, state_rep)
 postcheckf$recordID <- group_indices(postcheckf, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
 
 postcheckf <- gather(postcheckf, key = "yrep", value = "state", starts_with("staterep")) %>%
     mutate(repid = str_extract(yrep, "\\d+"))
+postcheckf$state <- as.factor(postcheckf$state)
+postcheckf$Phenophase_Derived <- as.factor(postcheckf$Phenophase_Derived)
 postcheckf$staterep <- group_indices(postcheckf, state, yrep)
 postcheckref <- filter(postcheckf, repid %in% sample(1:2400, 200)) # make it faster
+
+# plot model predictions for state 2
+
+
+ppc <- postcheckf %>%
+    mutate(correct = case_when(state==Phenophase_Derived ~ 1,
+                               state!=Phenophase_Derived ~ 0)) %>%
+    group_by(recordID, Phenophase_Derived) %>%
+    mutate(prop_correct = sum(correct)/2400) %>%
+    select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing, SPU_Name, Phenophase_Derived, prop_correct)
+
+ggplot(ppc, aes(x=sum_forcing, y=prop_correct)) +
+    geom_point() +
+    facet_wrap("Phenophase_Derived")
+
+ppc2 <- ppc %>% group_by(recordID, Phenophase_Derived) %>%
+    mutate(tots = length(correct))
+
+
+obs2 <- filter(postcheckf, Phenophase_Derived==2)
+pred2 <- filter(postcheckf, state==2)
+
+# When stage 2 is observed, the model predicts what stage?
+ggplot(obs2, aes(x=sum_forcing, fill=state)) +
+    geom_histogram(position = "identity", alpha=0.5) +
+    ggtitle("Model predictions when observations are stage 2", subtitle = "female")
+
+# When the model predicts stage 2, what is observed?
+ggplot(pred2, aes(x=sum_forcing, fill=Phenophase_Derived)) +
+    geom_histogram(position = "identity", alpha=0.5) +
+    ggtitle("Observations when model predicts stage 2", subtitle = "female")
+
 
 
 fdf2 <- filter(fdf, Phenophase_Derived==2)
