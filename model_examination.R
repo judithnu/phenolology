@@ -18,8 +18,12 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 
 # MODEL DATA #####################
 
-#ffit.stan <- readRDS("slopes_ristos_scaled_FEMALE.rds")
-ffit.stan <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-09_10climatena.rds")
+state <- df$Phenophase_Derived
+forcing <- df$sum_forcing
+
+
+
+ffit.stan <- readRDS("slopes_nc_FEMALE2019-09-16gq.rds")
 mfit.stan <- readRDS("slopes_nc_scaled_ristos_MALE2019-08-27_climatena.rds")
 
 fshiny <- as.shinystan(ffit.stan)
@@ -179,7 +183,7 @@ fint_clone <- mcmc_intervals(farray, regex_pars=c("clone")) + ggtitle("female")
 mint_clone <- mcmc_intervals(marray, regex_pars=c("clone")) + ggtitle("male")
 
 #NB
-fint_beta <- mcmc_intervals(farray, regex_pars = c("beta")) 
+fint_beta <- mcmc_intervals(farray, regex_pars = c("beta"))
 mint_beta <- mcmc_intervals(marray, regex_pars = c("beta"))
 
 compare_fm(fint_beta, mint_beta)
