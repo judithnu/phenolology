@@ -29,7 +29,7 @@ read_data <- function() {
         filter(!(Year==2011 & Site=="KettleRiver"))
 
     ## provenance
-    SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+    SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                         header=TRUE, stringsAsFactors = FALSE) %>%
         dplyr::select(SPU_Name, Orchard)
 
@@ -41,4 +41,24 @@ read_data <- function() {
         unique()
 
     return(phendf)
+}
+
+# Filter the phenology dataframe by sex. Add grouping vars a la stan and extract unique combinations of grouping variables. df is a dataframe and sex is "MALE" or "FEMALE". Stan requires grouping vars to be consecutive integers, so indexes will differ/represent different underlying groups for any groups that are not identical across sexes
+splitsex <- function(df = phendf, sex) {
+  df <- filter(phendf, Sex == sex)
+  # add grouping columns to match with stan output
+  df <- stanindexer(df)
+}
+
+# join male and female sex
+unique_grouper <- function(df1 = fdf, df2 = mdf) {
+  df <- full_join(df1, df2)
+  #extract unique groups
+  udf <- df %>%
+    dplyr::select(Sex, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID) %>%
+    distinct()
+  # Group by individual clone and group by individuals WITH sex
+  udf$IndGroup <- group_indices(udf, SiteID, ProvenanceID, YearID, CloneID)
+  udf$IndSexGroup <- group_indices(udf, Sex, IndGroup)
+  return(udf)
 }
