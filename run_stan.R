@@ -2,8 +2,8 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-sex <- "FEMALE"
-#sex <- "MALE"
+#sex <- "FEMALE"
+sex <- "MALE"
 
 forcingtype <- "scaled_ristos"
 
@@ -143,6 +143,6 @@ fit <- stan("slopes_nc.stan",
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, "2019-09_10climatena", ".rds", sep=''))
+saveRDS(fit, file = paste("slopes_nc_", sex, "2019-09_16gq", ".rds", sep=''))
 
 
