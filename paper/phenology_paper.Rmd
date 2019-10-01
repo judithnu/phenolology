@@ -3,11 +3,11 @@ title: "Predicting pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
 date: May 8, 2019
 output:
-  html_document: 
-    toc: TRUE
   pdf_document:
     fig_caption: yes
-
+  html_document: 
+    toc: TRUE
+bibliography: full_zotero_library.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -29,12 +29,12 @@ library(tidyverse)
 
 ```{r data}
 # combined phenology and weather data 
-phenology_data <- read.csv("data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+phenology_data <- read.csv("../data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
   filter(forcing_type==forcingtype)
-phenology_data_model <- read.csv("data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
+phenology_data_model <- read.csv("../data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
 
 # seed orchard provenances
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard) %>%
   rename(Provenance=SPU_Name)
@@ -94,8 +94,6 @@ Coniferous forest trees are wind pollinated wtih pollination possible over large
 Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination .rpe
 Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed production declines. 
 [Also affects gene flow now and is important for understanding current spatial genetic structure and local adaptation] 
-
-
 
 Lodgepole pine is a good representative of these issues - an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
 Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Figure \ref{range}) with widespread and significant local adaptation in many traits. 
@@ -230,15 +228,33 @@ kable(phenophase_legend, padding = 0)
 
 #### Weather data
 
-Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ over northwest North America [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each station \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures provided by PNWNAmet.
+Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ (~ 6km) over northwest North America  [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each site \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures. 
 
-As the PNWNAmet gridpoints do not exactly align with the sites, a correction for elevation was applied using the dry adiabatic lapse rate.
+Gridpoint data was adjusted using monthly site data. As gridpoints did not align exactly with site locations and there were significant elevation differences between many of the sites and gridpoints, PNWNAmet data did not accurately represent the temperature at sites. Monthly site specific data was regressed on monthly PNWNAmet data to determine a correction factor for PNWNAmet data. Mean monthly temperatures for the sites were generated using the ClimateNA v5.10 software package [@wang2016]. For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package.
 
-$$t_{site} = t_{gridpoint} + \left(\frac{10^{\circ}\mathrm{C}}{1000 \mathrm{m}}\right)\left(elevation_{site} - elevation_{gridpoint}\right)$$
+$$T = \alpha + \beta t$$
+Table of intercepts $\alpha$ and slopes $\beta$ for each site.
+```
+          Site             term estimate std.error statistic p.value
+1    Kalamalka      (Intercept)    -0.23      0.06     -3.71 < 0.001
+2    Kalamalka meantempgridPCIC     0.99      0.01    187.18 < 0.001
+3  KettleRiver      (Intercept)     1.16      0.06     18.28 < 0.001
+4  KettleRiver meantempgridPCIC     1.03      0.01     159.8 < 0.001
+5        PGTIS      (Intercept)     0.26      0.04      6.43 < 0.001
+6        PGTIS meantempgridPCIC     0.98         0    232.72 < 0.001
+7          PRT      (Intercept)    -0.04      0.06     -0.72    0.47
+8          PRT meantempgridPCIC     0.99      0.01    189.28 < 0.001
+9     Sorrento      (Intercept)     1.46      0.06     25.43 < 0.001
+10    Sorrento meantempgridPCIC     1.02      0.01    172.05 < 0.001
+11       Tolko      (Intercept)    -0.45      0.06     -7.67 < 0.001
+12       Tolko meantempgridPCIC     0.99      0.01     192.7 < 0.001
+13      Vernon      (Intercept)    -0.23      0.06     -3.59 < 0.001
+14      Vernon meantempgridPCIC     0.99      0.01    186.15 < 0.001
+```
 
-FIGURE SUMMARIZING RAW MEAN TEMPERATURES?
-
-Figure X shows the corrected and uncorrected temperatures with temperatures collected by seed orchard workers at the sites using automated data loggers. In the figure, PNWNAmet temperatures have been translated to growing degree days with a 5$^{\circ}$C threshold because only GDD calculated from the logged data was available from the sites.
+For each site, daily mean temperature  was estimated by 
+$$T_{site, date} = \alpha_{site} + \beta_{site} t_{site, date}$$
+where $t$ are the mean daily temperatures extracted from PNWNAmet.
 
 #### Forcing units
 
@@ -269,28 +285,27 @@ $$\mathrm{Pr}(S=s)=\text{OrderedLogistic}(s~|~\eta,\kappa) = \left\{ \begin{arra
 
 where the cutpoints $\kappa_s < \kappa_{s+1}$ and $\eta$ is a linear model.
 
-[CORRECT THIS TO MATCH STAN CODE]
 $$\begin{array}{rlr}
 S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \eta_i & = (\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
-\kappa_k & \sim \mathrm{gamma}(7.5,1) & \text{fixed priors}\\
+\kappa_k & \sim \mathrm{gamma}(20,1) & \text{fixed priors}\\
 \beta & \sim \mathrm{exponential}(2) & \text{}\\
 \beta_{site} & \sim \mathrm{normal}(0,\sigma_{site}) & \text{adaptive priors}\\
 \beta_{prov} & \sim \mathrm{normal}(0,\sigma_{prov}) & \text{}\\
 \beta_{year} & \sim \mathrm{normal}(0, \sigma_{year}) \\
 \beta_{clone} & \sim \mathrm{normal}(0, \sigma_{clone}) \\
-\sigma_{site} & \sim \mathrm{exponential}(3) & \text{hyperpriors}\\
-\sigma_{prov} & \sim \mathrm{exponential}(3) \\
-\sigma_{year} & \sim \mathrm{exponential}(3) \\
-\sigma_{clone} & \sim \mathrm{exponential}(3) \\
+\sigma_{site} & \sim \mathrm{exponential}(5) & \text{hyperpriors}\\
+\sigma_{prov} & \sim \mathrm{exponential}(5) \\
+\sigma_{year} & \sim \mathrm{exponential}(5) \\
+\sigma_{clone} & \sim \mathrm{exponential}(5) \\
 \end{array}$$
 
-The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
+The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ were designed to force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
-Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run for [X] iterations of which [Y] were warmup [See code].
+Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run [Z] chains for [X] iterations of which [Y] were warmup [See code].
 
 #### Model Assumptions 
-I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for how very cold temperatures and very warm temperatures damage tissues and cause abnormal development. [Cite Sarvas's weird hot stuff and some late spring phenology]
+I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for damage and abnormal development from very cold and very warm temperatures.  [Cite Sarvas's weird hot stuff and some late spring phenology]
 
 #### Model diagnostics
 
@@ -299,46 +314,48 @@ I assume that chilling requirements are always met and that chilling and forcing
 I defined the beginning of the flowering period as the point at which a tree was 20% likely to have passed out of stage 1 and the end of the flowering period as the probability at which a tree was 80% likely to have passed out of stage 2. This is equivalent to 20% of the trees in the population having reached stage 2 and 80% having reached stage 3.
 
 ##### Begin and end of flowering period
-The accumulated forcing units required to reach the beginning of the flowering period, $fbegin_i$, is 
+The accumulated forcing units required to reach the beginning of the flowering period, $f_{begin}$, is 
 $$ \begin{array}{rl}
-\mathrm{Pr}(s_i > 1) = 0.2 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f_i) \\
-fbegin_i & = \frac{\mathrm{logit}(0.2)}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
+\mathrm{Pr}(s > 1) = 0.2 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f - \kappa_1) \\
+f_{begin} & = \frac{\mathrm{logit}(0.2) + \kappa_1}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
 \end{array}
 $$
 
 
-The accumulated forcing units required to reach the end of the flowering period, $fend_i$, is 
+The accumulated forcing units required to reach the end of the flowering period, $f_{end}$, is 
 
 $$ \begin{array}{rl}
-\mathrm{Pr}(s_i > 2) = 0.8 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f_i - \kappa_1) \\
-fend_i & = \frac{\mathrm{logit}(0.8) + \kappa_1}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
+\mathrm{Pr}(s > 2) = 0.8 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f - \kappa_2) \\
+f_{end} & = \frac{\mathrm{logit}(0.8) + \kappa_2}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
 \end{array}
 $$
 
 
 I calculated $f_{start}$ and $f_{end}$ for all combinations of clone, site, provenance, and year that occur in the dataset for all samples from the posterior. The range of forcing units that stage 2 occurs over, *i.e.* the flowering period, is 
 
-$$ frange = fend-fbegin$$
+$$ f_{range} = f_{end}-f_{begin}$$
 
 
 ##### Translating between accumulated forcing units and days
-While $fbegin$ and $fend$ are constant for a given combination of clone, site, provenance, (and year???), $dbegin$ and $dend$ differ from year to year and location to location. For years and locations of interest, accumulated forcing units were calculated from mean daily temperatures and used to translate between accumulated forcing units and day of year. The day of year that the accummulated forcing unit reached at least $fbegin$ or $fend$ was $dbegin$ or $dend$. The length of the phenological period was then calculated as
+While $fbegin$ and $fend$ are constant for a given combination of clone, site, provenance, (and year???), $dbegin$ and $dend$ differ from year to year and location to location. For years and locations of interest, accumulated forcing units were calculated from mean daily temperatures and used to translate between accumulated forcing units and day of year. The day of year that the accummulated forcing unit reached at least $f_{begin}$ or $f_{end}$ was $d_{begin}$ or $d_{end}$. The length of the phenological period was then calculated as
 
-$$length=dend-dbegin$$
+$$length=d_{end}-d_{begin}$$
 
 ???Because $\beta_{year}$ is included as an effect, $f_{start}$ and $f_{end}$ are specific to the year the data was collected.???
 
 #### Model checking/Posterior predictive checks
 
-To check the usefulness of the model, the data was compared to model predictions. I calculated the point at which at least 50% of trees of a given sex in a given year at a given site from a given provenance had begun flowering ($f50_{obs}$). Then, 30 phenological states were simulated from the model at [Z] accumulated forcing units between [X] and [Y] for each set of parameter values (model configurations) sampled from the posterior distribution . 
+To check the usefulness of the model, the data was compared to model predictions. I simulated a phenological state from all model configurations for each phenological observation in the dataset.
 
-$$s^{\prime}_i \sim \mathrm{OrderedLogistic}(\eta_i,\kappa | s) $$
+<!-- I then calculated the point at which at least 50% of trees of a given sex in a given year at a given site from a given provenance had begun flowering ($f50_{obs}$).   -->
+
+<!-- $$s^{\prime}_i \sim \mathrm{OrderedLogistic}(\eta_i,\kappa | s) $$ -->
 
 [Draw a diagram to explain this]
 
-The predicted accumulated forcing at which at least 50% of the trees have begun flowering $f50_{pred}$ is the lowest accumulated forcing where at least half of simulations return stage 2 or greater.
+<!-- The predicted accumulated forcing at which at least 50% of the trees have begun flowering $f50_{pred}$ is the lowest accumulated forcing where at least half of simulations return stage 2 or greater. -->
 
-Then I checked to see whether $f50_{obs}$ was in the 90% highest density interval of $f50_{pred}$.
+<!-- Then I checked to see whether $f50_{obs}$ was in the 90% highest density interval of $f50_{pred}$. -->
 
 
 
@@ -402,36 +419,35 @@ I will examine the variability of the start date across the range ($t_1$) to see
 ## Model summary
 
 ```{r model data}
-ffit.stan <- readRDS("FEMALE_slopes_scaled.rds")
-mfit.stan <- readRDS("MALE_slopes_scaled.rds")
+ffit.stan <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-08-27_climatena.rds")
+mfit.stan <- readRDS("slopes_nc_scaled_ristos_MALE2019-08-27_climatena.rds")
+
+#need to drop noncentered parameters. model_examination.R is more uptodate
+
+fsum <- rstan::summary(ffit.stan)$summary
+fsum <- as.data.frame(fsum)
+farray <- as.array(ffit.stan)
 
 fsum <- rstan::summary(ffit.stan)$summary
 fsum <- as.data.frame(fsum)
 fsum$par <- rownames(fsum)
-fpost <- as.data.frame(ffit.stan)
-fpost_re <- extract.samples(ffit.stan)
+fpost <- as.data.frame(ffit.stan) %>%
+  select(-contains("z"))
 fparam_names <- colnames(fpost)
 
-flp <- log_posterior(ffit.stan)
-fnp <- nuts_params(ffit.stan) #nuts params
 
 msum <- rstan::summary(mfit.stan)$summary
 msum <- as.data.frame(msum)
 msum$par <- rownames(msum)
-mpost <- as.data.frame(mfit.stan)
-mpost_re <- extract.samples(mfit.stan)
+mpost <- as.data.frame(mfit.stan) %>%
+  select(-contains("z"))
 mparam_names <- colnames(mpost)
-
-mlp <- log_posterior(mfit.stan)
-mnp <- nuts_params(mfit.stan) #nuts params
 
 #mf
 fpost$sex <- 0
 mpost$sex <- 1
 
-
-post <- full_join(mpost, fpost) %>%
-    select(-`b_clone[260]`)
+post <- full_join(mpost, fpost) 
 ```
 
 ### Parameter estimates
@@ -475,57 +491,57 @@ compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
 
 
 ```{r compare site and prov intervals}
-ggplot(post, aes(x=beta, fill=as.factor(sex))) +
-    geom_density(alpha=0.5) + 
-    ggtitle("male and female speed of transition estimates")
-
-fint_beta <- mcmc_areas(fpost, regex_pars = "beta") + ggtitle("beta")
-mint_beta <- mcmc_areas(mpost, regex_pars = "beta")
-
-compare_fm(fint_beta, mint_beta, xlim=c(0.05, 0.10))
-
-fkap <- mcmc_areas(fpost, regex_pars = "kappa")
-mkap <- mcmc_areas(mpost, regex_pars = "kappa")
-
-compare_fm_wide(fkap, mkap, xlim=c(18, 29))
-
-color_scheme_set("blue")
-fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
-mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
-
-compare_fm_wide(fint_site, mint_site) 
-
-fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
-ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
-
-compare_fm_wide(fa_sigma, ma_sigma)
-
-fa_y <- mcmc_areas(fpost, regex_pars = "year") + ggtitle("year")
-ma_y <- mcmc_areas(mpost, regex_pars = "year")
-
-compare_fm_wide(fa_y, ma_y)
+# ggplot(post, aes(x=beta, fill=as.factor(sex))) +
+#     geom_density(alpha=0.5) + 
+#     ggtitle("male and female speed of transition estimates")
+# 
+# fint_beta <- mcmc_areas(fpost, regex_pars = "beta") + ggtitle("beta")
+# mint_beta <- mcmc_areas(mpost, regex_pars = "beta")
+# 
+# compare_fm(fint_beta, mint_beta, xlim=c(0.05, 0.10))
+# 
+# fkap <- mcmc_areas(fpost, regex_pars = "kappa")
+# mkap <- mcmc_areas(mpost, regex_pars = "kappa")
+# 
+# compare_fm_wide(fkap, mkap, xlim=c(18, 29))
+# 
+# color_scheme_set("blue")
+# fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
+# mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
+# 
+# compare_fm_wide(fint_site, mint_site) 
+# 
+# fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
+# ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
+# 
+# compare_fm_wide(fa_sigma, ma_sigma)
+# 
+# fa_y <- mcmc_areas(fpost, regex_pars = "year") + ggtitle("year")
+# ma_y <- mcmc_areas(mpost, regex_pars = "year")
+# 
+# compare_fm_wide(fa_y, ma_y)
 
 ```
 
 ```{r compare clones}
-fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
-mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
-
-compare_fm_wide(fint_c, mint_c)
-```
-
-### Sex diff
-
-```{r half transitions - no effects}
-fpost$f1 <- fpost$`kappa[1]`/fpost$beta
-fpost$f2 <- fpost$`kappa[2]`/fpost$beta
-mpost$f1 <- mpost$`kappa[1]`/mpost$beta
-mpost$f2 <- mpost$`kappa[2]`/mpost$beta
-
-ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
-mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
-
-compare_fm(ff, mf)
+# fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
+# mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
+# 
+# compare_fm_wide(fint_c, mint_c)
+# ```
+# 
+# ### Sex diff
+# 
+# ```{r half transitions - no effects}
+# fpost$f1 <- fpost$`kappa[1]`/fpost$beta
+# fpost$f2 <- fpost$`kappa[2]`/fpost$beta
+# mpost$f1 <- mpost$`kappa[1]`/mpost$beta
+# mpost$f2 <- mpost$`kappa[2]`/mpost$beta
+# 
+# ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
+# mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
+# 
+# compare_fm(ff, mf)
 ```
 
 

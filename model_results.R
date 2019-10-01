@@ -1,7 +1,4 @@
-#### posterior predictive checks
-
-samples = 200
-forcingtype = 'scaled_ristos'
+#### model results
 
 # Create datasets holding parameter values - fstart, fend, and f50s
 
@@ -9,30 +6,12 @@ library(tidyverse)
 library(rstan)
 library(gtools)
 
+source('phenology_functions.R')
 
 # FUNCTIONS ####################################
 
-# Add grouping columns that stan will tolerate.
-stanindexer <- function(df) {
-    df$CloneID <- group_indices(df, Clone)
-    df$OrchardID <- group_indices(df, Orchard)
-    df$ProvenanceID <- group_indices(df, SPU_Name)
-    df$SiteID <- group_indices(df, Site)
-    df$YearID <- group_indices(df, Year)
-    df$TreeID <- group_indices(df,TreeUnique)
-    return(df)
-}
 
-logistic2 <- function(x,b,c) {
-    1/(1 + exp(-(b * (x-(c/b)))))
-}
 
-pdflogistic <- function(x,b,c) {
-    num <- b * exp(-b*(x-(c/b)))
-    denom <- (1 + exp(-(b * (x-(c/b)))))^2
-    val <- num/denom
-    return(val)
-}
 
 #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
 tidypar <- function(stanframe, param, id) {
@@ -46,25 +25,6 @@ tidypar <- function(stanframe, param, id) {
     return(par)
 }
 
-# Filter the phenology dataframe by sex. Add grouping vars a la stan and extract unique combinations of grouping variables. df is a dataframe and sex is "MALE" or "FEMALE". Stan requires grouping vars to be consecutive integers, so indexes will differ/represent different underlying groups for any groups that are not identical across sexes
-splitsex <- function(df = phendf, sex) {
-    df <- filter(phendf, Sex == sex)
-    # add grouping columns to match with stan output
-    df <- stanindexer(df)
-}
-
-# join male and female sex
-unique_grouper <- function(df1 = fdf, df2 = mdf) {
-    df <- full_join(df1, df2)
-    #extract unique groups
-    udf <- df %>%
-        dplyr::select(Sex, Site, SiteID, SPU_Name, ProvenanceID, Clone, CloneID, Year, YearID) %>%
-        distinct()
-# Group by individual clone and group by individuals WITH sex
-    udf$IndGroup <- group_indices(udf, SiteID, ProvenanceID, YearID, CloneID)
-    udf$IndSexGroup <- group_indices(udf, Sex, IndGroup)
-    return(udf)
-}
 
 # Build a dataframe where each row is a unique combination of parameters for each unique combination of sex, site, clone, year, and provenance that occurs in the data (IndSexGroup). #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
 build_par_df <- function(mcmcdf, datdf = udf, sex) {
@@ -102,54 +62,45 @@ calc_flowering_prob <- function(forcingaccum, beta, kappa1, kappa2) {
     return(prob)
 }
 
-# This function calculates the forcing units required to reach p flowering started
-calcstage2start <- function(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2) {
-    x <- (exp(kappa2)*p - exp(kappa2) + exp(kappa1)*p + exp(kappa1))^2 - 4*(p^2)*exp(kappa1+kappa2)
-    y <- -exp(kappa2)*p + exp(kappa2) - exp(kappa1)*p - exp(kappa1)
-    f <- log((-sqrt(x) + y)/(2*p))/beta
+# This function calculates the forcing units required for a tree to have a 20% chance of being in a state > 1.
+# calcstage2start <- function(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2) {
+#     x <- (exp(kappa2)*p - exp(kappa2) + exp(kappa1)*p + exp(kappa1))^2 - 4*(p^2)*exp(kappa1+kappa2)
+#     y <- -exp(kappa2)*p + exp(kappa2) - exp(kappa1)*p - exp(kappa1)
+#     f <- log((-sqrt(x) + y)/(2*p))/beta
+#
+#     return(f)
+# }
 
-    return(f)
+calcstageforcing <- function(p=0.2, beta=betas, kappa) {
+    prob <- (logit(p) + kappa)/beta
+    return(prob)
 }
 
 # This function calculates the forcing units required to reach p flowering left
-calcstage2end <- function(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2) {
-    x <- (exp(kappa2)*p - exp(kappa2) + exp(kappa1)*p + exp(kappa1))^2 - 4*(p^2)*exp(kappa1+kappa2)
-    y <- -exp(kappa2)*p + exp(kappa2) - exp(kappa1)*p - exp(kappa1)
-    f <- log((sqrt(x) + y)/(2*p))/beta
-
-    return(f)
-}
+# calcstage2end <- function(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2) {
+#     x <- (exp(kappa2)*p - exp(kappa2) + exp(kappa1)*p + exp(kappa1))^2 - 4*(p^2)*exp(kappa1+kappa2)
+#     y <- -exp(kappa2)*p + exp(kappa2) - exp(kappa1)*p - exp(kappa1)
+#     f <- log((sqrt(x) + y)/(2*p))/beta
+#
+#     return(f)
+# }
+# this function calculates the number of forcing units at which the probability of having passed out of stage 2 is 80%
+# calcstage2end <- function(p=0.8, beta=betas, kappa1=kappa1) {
+#     end <- (logit(p) + kappa1)/beta
+#     return(end)
+# }
 
 # MODEL AND ORIGINAL DATA ############
 
 #model
-fmod <- readRDS("slopes_ristos_scaled_FEMALE.rds") %>%
+fmod <- readRDS("slopes_nc_FEMALE2019-09-16gq.rds") %>%
     as.data.frame()
 
-mmod <- readRDS("slopes_ristos_scaled_MALE.rds") %>%
+mmod <- readRDS("slopes_nc_MALE2019-09-16gq.rds") %>%
     as.data.frame()
 
 # original data (this code should match relevant bits in run_stan)
-phenology_data <- read.csv("data/phenology_heatsum.csv",
-                           stringsAsFactors = FALSE, header = TRUE
-) %>%
-    filter(forcing_type == forcingtype)
-
-## provenance
-SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
-                    header=TRUE, stringsAsFactors = FALSE) %>%
-    dplyr::select(SPU_Name, Orchard)
-
-
-
-# Data Processing ##################
-# join provenance and phenology data
-
-phendf <- phenology_data %>%
-    na.omit() %>%
-    left_join(SPU_dat) %>%
-    unique()
-
+phendf <- read_data()
 
 # identify combinations of effects that actually occur
 
@@ -158,38 +109,31 @@ mdf <- splitsex(phendf, "MALE")
 
 
 udf <- unique_grouper(fdf, mdf)
+rm(fdf, mdf)
 
 #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
 
-fpardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE")
+fpardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE")
 mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
 pardf <- rbind(fpardf, mpardf) %>%
     group_by(IndSexGroup) %>%
-    sample_n(samples) #downsample
+    sample_frac(0.1) #downsample
+
+rm(fpardf)
+rm(mpardf)
 
 # Calculate transformed parameters ################
-# add transformed parameters fstart, fend, and f50s
+# add transformed parameters fstart and fend with and without effects
 pardf_trans <- pardf %>%
     mutate(betas = b_clone + b_prov + b_site + b_year + beta) %>%
-    # mutate(fstart = (logit(.2) + kappa1)/betas) %>%
-    # mutate(fend = (logit(.8) + kappa2)/betas) %>%
-    # mutate(fhalf1 = kappa1/betas) %>%
-    # mutate(fhalf2 = kappa2/betas) %>%
-    #mutate(fhalf1_pop = kappa1/beta) %>%
-    #mutate(fhalf2_pop = kappa2/beta) %>%
-    #mutate(fstart1_pop = (logit(.2) + kappa1)/beta) %>%
-    # mutate(fhalf1_noprov = kappa1/(betas-b_prov)) %>%
-    # mutate(fhalf2_noprov = kappa2/(betas-b_prov)) %>%
-    # mutate(fhalf1_nosite = kappa1/(betas-b_site)) %>%
-    # mutate(fstart_noprov = (logit(.2) + kappa1)/(betas-b_prov))
-mutate(fbegin_all = calcstage2start(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2)) %>%
-    mutate(fend_all = calcstage2end(p=0.2, beta=betas, kappa1=kappa1, kappa2=kappa2)) %>%
-    mutate(fbegin_noprov = calcstage2start(p=0.2, beta=betas-b_prov, kappa1=kappa1, kappa2=kappa2)) %>%
-    mutate(fend_noprov = calcstage2end(p=0.2, beta=betas-b_prov, kappa1=kappa1, kappa2=kappa2)) %>%
-    mutate(fbegin_nosite = calcstage2start(p=0.2, beta=betas-b_site, kappa1=kappa1, kappa2=kappa2)) %>%
-    mutate(fend_nosite = calcstage2end(p=0.2, beta=betas-b_site, kappa1=kappa1, kappa2=kappa2)) %>%
-    mutate(fbegin_pop = calcstage2start(p=0.2, beta=beta, kappa1=kappa1, kappa2=kappa2)) %>%
-    mutate(fend_pop = calcstage2end(p=0.2, beta=beta, kappa1=kappa1, kappa2=kappa2))
+mutate(fbegin_all = calcstageforcing(p=0.2, beta=betas, kappa=kappa1)) %>%
+    mutate(fend_all = calcstageforcing(p=0.8, beta=betas, kappa=kappa2)) %>%
+    mutate(fbegin_noprov = calcstageforcing(p=0.2, beta=betas-b_prov, kappa=kappa1)) %>%
+    mutate(fend_noprov = calcstageforcing(p=0.8, beta=betas-b_prov, kappa=kappa2)) %>%
+    mutate(fbegin_nosite = calcstageforcing(p=0.2, beta=betas-b_site, kappa=kappa1)) %>%
+    mutate(fend_nosite = calcstageforcing(p=0.8, beta=betas-b_site, kappa=kappa2)) %>%
+    mutate(fbegin_pop = calcstageforcing(p=0.2, beta=beta, kappa=kappa1)) %>%
+    mutate(fend_pop = calcstageforcing(p=0.8, beta=beta, kappa=kappa2))
 
 #pardf has all parameters and transformed parameters
 
@@ -210,21 +154,40 @@ write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
 # Plot raw data
 
 #plot data #######################
-ggplot(phendf, aes(x=sum_forcing, color=Sex)) +
-    stat_ecdf(size=1.1) +
+
+s2 <- phendf %>%
+    filter(Phenophase==2) %>%
+    group_by(Index) %>%
+    summarise(s2 = min(DoY))
+
+s3 <- phendf %>%
+    filter(Phenophase==3) %>%
+    group_by(Index) %>%
+    summarise(s3 = min(DoY))
+
+phendf <- left_join(phendf, s2) %>%
+    left_join(s3)
+
+# This plot shows the cumulative distribution of accumulated forcing units for phenological states 2 and 3 for the collected data
+ggplot(filter(phendf, DoY == s2 | DoY==s3), aes(x=sum_forcing, color=Sex, linetype=Phenophase)) +
+    stat_ecdf() +
     facet_wrap(Site ~ SPU_Name) +
     scale_color_viridis_d() +
     theme_bw(base_size=18) +
-    ggtitle("Flowering phenology data")
+    ggtitle("Cumulative phase 2 and 3 flowering phenology data") +
+    theme(legend.position = "top") +
+    ylab(NULL) +
+    xlab("Accumulated forcing units")
 
-ggplot(filter(phendf, Phenophase_Derived==2 & Site %in% c("PGTIS", "Kalamalka", "PRT", "Vernon")), aes(x=sum_forcing, color=Sex)) +
+
+ggplot(filter(phendf, Phenophase==2 & Site %in% c("PGTIS", "Kalamalka", "PRT", "Vernon")), aes(x=sum_forcing, color=Sex)) +
     stat_ecdf(size=1.1) +
     facet_grid(SPU_Name ~ Site) +
     scale_color_viridis_d() +
     theme_bw(base_size=18) +
     ggtitle("Flowering - Provenance comparison")
 
-ggplot(filter(phendf, Phenophase_Derived==2 & SPU_Name %in% c("Bulkley Valley Low", "Central Plateau Low", "Prince George Low")), aes(x=sum_forcing, color=Sex)) +
+ggplot(filter(phendf, Phenophase==2 & SPU_Name %in% c("Bulkley Valley Low", "Central Plateau Low", "Prince George Low")), aes(x=sum_forcing, color=Sex)) +
     stat_ecdf() +
     facet_grid(Site ~ SPU_Name) +
     scale_color_viridis_d() +
@@ -453,12 +416,12 @@ ggplot(small_pars, aes(x=fus, y=stage2prob, color=Sex, group=rows)) +
 
 
 # Get data for flowering periods
-fbloom <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
-    filter(Phenophase_Derived==2) %>%
+fbloom <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase, Sex, sum_forcing) %>%
+    filter(Phenophase==2) %>%
     rename(FUs = sum_forcing)
 
-mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, sum_forcing) %>%
-    filter(Phenophase_Derived==2) %>%
+mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase, Sex, sum_forcing) %>%
+    filter(Phenophase==2) %>%
     rename(FUs = sum_forcing)
 
 bdat <- rbind(fbloom, mbloom)# %>%

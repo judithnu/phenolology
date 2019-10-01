@@ -10,9 +10,8 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
     bayesplot_grid(
         femplot, mplot,
         grid_args = list(nrow = nrow),
-        subtitles = c("Error",
-                      "No error"),
-        xlim = c(20,30),
+        subtitles = c("female",
+                      "male"),
         ...
     )
 }
@@ -20,16 +19,18 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 # MODEL DATA #####################
 
 
-#ffit.stan <- readRDS("slopes_ristos_scaled_FEMALE.rds")
-ffit.stan <- readRDS("slopes_scaled_ristos_FEMALEnc_yp.rds")
-mfit.stan <- readRDS("slopes_ristos_scaled_MALE.rds")
+state <- df$Phenophase_Derived
+forcing <- df$sum_forcing
+
+ffit.stan <- readRDS("slopes_nc_FEMALE2019-09-16gq.rds")
+mfit.stan <- readRDS("slopes_nc_scaled_ristos_MALE2019-08-27_climatena.rds")
 
 
 fshiny <- as.shinystan(ffit.stan)
 launch_shinystan(fshiny)
 
-#mshiny <- as.shinystan(mfit.stan)
-#launch_shinystan(mshiny)
+mshiny <- as.shinystan(mfit.stan)
+launch_shinystan(mshiny)
 
 # female model #########################################
 fsum <- rstan::summary(ffit.stan)$summary
@@ -168,25 +169,24 @@ mvf <- lm(fsum$mean ~ msum$mean)
 
 # central posterior uncertainty intervals. by default shows 50% intervals (thick) and 90% intervals (thinner outer). Use point_est to show or hide point estimates
 color_scheme_set("red")
-fint_bsp <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
-mint_bsp <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
+fint_bsp <- mcmc_intervals(farray, regex_pars = c("b_site", "b_prov"))
+mint_bsp <- mcmc_intervals(marray, regex_pars = c("b_site", "b_prov"))
 
 compare_fm(fint_bsp, mint_bsp)
 
-farea_k <- mcmc_areas(fpostdf, regex_pars = c("kappa"))
-marea_k <- mcmc_areas(mpostdf, regex_pars = c("kappa"))
+farea_k <- mcmc_areas(farray, regex_pars = c("kappa"))
+marea_k <- mcmc_areas(marray, regex_pars = c("kappa"))
 
 compare_fm(farea_k, marea_k)
 
-fint_clone <- mcmc_intervals(fpostdf, regex_pars=c("clone")) + ggtitle("female")
-mint_clone <- mcmc_intervals(fpostdf, regex_pars=c("clone")) + ggtitle("male")
-
-mcmc_intervals(fpostdf, regex_pars = "a_clone")
-mcmc_intervals(fpostdf, regex_pars = "cutpoints")
-mcmc_intervals(fpostdf, regex_pars = "a_provenance", point_est = "none")
+fint_clone <- mcmc_intervals(farray, regex_pars=c("clone")) + ggtitle("female")
+mint_clone <- mcmc_intervals(marray, regex_pars=c("clone")) + ggtitle("male")
 
 #NB
-mcmc_intervals(fpostdf, regex_pars = c("beta")) + ggtitle("Female and male transition speed")
+fint_beta <- mcmc_intervals(farray, regex_pars = c("beta"))
+mint_beta <- mcmc_intervals(marray, regex_pars = c("beta"))
+
+compare_fm(fint_beta, mint_beta)
 mcmc_intervals(fpostdf, regex_pars = c("prov", "site", "sigma")) + ggtitle("Scaled ristos effects")
 mcmc_intervals(fpostdf, regex_pars = c("clone")) + ggtitle("Clone intercepts")
 
