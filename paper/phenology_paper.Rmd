@@ -345,15 +345,17 @@ $$length=d_{end}-d_{begin}$$
 
 #### Model checking/Posterior predictive checks
 
-To check the usefulness of the model, the data was compared to model predictions. I calculated the point at which at least 50% of trees of a given sex in a given year at a given site from a given provenance had begun flowering ($f50_{obs}$). Then, 30 phenological states were simulated from the model at [Z] accumulated forcing units between [X] and [Y] for each set of parameter values (model configurations) sampled from the posterior distribution . 
+To check the usefulness of the model, the data was compared to model predictions. I simulated a phenological state from all model configurations for each phenological observation in the dataset.
 
-$$s^{\prime}_i \sim \mathrm{OrderedLogistic}(\eta_i,\kappa | s) $$
+<!-- I then calculated the point at which at least 50% of trees of a given sex in a given year at a given site from a given provenance had begun flowering ($f50_{obs}$).   -->
+
+<!-- $$s^{\prime}_i \sim \mathrm{OrderedLogistic}(\eta_i,\kappa | s) $$ -->
 
 [Draw a diagram to explain this]
 
-The predicted accumulated forcing at which at least 50% of the trees have begun flowering $f50_{pred}$ is the lowest accumulated forcing where at least half of simulations return stage 2 or greater.
+<!-- The predicted accumulated forcing at which at least 50% of the trees have begun flowering $f50_{pred}$ is the lowest accumulated forcing where at least half of simulations return stage 2 or greater. -->
 
-Then I checked to see whether $f50_{obs}$ was in the 90% highest density interval of $f50_{pred}$.
+<!-- Then I checked to see whether $f50_{obs}$ was in the 90% highest density interval of $f50_{pred}$. -->
 
 
 
