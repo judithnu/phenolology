@@ -93,11 +93,14 @@ calcstageforcing <- function(p=0.2, beta=betas, kappa) {
 # MODEL AND ORIGINAL DATA ############
 
 #model
-fmod <- readRDS("slopes_nc_FEMALE2019-09-16gq.rds") %>%
-    as.data.frame()
 
-mmod <- readRDS("slopes_nc_MALE2019-09-16gq.rds") %>%
-    as.data.frame()
+fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-10-04climatena.rds") %>%
+    as.data.frame() %>%
+    sample_frac(0.2)
+
+mmod <- readRDS("slopes_nc_scaled_ristos_MALE2019-10-04climatena.rds") %>%
+    as.data.frame() %>%
+    sample_frac(0.2)
 
 # original data (this code should match relevant bits in run_stan)
 phendf <- read_data()

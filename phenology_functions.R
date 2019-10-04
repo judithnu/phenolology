@@ -29,7 +29,7 @@ read_data <- function() {
         filter(!(Year==2011 & Site=="KettleRiver"))
 
     ## provenance
-    SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
+    SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
                         header=TRUE, stringsAsFactors = FALSE) %>%
         dplyr::select(SPU_Name, Orchard)
 
@@ -48,7 +48,7 @@ read_data <- function() {
 splitsex <- function(df = phendf, sex) {
     df <- filter(phendf, Sex == sex)
     # add grouping columns to match with stan output
-    df <- stanindexer(df) 
+    df <- stanindexer(df)
 }
 
 
