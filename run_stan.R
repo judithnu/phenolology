@@ -28,17 +28,17 @@ prepforstan <- function(df, file) {
   Nclone <- length(unique(df$CloneID))
   Ntree <- length(unique(df$TreeID))
   Nyear <- length(unique(df$YearID))
-  
+
   SiteID <- df$SiteID
   ProvenanceID <- df$ProvenanceID
   OrchardID <- df$OrchardID
   CloneID <- df$CloneID
   TreeID <- df$TreeID
   YearID <- df$YearID
-  
+
   forcing <- df$sum_forcing
   state <- df$Phenophase_Derived
-  
+
   rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Nyear", "SiteID", "ProvenanceID", "CloneID", "YearID", "forcing", "state"), file)
 }
 
@@ -92,10 +92,10 @@ fit <- stan("slopes_nc.stan",
             model_name = paste(sex, "slopes_nc", forcingtype),
             data = rdump,
             pars = c("z_prov", "z_year", "phi"), include=FALSE,
-            chains = 8, cores = 8, warmup = 1500, iter = 1800,
+            chains = 6, cores = 6, warmup = 1500, iter = 1800,
             control = list(max_treedepth = 15, adapt_delta = .9)
 )
 
-saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, "2019-09_10climatena", ".rds", sep=''))
+saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, "2019-10-04climatena", ".rds", sep=''))
 
 
