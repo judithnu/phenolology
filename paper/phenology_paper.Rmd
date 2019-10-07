@@ -235,6 +235,7 @@ Gridpoint data was adjusted using monthly site data. As gridpoints did not align
 $$T = \alpha + \beta t$$
 Table of intercepts $\alpha$ and slopes $\beta$ for each site.
 ```
+version 5.21
           Site             term estimate std.error statistic p.value
 1    Kalamalka      (Intercept)    -0.23      0.06     -3.71 < 0.001
 2    Kalamalka meantempgridPCIC     0.99      0.01    187.18 < 0.001
@@ -250,6 +251,23 @@ Table of intercepts $\alpha$ and slopes $\beta$ for each site.
 12       Tolko meantempgridPCIC     0.99      0.01     192.7 < 0.001
 13      Vernon      (Intercept)    -0.23      0.06     -3.59 < 0.001
 14      Vernon meantempgridPCIC     0.99      0.01    186.15 < 0.001
+
+#version 6.20
+          Site             term estimate std.error statistic p.value
+1    Kalamalka      (Intercept)     0.21      0.04      5.34 < 0.001
+2    Kalamalka meantempgridPCIC     0.98         0    304.64 < 0.001
+3  KettleRiver      (Intercept)     1.04      0.06     18.64 < 0.001
+4  KettleRiver meantempgridPCIC     1.04      0.01     183.7 < 0.001
+5        PGTIS      (Intercept)     0.32      0.03      9.75 < 0.001
+6        PGTIS meantempgridPCIC     0.99         0    285.54 < 0.001
+7          PRT      (Intercept)     0.37      0.04     10.13 < 0.001
+8          PRT meantempgridPCIC     0.98         0    307.25 < 0.001
+9     Sorrento      (Intercept)     1.97      0.04      44.2 < 0.001
+10    Sorrento meantempgridPCIC        1         0    217.47 < 0.001
+11       Tolko      (Intercept)    -0.02      0.03     -0.47    0.64
+12       Tolko meantempgridPCIC     0.97         0    319.76 < 0.001
+13      Vernon      (Intercept)      0.2      0.04      5.22 < 0.001
+14      Vernon meantempgridPCIC     0.98         0    299.35 < 0.001
 ```
 
 For each site, daily mean temperature  was estimated by 
