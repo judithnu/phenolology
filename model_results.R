@@ -2,15 +2,15 @@
 
 # Create datasets holding parameter values - fstart, fend, and f50s
 
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
 library(rstan)
 library(gtools)
 
 source('phenology_functions.R')
 
 # FUNCTIONS ####################################
-
-
 
 
 #take a stan model dataframe and create a tidy dataframe for a given parameter. takes a dataframe, a string with the parameter name, and a string describing the param ID (e.g. par = "Site" and id="SiteID")
@@ -29,32 +29,42 @@ tidypar <- function(stanframe, param, id) {
 # Build a dataframe where each row is a unique combination of parameters for each unique combination of sex, site, clone, year, and provenance that occurs in the data (IndSexGroup). #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
 build_par_df <- function(mcmcdf, datdf = udf, sex) {
 
-    udf <- filter(datdf, Sex==sex)
+    udf <- dplyr::filter(datdf, Sex==sex)
     mcmcdf$iter <- 1:nrow(mcmcdf)
 
     singledimpars <- mcmcdf %>%
         dplyr::select(iter, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa"), contains("mean")) %>%
         rename(kappa1 = `kappa[1]`) %>%
         rename(kappa2 = `kappa[2]`)
+
     siteb <- tidypar(mcmcdf, "b_site", "SiteID")
     provb <- tidypar(mcmcdf, "b_prov", "ProvenanceID")
     cloneb <- tidypar(mcmcdf, "b_clone", "CloneID")
     yearb <- tidypar(mcmcdf, "b_year", "YearID")
 
-    sitemerge <- left_join(udf, siteb) %>%
-        select(-name)
-    provmerge <- left_join(udf, provb) %>%
-        select(-name)
     clonemerge <- left_join(udf, cloneb) %>%
         select(-name)
+    pardf <- left_join(udf, clonemerge)
+    rm(clonemerge, cloneb)
+    sitemerge <- left_join(udf, siteb) %>%
+        select(-name)
+    pardf <- left_join(pardf, sitemerge)
+    rm(sitemerge, siteb)
+    provmerge <- left_join(udf, provb) %>%
+        select(-name)
+    pardf <- left_join(pardf, provmerge)
+    rm(provmerge, provb)
     yearmerge <- left_join(udf, yearb) %>%
         select(-name)
+    pardf <- left_join(pardf, yearmerge)
+    rm(yearmerge, yearb)
+    pardf <- left_join(pardf, singledimpars)
 
-    pardf <- left_join(udf, clonemerge) %>%
-        left_join(provmerge) %>%
-        left_join(sitemerge) %>%
-        left_join(yearmerge) %>%
-        left_join(singledimpars)
+    # pardf <- left_join(udf, clonemerge) %>%
+    #     left_join(provmerge) %>%
+    #     left_join(sitemerge) %>%
+    #     left_join(yearmerge) %>%
+    #     left_join(singledimpars)
 }
 
 calc_flowering_prob <- function(forcingaccum, beta, kappa1, kappa2) {
@@ -112,18 +122,18 @@ mdf <- splitsex(phendf, "MALE")
 
 
 udf <- unique_grouper(fdf, mdf)
-rm(fdf, mdf)
+
 
 #pardf is a dataframe with N rows of parameters for each sum_forcing, site, provenance, clone, and year combination that appear in the data, where N = number of draws from the posterior distribution
 
 fpardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE")
-mpardf <- build_par_df(mcmcdf = mmod, datdf = udf, sex = "MALE")
-pardf <- rbind(fpardf, mpardf) %>%
-    group_by(IndSexGroup) %>%
-    sample_frac(0.1) #downsample
+mpardf <- build_par_df(mcmcdf = mmod, datdf = mdf, sex = "MALE")
+
+pardf <- rbind(fpardf, mpardf)
 
 rm(fpardf)
 rm(mpardf)
+
 
 # Calculate transformed parameters ################
 # add transformed parameters fstart and fend with and without effects
@@ -138,21 +148,33 @@ mutate(fbegin_all = calcstageforcing(p=0.2, beta=betas, kappa=kappa1)) %>%
     mutate(fbegin_pop = calcstageforcing(p=0.2, beta=beta, kappa=kappa1)) %>%
     mutate(fend_pop = calcstageforcing(p=0.8, beta=beta, kappa=kappa2))
 
+pardf_trans <- data.table::as.data.table(pardf_trans)
+rm(pardf)
+
 #pardf has all parameters and transformed parameters
 
-tpars <- dplyr::select(pardf_trans, iter, contains("ID"), Sex, Site, SPU_Name, Clone, Year, contains("Ind"), starts_with("f")) %>%
+tpars <- pardf_trans %>%
+    dplyr::select(-forcing_type, -forcing) %>%
+    dplyr::select(iter, contains("ID"), Sex, Site, SPU_Name, Clone, Year, contains("Ind"), starts_with("f")) %>%
     gather(key="param", value="sum_forcing", starts_with("f")) %>%
-    mutate(side = case_when(str_detect(param, "begin") ~ "begin",
-                            str_detect(param, "end") ~ "end")) %>%
-    mutate(effect = case_when(str_detect(param, "all") ~ "all",
-                              str_detect(param, "pop") ~ "pop",
-                              str_detect(param, "noprov") ~ "no_prov",
-                              str_detect(param, "nosite") ~ "no_site"))
+    mutate(side = str_extract(param, ("begin|end"))) %>%
+    mutate(effect = str_extract(param, "all|pop|noprov|nosite"))
 
-#tpars$param <- factor(tpars$param)
-#tpars$param = factor(tpars$param,levels(tpars$param)[c(1,3,2,4)])
 
 write.csv(tpars, "transformed_parameters.csv", row.names = FALSE)
+
+# Get data for flowering periods
+fbloom <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase, Sex, sum_forcing) %>%
+    filter(Phenophase==2) %>%
+    rename(FUs = sum_forcing)
+
+mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase, Sex, sum_forcing) %>%
+    filter(Phenophase==2) %>%
+    rename(FUs = sum_forcing)
+
+bdat <- rbind(fbloom, mbloom)# %>%
+#full_join(tpars)
+# bdat has forcing units (FUs) that the model estimates start and end to occur at as well as the actual forcing units (sum_forcing) that flowering was recorded at.
 
 # Plot raw data
 
@@ -245,38 +267,27 @@ ggplot(provcomp, aes(x=sum_forcing, fill=effect, linetype=side)) +
     theme(strip.text.y = element_text(angle = 0)) +
     theme(legend.position= "top")
 
-sitecomp <- filter(tpars, effect %in% c("all", "no_site"))
+sitecomp <- filter(tpars, effect %in% c("all", "no_site")) %>%
+    filter(Sex=="FEMALE")
 
 ggplot(sitecomp, aes(x=sum_forcing, fill=effect, linetype=side)) +
     geom_density(alpha=0.5) +
-    stat_ecdf(data=bdat, aes(x=FUs), inherit.aes=FALSE) +
+    #stat_ecdf(data=bdat, aes(x=FUs), inherit.aes=FALSE) +
     scale_fill_viridis_d(option="A") +
-    facet_grid(Site ~ Sex) +
+    facet_grid(Site ~ .) +
     ggtitle("Start and end by site") +
     xlab("Forcing units") +
     theme_bw(base_size=18) +
     theme(strip.text.y = element_text(angle = 0)) +
     theme(legend.position= "top")
 
-#present
-# provhalf <- full_join(ph1, ph2)
-# ggplot(provhalf, aes(x=sum_forcing, fill="withprov", group=param)) +
-#     geom_density() +
-#     geom_density(aes(x=sum_forcing_noprov, fill="no_prov", linetype=param, group=no_prov), alpha=0.5) +
-#     scale_fill_viridis_d(option="B") +
-#     facet_grid(SPU_Name ~ Sex) +
-#     ggtitle("Provenance effect on 50% forcing unit requirements") +
-#     xlab("Forcing units") +
-#     theme_bw(base_size=18) +
-#     theme(strip.text.y = element_text(angle = 0)) +
-#     theme(legend.position= "top")
 
 
+
+# calculate HPDIs ###############
 
 hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
 hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
-
-# calculate HPDIs
 
 full <- group_by(tpars, param, Sex) %>%
     summarize(x=hpd_lower(sum_forcing, prob=.99), xend=hpd_upper(sum_forcing, prob=.99)) %>%
@@ -297,6 +308,7 @@ ggplot(filter(hpd_df, interval==".99"), aes(x=value, y=0, color=Sex, size=interv
     geom_line(data = filter(hpd_df, interval=="0.5"), aes(x=value, y=0)) +
     facet_grid(rows=vars(param, Sex)) +
     theme_bw() +
+    theme(strip.text.y = element_text(angle = 0)) +
     scale_color_viridis_d()
 
 # This is a good plot
@@ -417,19 +429,6 @@ ggplot(small_pars, aes(x=fus, y=stage2prob, color=Sex, group=rows)) +
     xlab("Accumulated forcing units") +
     theme_bw(base_size = 20)
 
-
-# Get data for flowering periods
-fbloom <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase, Sex, sum_forcing) %>%
-    filter(Phenophase==2) %>%
-    rename(FUs = sum_forcing)
-
-mbloom <- dplyr::select(mdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase, Sex, sum_forcing) %>%
-    filter(Phenophase==2) %>%
-    rename(FUs = sum_forcing)
-
-bdat <- rbind(fbloom, mbloom)# %>%
-    #full_join(tpars)
-# bdat has forcing units (FUs) that the model estimates start and end to occur at as well as the actual forcing units (sum_forcing) that flowering was recorded at.
 
 fbloomd <- dplyr::select(fdf, SiteID, ProvenanceID, CloneID, YearID, Site, SPU_Name, Clone, Year, Phenophase_Derived, Sex, DoY) %>%
     filter(Phenophase_Derived==2) %>%
