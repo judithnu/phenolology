@@ -7,26 +7,25 @@ source('phenology_functions.R')
 forcingtype = 'scaled_ristos'
 
 
-
-library(tidyverse)
+library(dplyr)
 library(rstan)
 library(bayesplot)
 library(rethinking)
 
 
 #model
-fmod <- readRDS("slopes_nc_FEMALE2019-09_16gq.rds") %>%
+fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-10-04climatena.rds") %>%
     as.data.frame()
 
-mmod <- readRDS("slopes_nc_MALE2019-09_16gq.rds") %>%
+mmod <- readRDS("slopes_nc_scaled_ristos_MALE2019-10-04climatena.rds") %>%
     as.data.frame()
 
 state_repf <- t(as.matrix(dplyr::select(fmod, contains("state_rep"))))
 state_repm <- t(as.matrix(dplyr::select(mmod, contains("state_rep"))))
 
-reps <- c(1:2400)
+reps <- c(1:1800)
 colnames(state_repm) <- paste("staterep", reps, sep="_")
-
+colnames(state_repf) <- paste("staterep", reps, sep="_")
 
 # original data (this code should match relevant bits in run_stan)
 phendf <- read_data()
@@ -63,16 +62,16 @@ ppcf <- postcheckf %>%
                              state!=Phenophase_Derived ~ 0)) %>%
   group_by(recordID) %>%
   mutate(prop_correct = sum(correct)/length(correct)) %>%
-  select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing, 
+  select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
          SPU_Name, Phenophase_Derived, prop_correct) %>%
-  distinct() 
+  distinct()
 
 ppcm <- postcheckm %>%
   mutate(correct = case_when(state==Phenophase_Derived ~ 1,
                              state!=Phenophase_Derived ~ 0)) %>%
   group_by(recordID) %>%
   mutate(prop_correct = sum(correct)/length(correct)) %>%
-  select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing, 
+  select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
          SPU_Name, Phenophase_Derived, prop_correct) %>%
   distinct()
 
@@ -101,12 +100,11 @@ ppc_phenophase_site <- postrep %>%
   arrange(Sex, Phenophase_Derived)
 
 
-# plot model predictions for state 2
+# plot model predictions
 ggplot(ppc, aes(x=sum_forcing, y=prop_correct)) +
     geom_point(alpha=0.2, pch=16) +
     facet_grid(Sex ~ Phenophase_Derived) +
   ggtitle("Proportion of predictions that match data across forcing units")
-
 
 ggplot(postrep, aes(x=Phenophase_Derived, fill=state)) +
   geom_bar() +
@@ -116,15 +114,15 @@ ggplot(postrep, aes(x=Phenophase_Derived, fill=state)) +
 
 ggplot(ppc_phenophase, aes(x=Sex, y=prop_correct, fill=Phenophase_Derived)) +
   geom_bar(stat="identity", position="dodge") +
-  ylim(c(0,1)) + 
+  ylim(c(0,1)) +
   scale_fill_viridis_d(option="A") +
   ggtitle("Proportion of states correctly predicted by the model for each observed phenophase")
 
 ggplot(ppc_phenophase_site, aes(x=Phenophase_Derived, y=prop_correct, fill=Site)) +
   geom_bar(stat="identity", position="dodge") +
-  ylim(c(0,1)) + 
+  ylim(c(0,1)) +
   scale_fill_viridis_d(option="A") +
-  facet_wrap("Sex")
+  facet_wrap("Sex") +
   ggtitle("Proportion of states correctly predicted by the model for each observed phenophase")
 
   #####################################
