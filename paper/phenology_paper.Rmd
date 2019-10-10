@@ -361,9 +361,9 @@ $$length=d_{end}-d_{begin}$$
 
 ???Because $\beta_{year}$ is included as an effect, $f_{start}$ and $f_{end}$ are specific to the year the data was collected.???
 
-#### Model checking/Posterior predictive checks
+#### Posterior predictive checks
 
-To check the usefulness of the model, the data was compared to model predictions. I simulated a phenological state from all model configurations for each phenological observation in the dataset.
+To check the realism of the model, the observations of phenological states were compared to model predictions. When the model was fit in Stan, I also simulated one phenological state from all model configurations for each phenological observation in the dataset.
 
 <!-- I then calculated the point at which at least 50% of trees of a given sex in a given year at a given site from a given provenance had begun flowering ($f50_{obs}$).   -->
 
@@ -378,7 +378,7 @@ To check the usefulness of the model, the data was compared to model predictions
 
 
 #### Average predictive comparisons
-
+Average predictive comparisons allow parameters in non-linear models with interactions to be compared like regression coefficients in linear models with no interactions. Average predictive comparisons were calculated for site, provenance, clone, year, and accumulated forcing units following @gelman2007b. [link to code supplement]
 
 #### Differences between provenances
 
@@ -408,7 +408,12 @@ $$\mathrm{H50}_{prov_i} - \mathrm{H50}_{prov_j} = \beta_{prov_j} - \beta_{prov_2
 
 ## Posterior predictive checks
 
-[See p. 81 in lab notebook for figure idea]
+Across all sites, years, provenances, and clones, the model predictions match the observation the majority of the time. Stage 2 and males are most likely to be predicted corrected. 
+
+Predictions are most certain for stage 1 at low levels of forcing, for stage 2 at moderate levels of forcing, and for stage 3 at high levels of forcing.
+
+[Do a reverse graph forcing vs proportion of data points that match model predictions]
+
 
 ## Average Predictive Comparison
 
