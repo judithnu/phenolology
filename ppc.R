@@ -1,13 +1,12 @@
 #### posterior predictive checks
-## for forcing units across the range observed in my data (length X), simulate 30 phenological states for each model configuration (Y).
-## This will result in X x 30 x Y states
+## for each phenological observation and model configuration, simulate 1 phenological state
 
 source('phenology_functions.R')
 
 forcingtype = 'scaled_ristos'
 
 
-library(dplyr)
+library(tidyverse)
 library(rstan)
 library(bayesplot)
 library(rethinking)
@@ -31,18 +30,22 @@ colnames(state_repf) <- paste("staterep", reps, sep="_")
 phendf <- read_data()
 
 fdf <- splitsex(phendf, "FEMALE")
+fdf$recordID <- group_indices(fdf, Index, DoY) #create an index for each observation
+
+dups <-  which(diff(fdf$recordID) < 1)
+fdf <- fdf %>% arrange(recordID)
+whydups <- fdf[sort(c(dups, dups+1)) ,]
 mdf <- splitsex(phendf, "MALE")
 
 #merge data and predicted phenological states for females
 postcheckf <- cbind(fdf, state_repf)
-postcheckf$recordID <- group_indices(postcheckf, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
+#postcheckf$recordID <- group_indices(postcheckf, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
 
 postcheckf <- gather(postcheckf, key = "yrep", value = "state", starts_with("staterep")) %>%
     mutate(repid = str_extract(yrep, "\\d+"))
 postcheckf$state <- as.factor(postcheckf$state)
 postcheckf$Phenophase_Derived <- as.factor(postcheckf$Phenophase_Derived)
-postcheckf$staterep <- group_indices(postcheckf, state, yrep)
-#postcheckref <- filter(postcheckf, repid %in% sample(1:2400, 200)) # make it faster
+postcheckf$staterep <- group_indices(postcheckf, state, yrep) # maybe this is problem?
 
 #merge data and predicted phenological states for males
 
@@ -61,10 +64,25 @@ ppcf <- postcheckf %>%
   mutate(correct = case_when(state==Phenophase_Derived ~ 1,
                              state!=Phenophase_Derived ~ 0)) %>%
   group_by(recordID) %>%
+  mutate(n = length(recordID))
   mutate(prop_correct = sum(correct)/length(correct)) %>%
   select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
          SPU_Name, Phenophase_Derived, prop_correct) %>%
   distinct()
+
+correctfindex <- which(postcheckf$state == postcheckf$Phenophase_Derived)
+postcheckf$correct[correctfindex] <- 1
+postcheckf$correct[is.na(postcheckf$correct)] <- 0
+
+ppcf <- postcheckf %>%
+    group_by(recordID) %>%
+    mutate(n = length(recordID)) %>%
+  mutate(prop_correct = sum(correct)/length(correct)) %>%
+    select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
+           SPU_Name, Phenophase_Derived, prop_correct) %>%
+    distinct()
+
+toomany <- filter(ppcf, n==3600)
 
 ppcm <- postcheckm %>%
   mutate(correct = case_when(state==Phenophase_Derived ~ 1,
