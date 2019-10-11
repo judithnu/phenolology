@@ -1,5 +1,5 @@
 # Drop redundant data
-# Observations at Prince George that aren't the last recorded "not started" day, the first or last recorded active day, or the first recorded "finished" day are redundant.
+# Observations at Prince George provided by Rita Wagner that aren't the last recorded "not started" day, the first or last recorded active day, or the first recorded "finished" day are redundant.
 # Keep for each unique Tree, Clone, Year, Site, Prov combination at PGTIS
 ## Last recorded 1
 ## First recorded 2
@@ -12,8 +12,11 @@ library(tidyverse)
 data <- read.csv("data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE)
 data$Phenophase_Derived <- as.factor(data$Phenophase_Derived)
 
-# Drop redundant data from PGTIS
-slim_pgtis <- filter(data, Site == "PGTIS") %>%
+# phenophases that identify records NOT provided by Wagner
+not_wagner_pp <- c("inferred", "receptive20", "receptive80", "pollenshed20", "pollenshed80")
+
+# Drop redundant data from PGTIS.
+slim_pgtis <- filter(data, Site == "PGTIS" & !Phenophase %in% not_wagner_pp) %>%
     group_by(Index, Phenophase_Derived) %>%
     mutate(FR = min(DoY)) %>%
     mutate(LR = max(DoY)) %>%
@@ -24,9 +27,9 @@ slim_pgtis <- filter(data, Site == "PGTIS") %>%
     filter(keep == 1) %>%
     select(-FR, -LR, -keep)
 
-# Combine PGTIS and rest of data
+# Combine PGTIS from Wagner and rest of data
 
-no_pgtis <- filter(data, Site !="PGTIS")
+no_pgtis <- filter(data, Phenophase %in% not_wagner_pp)
 
 data_slimmed <- full_join(slim_pgtis, no_pgtis)
 
