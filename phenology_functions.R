@@ -29,7 +29,7 @@ read_data <- function() {
         filter(!(Year==2011 & Site=="KettleRiver"))
 
     ## provenance
-    SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+    SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                         header=TRUE, stringsAsFactors = FALSE) %>%
         dplyr::select(SPU_Name, Orchard)
 

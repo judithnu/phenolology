@@ -11,13 +11,12 @@ forcingtype = "scaled_ristos" # choose forcing type for use in phendf output for
 # Data --------------------------------------------------------------------
 
 
-phendat <- read.csv('~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv', stringsAsFactors = FALSE)
+phendat <- read.csv('../phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv', stringsAsFactors = FALSE)
 phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 
-#UPDATE IF MODEL WORKS WELL
-climdat <- read.csv('~/Documents/research_phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_adjusted.csv', header = TRUE, stringsAsFactors=FALSE) %>%
+climdat <- read.csv('../phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_adjusted.csv', header = TRUE, stringsAsFactors=FALSE) %>%
     mutate(DoY = yday(Date)) %>%
-    rename(mean_temp = mean_temp_corrected)
+    rename(mean_temp = mean_temp_corrected) # use mean temps that PCIC raw with a ClimateNA correction
 
 # Functions ----------------------------------
 
@@ -217,8 +216,8 @@ phendf <- dplyr::left_join(phen, gclim) %>%
 
 phendf$Phenophase_Derived <- as.factor(phendf$Phenophase_Derived)
 
-write.csv(phendf, "~/Documents/research_phenolology/data/phenology_heatsum_all.csv", row.names = FALSE)
-write.csv(gclim, "~/Documents/research_phenolology/data/all_clim_PCIC.csv", row.names=FALSE)
+write.csv(phendf, "data/phenology_heatsum_all.csv", row.names = FALSE)
+write.csv(gclim, "data/all_clim_PCIC.csv", row.names=FALSE)
 
 ## Checks ################
 
