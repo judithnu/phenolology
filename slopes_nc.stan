@@ -6,7 +6,7 @@ data{
     int Nprovenance;
     int Nclone;
     int Nyear;
-    int Ntree;
+   // int Ntree;
     // data
     int state[N];
     vector[N] forcing;
@@ -14,7 +14,7 @@ data{
     int ProvenanceID[N];
     int CloneID[N];
     int YearID[N];
-    int TreeID[N];
+  //  int TreeID[N];
 }
 
 parameters{
@@ -26,12 +26,12 @@ parameters{
     vector[Nclone] b_clone;
     //vector[Nyear] z_year;
     vector[Nyear] b_year;
-    vector[Ntree] b_tree;
+   // vector[Ntree] b_tree;
     real<lower=0> sigma_site;
     real<lower=0> sigma_prov;
     real<lower=0> sigma_clone;
     real<lower=0> sigma_year;
-    real<lower=0> sigma_tree;
+  //  real<lower=0> sigma_tree;
 }
 
 
@@ -45,21 +45,21 @@ model{
     sigma_prov ~ exponential( 5 );
     sigma_clone ~ exponential( 5 );
     sigma_year ~ exponential( 5 );
-    sigma_tree ~ exponential( 5);
+  //  sigma_tree ~ exponential( 5);
     b_site ~ normal( 0 , sigma_site );
     //z_prov ~ normal( 0 , 1 );
     b_prov ~ normal( 0 , sigma_prov );
     b_clone ~ normal( 0 , sigma_clone );
     //z_year ~ normal( 0 , 1 );
     b_year ~ normal( 0 , sigma_year );
-    b_tree ~ normal(0, sigma_tree);
+  //  b_tree ~ normal(0, sigma_tree);
 
     // model
 
     for ( i in 1:N ) {
         //phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + z_prov[ProvenanceID[i]]*sigma_prov + b_clone[CloneID[i]] + z_year[YearID[i]]*sigma_year);
         phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]] + 
-        b_clone[CloneID[i]] + b_year[YearID[i]] + b_tree[TreeID[i]]);
+        b_clone[CloneID[i]] + b_year[YearID[i]]);
     }
     for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );
 }
@@ -75,7 +75,7 @@ generated quantities{
   real b_clone_mean;
   real b_year_mean;
   real b_prov_mean;
-  real b_tree_mean;
+  //real b_tree_mean;
 
   //ppc y_rep
   vector[N] phi;
@@ -90,7 +90,7 @@ generated quantities{
   b_prov_mean = mean(b_prov);
   b_clone_mean = mean(b_clone);
   b_year_mean = mean(b_year);
-  b_tree_mean = mean(b_tree);
+//  b_tree_mean = mean(b_tree);
 
   // simulate data for model testing
   for ( i in 1:N ) {
