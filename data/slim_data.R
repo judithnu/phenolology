@@ -9,7 +9,7 @@
 library(tidyverse)
 
 
-data <- read.csv("~/Documents/research_phenolology/data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE)
+data <- read.csv("data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE)
 data$Phenophase_Derived <- as.factor(data$Phenophase_Derived)
 
 # phenophases that identify records NOT provided by Wagner
@@ -33,7 +33,7 @@ no_pgtis <- filter(data, Phenophase %in% not_wagner_pp)
 
 data_slimmed <- full_join(slim_pgtis, no_pgtis)
 
-write.csv(data_slimmed, "~/Documents/research_phenolology/data/phenology_heatsum.csv", row.names = FALSE)
+write.csv(data_slimmed, "data/phenology_heatsum.csv", row.names = FALSE)
 
 # don't drop data you don't mean to
 nrow(data)
