@@ -21,7 +21,7 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 state <- df$Phenophase_Derived
 forcing <- df$sum_forcing
 
-ffit.stan <- readRDS("2019-10-10_slopes_nc_climatena_scaled_ristos_FEMALE_.rds")
+ffit.stan <- readRDS("2019-10-11_slopes_nc_climatena_scaled_ristos_FEMALE_.rds")
 # ffit.stan <- readRDS("slopes_nc_FEMALE2019-09-16gq.rds")
 # mfit.stan <- readRDS("slopes_nc_MALE2019-09-16gq.rds")
 mfit.stan <- readRDS("slopes_nc_scaled_ristos_MALE2019-10-04climatena.rds")

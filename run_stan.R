@@ -2,8 +2,10 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-sex <- "FEMALE"
-#sex <- "MALE"
+#sex <- "FEMALE"
+sex <- "MALE"
+
+forcingtype = "scaled_ristos"
 
 # Dependencies and options ##################
 # library(rethinking)
@@ -39,7 +41,7 @@ prepforstan <- function(df, file) {
   forcing <- df$sum_forcing
   state <- df$Phenophase_Derived
 
-  rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Nyear", "SiteID", "ProvenanceID", "CloneID", "YearID", "forcing", "state"), file)
+  rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Ntree", "Nyear", "SiteID", "ProvenanceID", "CloneID", "TreeID", "YearID", "forcing", "state"), file)
 }
 
 # Read in and process data
@@ -85,14 +87,16 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 test <- stan("slopes_nc.stan",
              model_name = paste("test", Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
              data = rdump,
+             pars = c("b_clone", "b_tree", "phi"), include=FALSE,
              chains = 1, cores = 1, warmup = 20, iter = 25,
+             save_dso=FALSE
 ) # quick check for small problems
 
 fit <- stan("slopes_nc.stan",
             model_name = paste(Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
             data = rdump,
-            pars = c("z_prov", "z_year", "phi"), include=FALSE,
-            chains = 8, cores = 8, warmup = 1500, iter = 2100,
+            pars = c("b_clone", "b_tree", "phi"), include=FALSE,
+            chains = 8, cores = 8, warmup = 1600, iter = 2400,
             control = list(max_treedepth = 15, adapt_delta = .9),
 )
 
