@@ -9,20 +9,20 @@ forcingtype = 'scaled_ristos'
 library(tidyverse)
 library(rstan)
 library(bayesplot)
-library(rethinking)
+#library(rethinking)
 
 
 #model
-fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-10-04climatena.rds") %>%
+fmod <- readRDS("2019-10-13_slopes_nc_FEMALE_.rds") %>%
     as.data.frame()
 
-mmod <- readRDS("slopes_nc_scaled_ristos_MALE2019-10-04climatena.rds") %>%
+mmod <- readRDS("2019-10-13_slopes_nc_MALE_.rds") %>%
     as.data.frame()
 
 state_repf <- t(as.matrix(dplyr::select(fmod, contains("state_rep"))))
 state_repm <- t(as.matrix(dplyr::select(mmod, contains("state_rep"))))
 
-reps <- c(1:1800)
+reps <- c(1:nrow(fmod))
 colnames(state_repm) <- paste("staterep", reps, sep="_")
 colnames(state_repf) <- paste("staterep", reps, sep="_")
 
@@ -30,44 +30,55 @@ colnames(state_repf) <- paste("staterep", reps, sep="_")
 phendf <- read_data()
 
 fdf <- splitsex(phendf, "FEMALE")
-fdf$recordID <- group_indices(fdf, Index, DoY) #create an index for each observation
-
-dups <-  which(diff(fdf$recordID) < 1)
-fdf <- fdf %>% arrange(recordID)
-whydups <- fdf[sort(c(dups, dups+1)) ,]
+# fdf$recordID <- group_indices(fdf, Index, DoY) #create an index for each observation
+# 
+# dups <-  which(diff(fdf$recordID) < 1)
+# fdf <- fdf %>% arrange(recordID)
+# whydups <- fdf[sort(c(dups, dups+1)) ,]
 mdf <- splitsex(phendf, "MALE")
 
 #merge data and predicted phenological states for females
 postcheckf <- cbind(fdf, state_repf)
-#postcheckf$recordID <- group_indices(postcheckf, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
+postcheckm <- cbind(mdf, state_repm)
+postrep <- rbind(postcheckf, postcheckm)
+postrep$recordID <- group_indices(postrep, Index, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
 
-postcheckf <- gather(postcheckf, key = "yrep", value = "state", starts_with("staterep")) %>%
+postrep <- gather(postrep, key = "yrep", value = "state", starts_with("staterep")) %>%
     mutate(repid = str_extract(yrep, "\\d+"))
-postcheckf$state <- as.factor(postcheckf$state)
-postcheckf$Phenophase_Derived <- as.factor(postcheckf$Phenophase_Derived)
-postcheckf$staterep <- group_indices(postcheckf, state, yrep) # maybe this is problem?
+postrep$state <- as.factor(postrep$state)
+postrep$Phenophase_Derived <- as.factor(postrep$Phenophase_Derived)
+postrep$staterep <- group_indices(postrep, Sex, state, yrep) 
 
 #merge data and predicted phenological states for males
 
-postcheckm <- cbind(mdf, state_repm)
-postcheckm$recordID <- group_indices(postcheckm, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
-
-postcheckm <- gather(postcheckm, key = "yrep", value = "state", starts_with("staterep")) %>%
-  mutate(repid = str_extract(yrep, "\\d+"))
-postcheckm$state <- as.factor(postcheckm$state)
-postcheckm$Phenophase_Derived <- as.factor(postcheckm$Phenophase_Derived)
-postcheckm$staterep <- group_indices(postcheckm, state, yrep)
+# postcheckm <- cbind(mdf, state_repm)
+# postcheckm$recordID <- group_indices(postcheckm, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
+# 
+# postcheckm <- gather(postcheckm, key = "yrep", value = "state", starts_with("staterep")) %>%
+#   mutate(repid = str_extract(yrep, "\\d+"))
+# postcheckm$state <- as.factor(postcheckm$state)
+# postcheckm$Phenophase_Derived <- as.factor(postcheckm$Phenophase_Derived)
+# postcheckm$staterep <- group_indices(postcheckm, state, yrep)
 
 
 # calculate proportion of correct predictions by observation and phenophase
-ppcf <- postcheckf %>%
-  mutate(correct = case_when(state==Phenophase_Derived ~ 1,
-                             state!=Phenophase_Derived ~ 0)) %>%
+postrep <- postrep %>%
+  mutate(correctyn = case_when(state==Phenophase_Derived ~ 1,
+                             state!=Phenophase_Derived ~ 0)) 
+propstate <- postrep %>%
+  group_by(recordID, state, Sex) %>%
+  summarise(propstate = n()/length(reps)) %>% # calculate proportion of each state predicted for each observation
+  left_join(forcingonly) %>%
+  #  %>%
+    mutate(correctyn = case_when(state==Phenophase_Derived ~ 1,
+                                 state!=Phenophase_Derived ~ 0))
+ppc <- postrep %>%
   group_by(recordID) %>%
-  mutate(n = length(recordID))
-  mutate(prop_correct = sum(correct)/length(correct)) %>%
-  select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
-         SPU_Name, Phenophase_Derived, prop_correct) %>%
+  summarise(prop_correct = sum(correctyn)/n()) %>% # calculate proportion correct for each observation
+  #left_join(propstate) %>%
+  left_join(postrep) %>%
+  select(recordID, Index, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
+         SPU_Name, Phenophase_Derived, prop_correct, state1, state2, state3) %>%
   distinct()
 
 correctfindex <- which(postcheckf$state == postcheckf$Phenophase_Derived)
@@ -100,20 +111,20 @@ postrep <- rbind(postcheckf, postcheckm)
 
 # calculate proportion of correct predictions by phenophase
 ppc_phenophase <- postrep %>%
-  mutate(correct = case_when(state==Phenophase_Derived ~ 1,
-                             state!=Phenophase_Derived ~ 0)) %>%
   group_by(Sex, Phenophase_Derived) %>%
-  mutate(prop_correct = sum(correct)/length(correct)) %>%
-  select(Sex, Phenophase_Derived, prop_correct) %>%
+  summarise(prop_correct = sum(correctyn)/n()) %>% # calculate proportion correct for each observation
+  left_join(postrep) %>%
+  select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
+         SPU_Name, Phenophase_Derived, prop_correct) %>%
   distinct() %>%
   arrange(Sex, Phenophase_Derived)
 
 ppc_phenophase_site <- postrep %>%
-  mutate(correct = case_when(state==Phenophase_Derived ~ 1,
-                             state!=Phenophase_Derived ~ 0)) %>%
   group_by(Sex, Phenophase_Derived, Site) %>%
-  mutate(prop_correct = sum(correct)/length(correct)) %>%
-  select(Sex, Phenophase_Derived, Site, Site, prop_correct) %>%
+  summarise(prop_correct = sum(correctyn)/n()) %>% # calculate proportion correct for each observation
+  left_join(postrep) %>%
+  select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
+         SPU_Name, Phenophase_Derived, prop_correct) %>%
   distinct() %>%
   arrange(Sex, Phenophase_Derived)
 
