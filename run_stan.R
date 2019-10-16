@@ -2,8 +2,8 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-sex <- "FEMALE"
-#sex <- "MALE"
+#sex <- "FEMALE"
+sex <- "MALE"
 
 forcingtype = "scaled_ristos"
 
@@ -87,7 +87,7 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 test <- stan("slopes_nc.stan",
              model_name = paste("test", Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
              data = rdump,
-             pars = c("b_clone", "phi"), include=FALSE,
+             pars = c("b_clone", "z_year", "phi"), include=FALSE,
              chains = 1, cores = 1, warmup = 20, iter = 25,
              save_dso=FALSE
 ) # quick check for small problems
@@ -95,8 +95,8 @@ test <- stan("slopes_nc.stan",
 fit <- stan("slopes_nc.stan",
             model_name = paste(Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
             data = rdump,
-            pars = c("b_clone", "phi"), include=FALSE,
-            chains = 8, cores = 8, warmup = 1600, iter = 2400,
+            pars = c("b_clone","z_year", "phi"), include=FALSE,
+            chains = 8, cores = 8, warmup = 700, iter = 1500,
             control = list(max_treedepth = 15, adapt_delta = .9),
 )
 
