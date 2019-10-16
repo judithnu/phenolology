@@ -49,18 +49,6 @@ postrep$state <- as.factor(postrep$state)
 postrep$Phenophase_Derived <- as.factor(postrep$Phenophase_Derived)
 postrep$staterep <- group_indices(postrep, Sex, state, yrep) 
 
-#merge data and predicted phenological states for males
-
-# postcheckm <- cbind(mdf, state_repm)
-# postcheckm$recordID <- group_indices(postcheckm, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
-# 
-# postcheckm <- gather(postcheckm, key = "yrep", value = "state", starts_with("staterep")) %>%
-#   mutate(repid = str_extract(yrep, "\\d+"))
-# postcheckm$state <- as.factor(postcheckm$state)
-# postcheckm$Phenophase_Derived <- as.factor(postcheckm$Phenophase_Derived)
-# postcheckm$staterep <- group_indices(postcheckm, state, yrep)
-
-
 # calculate proportion of correct predictions by observation and phenophase
 postrep <- postrep %>%
   mutate(correctyn = case_when(state==Phenophase_Derived ~ 1,
@@ -72,6 +60,7 @@ propstate <- postrep %>%
   #  %>%
     mutate(correctyn = case_when(state==Phenophase_Derived ~ 1,
                                  state!=Phenophase_Derived ~ 0))
+
 ppc <- postrep %>%
   group_by(recordID) %>%
   summarise(prop_correct = sum(correctyn)/n()) %>% # calculate proportion correct for each observation
@@ -81,34 +70,6 @@ ppc <- postrep %>%
          SPU_Name, Phenophase_Derived, prop_correct, state1, state2, state3) %>%
   distinct()
 
-correctfindex <- which(postcheckf$state == postcheckf$Phenophase_Derived)
-postcheckf$correct[correctfindex] <- 1
-postcheckf$correct[is.na(postcheckf$correct)] <- 0
-
-ppcf <- postcheckf %>%
-    group_by(recordID) %>%
-    mutate(n = length(recordID)) %>%
-  mutate(prop_correct = sum(correct)/length(correct)) %>%
-    select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
-           SPU_Name, Phenophase_Derived, prop_correct) %>%
-    distinct()
-
-toomany <- filter(ppcf, n==3600)
-
-ppcm <- postcheckm %>%
-  mutate(correct = case_when(state==Phenophase_Derived ~ 1,
-                             state!=Phenophase_Derived ~ 0)) %>%
-  group_by(recordID) %>%
-  mutate(prop_correct = sum(correct)/length(correct)) %>%
-  select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
-         SPU_Name, Phenophase_Derived, prop_correct) %>%
-  distinct()
-
-ppc <- rbind(ppcf, ppcm)
-
-#combine both sex's posterior prediction dfs
-postrep <- rbind(postcheckf, postcheckm)
-
 # calculate proportion of correct predictions by phenophase
 ppc_phenophase <- postrep %>%
   group_by(Sex, Phenophase_Derived) %>%
@@ -117,7 +78,7 @@ ppc_phenophase <- postrep %>%
   select(recordID, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
          SPU_Name, Phenophase_Derived, prop_correct) %>%
   distinct() %>%
-  arrange(Sex, Phenophase_Derived)
+  arrange(Sex, Phenophase_Derived) 
 
 ppc_phenophase_site <- postrep %>%
   group_by(Sex, Phenophase_Derived, Site) %>%
@@ -134,6 +95,7 @@ ggplot(ppc, aes(x=sum_forcing, y=prop_correct)) +
     geom_point(alpha=0.2, pch=16) +
     facet_grid(Sex ~ Phenophase_Derived) +
   ggtitle("Proportion of predictions that match data across forcing units")
+
 
 ggplot(postrep, aes(x=Phenophase_Derived, fill=state)) +
   geom_bar() +
