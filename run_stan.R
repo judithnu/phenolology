@@ -45,7 +45,7 @@ prepforstan <- function(df, file) {
 }
 
 # Read in and process data
-phendf <- read_data()
+phendf <- read_data(slim=FALSE)
 
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)
