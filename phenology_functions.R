@@ -22,11 +22,18 @@ pdflogistic <- function(x,b,c) {
     return(val)
 }
 
-read_data <- function() {
+read_data <- function(slim=TRUE) { #choose true if slimmed data and false for full dataset
+    if (isTRUE(slim)) {
     phenology_data <- read.csv("data/phenology_heatsum.csv",
                                stringsAsFactors = FALSE, header = TRUE
     ) %>%
         filter(!(Year==2011 & Site=="KettleRiver"))
+    } else {
+        phenology_data <- read.csv("data/phenology_heatsum_all.csv",
+                                   stringsAsFactors = FALSE, header = TRUE
+        )
+    }
+    
 
     ## provenance
     SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
