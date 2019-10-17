@@ -24,8 +24,8 @@ parameters{
     //vector[Nprovenance] z_prov;
     vector[Nprovenance] b_prov;
     vector[Nclone] b_clone;
-    //vector[Nyear] z_year;
-    vector[Nyear] b_year;
+    vector[Nyear] z_year;
+    //vector[Nyear] b_year;
    // vector[Ntree] b_tree;
     real<lower=0> sigma_site;
     real<lower=0> sigma_prov;
@@ -50,8 +50,8 @@ model{
     //z_prov ~ normal( 0 , 1 );
     b_prov ~ normal( 0 , sigma_prov );
     b_clone ~ normal( 0 , sigma_clone );
-    //z_year ~ normal( 0 , 1 );
-    b_year ~ normal( 0 , sigma_year );
+    z_year ~ normal( 0 , 1 );
+    //b_year ~ normal( 0 , sigma_year );
   //  b_tree ~ normal(0, sigma_tree);
 
     // model
@@ -59,7 +59,7 @@ model{
     for ( i in 1:N ) {
         //phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + z_prov[ProvenanceID[i]]*sigma_prov + b_clone[CloneID[i]] + z_year[YearID[i]]*sigma_year);
         phi[i] = forcing[i] * (beta + b_site[SiteID[i]] + b_prov[ProvenanceID[i]] + 
-        b_clone[CloneID[i]] + b_year[YearID[i]]);
+        b_clone[CloneID[i]] + z_year[YearID[i]]*sigma_year);
     }
     for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );
 }
@@ -68,7 +68,7 @@ generated quantities{
 
   //centered vars
  // vector[Nprovenance] b_prov;
- // vector[Nyear] b_year;
+ vector[Nyear] b_year;
 
   //mean effects
   real b_site_mean;
@@ -83,7 +83,7 @@ generated quantities{
 
   // recalculate b parameters that were un-centered
  // b_prov = z_prov*sigma_prov;
- // b_year = z_year*sigma_year;
+ b_year = z_year*sigma_year;
 
   // calculate mean effects across groups
   b_site_mean = mean(b_site);
@@ -101,5 +101,3 @@ generated quantities{
     state_rep[i] = ordered_logistic_rng(phi[i], kappa);
   }
 }
-
-
