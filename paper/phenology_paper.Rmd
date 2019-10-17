@@ -291,7 +291,7 @@ Cooler sites, like Prince George, accumulate forcing slower than warmer sites li
 
 ## Phenology Modeling 
 
-I modeled phenological states as a function of accumulated forcing units with a Bayesian multilevel ordinal logistic model fit in Stan with the No-U-Turn Sampler [@standevelopmentteamRStanInterfaceStan2018]. The model was fit separately to data for male strobili and female strobili. A logistic cumulative link function accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states. The model parameters describe a probability function for each state. Cutpoints $\kappa$ separate each state while the slope parameter of the linear model influences the steepness of the curves. Transitions between phenological states happen rapidly when the slope is large and slowly when it is small. 
+I modeled phenological states as a function of accumulated forcing units with separate Bayesian multilevel ordinal logistic models for male and female strobili. A logistic cumulative link function accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states. The model parameters describe a probability function for each state. Cutpoints $\kappa$ separate each state while the slope parameter of the linear model influences the steepness of the curves. Transitions between phenological states happen rapidly when the slope is large and slowly when it is small. 
 
 The likelihood of being in state $s \in \{1,2,3\}$ is
 
@@ -320,12 +320,16 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 
 The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ were designed to force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
-Low variation for provenances and years made sampling inefficient, so I used a non-centered parameterization in the Stan model code for these clusters. The model was run [Z] chains for [X] iterations of which [Y] were warmup [See code].
+The model was fit in the probabilistic programming language Stan (vers. 2.19.1 via RStan [@standevelopmentteam2019]) which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior.
+
+Sampling efficiency for the year cluster was improved with a non-centered parameterization. I ran 8 independent chains for 1500 iterations, discarding 700 warm-up iterations for a total of 6400 posterior samples for each parameter.
 
 #### Model Assumptions 
 I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for damage and abnormal development from very cold and very warm temperatures.  [Cite Sarvas's weird hot stuff and some late spring phenology]
 
 #### Model diagnostics
+
+Rhat, Neff, etc.
 
 #### Flowering period timing and length
 
