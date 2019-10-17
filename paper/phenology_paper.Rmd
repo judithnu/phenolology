@@ -381,6 +381,8 @@ The model is very likely to correctly predict phase 1 and 3 at very high and low
 
 ![Proportion of observations correctly predicted as forcing accumulates \label{ppc_forcing}](~/Documents/research_phd/Lab_Notebook/images/2019-10-16_proppredforcingunits.png)
 
+While I don't expect a perfect retrodiction of the sample, it is a bit worrying that 1 and 3 are so hard to predict for the model. I think this is because the only 1 and 3 data I included were the most marginal 1 and 3s - right at transition points. This should improve predictions for flowering (phase 2), but makes 1 and 3 look worse. 
+
 Since phenology observations are not recorded until the flowering period begins, phase 1 and 3 should be harder to predict. Additionally, observations were trimmed so that only the last phase 1, first and last phase 2, and first phase 3 were left in the dataset. 
 
 I should perform this analysis on the unslimmed data.
