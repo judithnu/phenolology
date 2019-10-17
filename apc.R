@@ -3,7 +3,7 @@
 fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-10-04climatena.rds") %>%
     as.data.frame()
 
-#mmod <- readRDS("slopes_nc_scaled_ristos_MALE2019-10-04climatena.rds") %>%
+mmod <- readRDS("slopes_nc_scaled_ristos_MALE2019-10-04climatena.rds") %>%
     as.data.frame()
 
 state_repf <- t(as.matrix(dplyr::select(fmod, contains("state_rep"))))

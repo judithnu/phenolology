@@ -1,5 +1,9 @@
 # Script to run all data processing scripts
 
+# pick a computer
+machine <- "72"
+#machine <- "mycon"
+
 # Combine phenology and heatsum data
 
 ## Reads in phenology data from
