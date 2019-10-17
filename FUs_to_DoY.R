@@ -3,7 +3,7 @@
 #needs tpars from ppc.R
 forcingtype = "scaled_ristos"
 
-library(tidyverse)
+library(dplyr)
 
 gclim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
     filter(forcing_type==forcingtype)
@@ -11,8 +11,10 @@ gclim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE)
 #tpars <- read.csv("transformed_parameters.csv", header=TRUE, stringsAsFactors=FALSE)
 
 tpars_clim <- arrange(tpars, sum_forcing)
+rm(tpars)
 
 clim <- gclim
+rm(gclim)
 clim$siteyear <- paste(clim$Site, clim$Year, sep='')
 
 # choose cold, hot, and medium years.
@@ -20,33 +22,30 @@ clim$siteyear <- paste(clim$Site, clim$Year, sep='')
 climsort <- filter(clim, DoY == 180) %>%
     arrange(sum_forcing)
 
-
-
-# KettleRiver 2011 is cold, Kalamalka 1998 is hot, and PRT 2008 is middle of the road.
+# Prince George 2011 is cold, Kalamalka 1998 is hot
 
 # index clim and tpars by Site-Year
-
-KR2011 <- filter(clim, siteyear == "KettleRiver2011") %>%
+coldyear <- filter(clim, siteyear == climsort$siteyear[1]) %>%
     arrange(sum_forcing)
-KAL1998 <- filter(clim, siteyear == "Kalamalka1998") %>%
+hotyear <- filter(clim, siteyear == climsort$siteyear[nrow(climsort)]) %>%
     arrange(sum_forcing)
 
 #THIS WORKS. This compares forcing units in tpars to sum_forcing in the climate dataset and finds the closest sum_forcing that's greater than a given tpars. Then it extracts they Day of Year that sum_forcing occured on. The additional "+ 1" that follows the findInterval call adds one to the index returned: findInterval by default returns the index of the left-hand (low) side of an interval, and we want the right-hand (high) side of the interval, which is the next index in the interval-vector from the indexes returned.
-tpars_clim$DoY_KR2011 <- KR2011$DoY[findInterval(tpars_clim$sum_forcing,
-                                                 KR2011$sum_forcing) + 1]
-tpars_clim$DoY_KAL1998 <- KAL1998$DoY[findInterval(tpars_clim$sum_forcing,
-                                            KAL1998$sum_forcing) + 1]
+tpars_clim$DoY_coldyear <- coldyear$DoY[findInterval(tpars_clim$sum_forcing,
+                                                 coldyear$sum_forcing) + 1]
+tpars_clim$DoY_hotyear <- hotyear$DoY[findInterval(tpars_clim$sum_forcing,
+                                            hotyear$sum_forcing) + 1]
 
 #
-# ggplot(filter(tpars_clim, effect == "all"), aes(x=DoY_KR2011, color=Sex, linetype=param)) +
+# ggplot(filter(tpars_clim, effect == "all"), aes(x=DoY_coldyear, color=Sex, linetype=param)) +
 #     geom_density(alpha = 0.5) +
 #     facet_grid(SPU_Name ~ .)
 #
-# ggplot(filter(tpars_clim, param %in% c("fstart", "fend")), aes(x=DoY_KAL1998, color=Sex, linetype=param)) +
+# ggplot(filter(tpars_clim, param %in% c("fstart", "fend")), aes(x=DoY_hotyear, color=Sex, linetype=param)) +
 #     geom_density(alpha = 0.5) +
 #     facet_grid(SPU_Name ~ .)
 
-tparsgraph <- gather(tpars_clim, key="WeatherRegime", value="DoY", DoY_KAL1998, DoY_KR2011)
+tparsgraph <- gather(tpars_clim, key="WeatherRegime", value="DoY", DoY_hotyear, DoY_coldyear)
 
 # ggplot(filter(tparsgraph, effect=="all"), aes(x=DoY, fill=Sex)) +
 #     geom_histogram(alpha=0.7, binwidth=1) +
@@ -75,7 +74,7 @@ ggplot(filter(tpars_wide, effect=="all"), aes(x=Sex, y=length, fill=WeatherRegim
 ## prov diff DoY
 
 # tparsgraph <- filter(tpars, str_detect(param, "half")) %>%
-#     gather(key="WeatherRegime", value="DoY", DoY_KAL1998, DoY_KR2011)
+#     gather(key="WeatherRegime", value="DoY", DoY_hotyear, DoY_coldyear)
 #
 #
 # # subtract Provenance from all
@@ -126,8 +125,40 @@ hpd_df <- full_join(full, fifty) %>%
     gather(key=end, value=value, x, xend) %>%
     arrange(interval)
 
-hpd_df <- mutate(hpd_df, y = case_when(WeatherRegime=="DoY_KAL1998" ~ 0,
-                               WeatherRegime=="DoY_KR2011" ~ 1))
+hpd_df <- mutate(hpd_df, y = case_when(WeatherRegime=="DoY_hotyear" ~ 0,
+                               WeatherRegime=="DoY_coldyear" ~ 1))
+
+# compare with and without site effect ############
+
+shd1 <- filter(tparsgraph, effect == "all") %>%
+    select(-sum_forcing, -effect)
+shd2 <- filter(tparsgraph, effect == "no_site") %>%
+    rename(no_site=param, DoY_nosite=DoY) %>%
+    select(-sum_forcing, -effect)
+sitecompd <- full_join(phd1, phd2) %>%
+    mutate(daydiff = DoY_noprov-DoY)
+
+
+
+hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
+hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
+
+# calculate HPDIs for DoY diffs PROV #############
+
+full <- group_by(provcompd, side, Sex, SPU_Name, WeatherRegime) %>%
+    summarize(x=hpd_lower(daydiff, prob=.99), xend=hpd_upper(daydiff, prob=.99)) %>%
+    mutate(interval="0.99")
+
+fifty <- group_by(provcompd, side, Sex, SPU_Name, WeatherRegime) %>%
+    summarize(x=hpd_lower(daydiff, prob=.75), xend=hpd_upper(daydiff, prob=.75)) %>%
+    mutate(interval="0.75")
+
+hpd_df <- full_join(full, fifty) %>%
+    gather(key=end, value=value, x, xend) %>%
+    arrange(interval)
+
+hpd_df <- mutate(hpd_df, y = case_when(WeatherRegime=="DoY_hotyear" ~ 0,
+                                       WeatherRegime=="DoY_coldyear" ~ 1))
 
 # How to do an interval plot
 
@@ -186,8 +217,8 @@ hpd_df <- full_join(full, fifty) %>%
     arrange(interval)
 
 
-hpd_df <- mutate(hpd_df, y = case_when(WeatherRegime=="DoY_KAL1998" ~ 0,
-                                       WeatherRegime=="DoY_KR2011" ~ 1))
+hpd_df <- mutate(hpd_df, y = case_when(WeatherRegime=="DoY_hotyear" ~ 0,
+                                       WeatherRegime=="DoY_coldyear" ~ 1))
 
 trans1 <- filter(hpd_df, side=="begin")
 ggplot(filter(trans1, interval=="0.99"), aes(x=value, y=y, color=WeatherRegime, size=1)) +
@@ -249,7 +280,7 @@ ggplot(doysite, aes(x=DoY, color=effect, linetype=side)) +
     theme(legend.position= "top") +
     guides(size=FALSE, colour=guide_legend(override.aes = list(size=3)))
 
-doyprovcold <- filter(tparsgraph, effect %in% c("all", "no_prov"), WeatherRegime== "DoY_KR2011")
+doyprovcold <- filter(tparsgraph, effect %in% c("all", "no_prov"), WeatherRegime== "DoY_coldyear")
 ggplot(doyprovcold, aes(x=DoY, color=effect, linetype=side)) +
     geom_freqpoly(alpha=0.8) +
    # stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +
@@ -261,7 +292,7 @@ ggplot(doyprovcold, aes(x=DoY, color=effect, linetype=side)) +
     theme(strip.text.y = element_text(angle = 0)) +
     theme(legend.position= "top")
 
-doysitecold <- filter(tparsgraph, effect %in% c("all", "no_site"), WeatherRegime== "DoY_KR2011")
+doysitecold <- filter(tparsgraph, effect %in% c("all", "no_site"), WeatherRegime== "DoY_coldyear")
 ggplot(doysitecold, aes(x=DoY, color=effect, linetype=side)) +
     geom_freqpoly(alpha=0.8) +
     # stat_ecdf(data=bdatd, aes(x=DoY_obs), inherit.aes=FALSE) +

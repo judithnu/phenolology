@@ -5,6 +5,9 @@
 sex <- "FEMALE"
 #sex <- "MALE"
 
+forcingtype = "scaled_ristos"
+
+
 # Dependencies and options ##################
 # library(rethinking)
 library(tidyverse)
@@ -83,19 +86,22 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 
 # Fit model  #############
 test <- stan("slopes_nc.stan",
-             model_name = paste(sex, "slopes_nc", forcingtype),
+             model_name = paste("test", Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
              data = rdump,
-             chains = 1, cores = 1, warmup = 20, iter = 25
+             pars = c("b_clone", "z_year", "phi"), include=FALSE,
+             chains = 1, cores = 1, warmup = 20, iter = 25,
+             save_dso=FALSE
 ) # quick check for small problems
 
 fit <- stan("slopes_nc.stan",
-            model_name = paste(sex, "slopes_nc", forcingtype),
+            model_name = paste(Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
             data = rdump,
-            pars = c("z_prov", "z_year", "phi"), include=FALSE,
-            chains = 6, cores = 6, warmup = 1500, iter = 1800,
-            control = list(max_treedepth = 15, adapt_delta = .9)
+            pars = c("b_clone","z_year", "phi"), include=FALSE,
+            chains = 8, cores = 8, warmup = 700, iter = 1500,
+            control = list(max_treedepth = 15, adapt_delta = .9),
 )
 
-saveRDS(fit, file = paste("slopes_nc_", forcingtype, "_", sex, "2019-10-04climatena", ".rds", sep=''))
+
+saveRDS(fit, file = paste(Sys.Date(), "slopes_nc", sex, ".rds", sep='_'))
 
 

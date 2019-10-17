@@ -9,7 +9,7 @@
 
 source('data/combine_phenology_and_heatsum_PCIC.R')
 
-# Writes out a combined heatsum and phenology file to ~/Documents/research_phenolology/data/phenology_heatsum_all.csv" and a climate only file to
+# Writes out a combined heatsum and phenology file to /data/phenology_heatsum_all.csv" and a climate only file to
 # ~/Documents/research_phenolology/data/all_clim_PCIC.csv", row.names=FALSE)
 
 # Remove redundant data
