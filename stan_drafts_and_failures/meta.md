@@ -29,13 +29,15 @@ Also includes a version with intercepts only
 # 2019-04_separatesex
 Stan models with hierarchy. Separate models for separate sexes. Priors on cutpoint diffs. Versions with effects on both slope and intercepts and with effects on only intercepts
 
+#2019-08-25_sitexpcic_droppedKR
+model run where weather correction was based on reconstructed site temperatures regressed on pcic pnwnamet data and with Kettle River's 2011 data dropped.
+
 # baby ordered logistic
 
 ## generative_model.rds
 
 ## generative_model.stan
 simulates model configurations from the prior and then simulates data from the generating process. Output to `simulated_data_from_gen_model.R`
-
 
 ## heatsum_intercepts
 Rather similar to 2019-03_ristos_intercepts, but 
@@ -83,6 +85,10 @@ Simulating data and fitting stan models to it.
 # slopes_tree.stan
 
 2019-07-11. added individual trees to stan and tightened priors on beta effects.
+
+# slopes.stan
+
+2019-07. Model for committee meeting 2019-07-30.
 
 # workspaces
 
