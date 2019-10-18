@@ -36,7 +36,7 @@ read_data <- function(slim=TRUE) { #choose true if slimmed data and false for fu
     
 
     ## provenance
-    SPU_dat <- read.csv("../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+    SPU_dat <- read.csv("../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                         header=TRUE, stringsAsFactors = FALSE) %>%
         dplyr::select(SPU_Name, Orchard)
 

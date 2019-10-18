@@ -97,7 +97,7 @@ fit <- stan("slopes_nc.stan",
             model_name = paste(Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
             data = rdump,
             pars = c("b_clone","z_year", "phi"), include=FALSE,
-            chains = 8, cores = 8, warmup = 700, iter = 1500,
+            chains = 8, cores = 8, warmup = 1000, iter = 2000,
             control = list(max_treedepth = 15, adapt_delta = .9),
 )
 
