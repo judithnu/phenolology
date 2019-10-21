@@ -1,5 +1,7 @@
 # Average Predictive comparisons
 
+source('phenology_functions.R')
+
 library(tidyverse)
 library(gtools)
 
