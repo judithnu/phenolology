@@ -19,7 +19,7 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 # MODEL DATA #####################
 
 
-ffit.stan <- readRDS("2019-10-17_slopes_nc_FEMALE_.rds")
+ffit.stan <- readRDS("2019-10-21_slopes_nc_FEMALE_.rds")
 mfit.stan <- readRDS("2019-10-17_slopes_nc_MALE_.rds")
 
 
