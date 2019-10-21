@@ -318,7 +318,7 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{clone} & \sim \mathrm{exponential}(5) \\
 \end{array}$$
 
-The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors on $\kappa$s and $\beta$ were designed to force the correct sign (positive) and order of magnitude. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
+The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors were designed to force the correct sign (positive) and order of magnitude [cite lemoine]. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
 The model was fit in the probabilistic programming language Stan (vers. 2.19.1 via RStan [@standevelopmentteam2019]) which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior.
 
@@ -392,31 +392,13 @@ Since phenology observations are not recorded until the flowering period begins,
 I should perform this analysis on the unslimmed data.
 
 #### Average predictive comparisons
-Average predictive comparisons allow parameters in non-linear models with interactions to be compared like regression coefficients in linear models with no interactions. Average predictive comparisons were calculated for site, provenance, clone, year, and accumulated forcing units following @gelman2007b. [link to code supplement]
-
-#### Differences between provenances
-
-The point at which a tree is 50% likely to have transitioned from one phenophase to another can be calculated by dividing the cutpoint for the transition by the slope.
-
-The halfway point between any 2 consecutive phenological states is 
-
-$$\mathrm{Pr}(s>i) = 0.5 \\
-f_{half_i} = \frac{\kappa_i}{\vec\beta}$$
-
-$$\begin{array}{ll}
-\bf{H}_1 &= \kappa_1/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
-\bf{H}_2 &= \kappa_2/(\beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})\\
-\end{array}$$
-
-Were calculated according to [@vandermijnsbruggeVariationBudBurst2015] - "difference in days in which half the plants has reached the same score level"
-
-$$\mathrm{H50}_{prov_i} - \mathrm{H50}_{prov_j} = \beta_{prov_j} - \beta_{prov_2}/\beta$$
-
-
+Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models. Using $f_start$ as the expected value, average predictive comparisons were calculated for site, provenance, clone, and year following @gelman2007b. The average predictive comparison for forcing units was calculated with phenological state as the expected value. [link to code supplement] 
 
 # Results
 
 ## Model parameters
+
+
 
 ## fstart and fend
 
@@ -425,8 +407,6 @@ $$\mathrm{H50}_{prov_i} - \mathrm{H50}_{prov_j} = \beta_{prov_j} - \beta_{prov_2
 Across all sites, years, provenances, and clones, the model predictions match the observation the majority of the time. Stage 2 and males are most likely to be predicted corrected. 
 
 Predictions are most certain for stage 1 at low levels of forcing, for stage 2 at moderate levels of forcing, and for stage 3 at high levels of forcing.
-
-
 
 
 ## Average Predictive Comparison
