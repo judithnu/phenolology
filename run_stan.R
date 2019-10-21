@@ -42,7 +42,7 @@ prepforstan <- function(df, file) {
   forcing <- df$sum_forcing
   state <- df$Phenophase_Derived
 
-  rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Nyear", "SiteID", "ProvenanceID", "CloneID", "YearID", "forcing", "state"), file)
+  rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Nyear", "Ntree", "SiteID", "ProvenanceID", "CloneID", "YearID", "TreeID", "forcing", "state"), file)
 }
 
 # Read in and process data
@@ -96,8 +96,8 @@ test <- stan("slopes_nc.stan",
 fit <- stan("slopes_nc.stan",
             model_name = paste(Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
             data = rdump,
-            pars = c("b_clone","z_year", "phi"), include=FALSE,
-            chains = 8, cores = 8, warmup = 1000, iter = 2000,
+            pars = c("b_clone", "b_tree", "phi"), include=FALSE,
+            chains = 4, cores = 4, warmup = 5000, iter = 8000,
             control = list(max_treedepth = 15, adapt_delta = .9),
 )
 

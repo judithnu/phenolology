@@ -35,7 +35,7 @@ build_par_df <- function(mcmcdf, datdf = udf, sex) {
     singledimpars <- mcmcdf %>%
         dplyr::select(iter, beta, sigma_site, sigma_prov, sigma_clone, sigma_year, contains("kappa"), contains("mean")) %>%
         rename(kappa1 = `kappa[1]`) %>%
-        rename(kappa2 = `kappa[2]`)
+        rename(kappa2 = `kappa[2]`) 
 
     siteb <- tidypar(mcmcdf, "b_site", "SiteID")
     provb <- tidypar(mcmcdf, "b_prov", "ProvenanceID")
