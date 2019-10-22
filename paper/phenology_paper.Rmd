@@ -318,7 +318,7 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{clone} & \sim \mathrm{exponential}(5) \\
 \end{array}$$
 
-The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors were designed to force the correct sign (positive) and order of magnitude [cite lemoine]. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
+The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors were designed to force the correct sign (positive) and order of magnitude [@lemoineMovingNoninformativePriors2019]. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
 The model was fit in the probabilistic programming language Stan (vers. 2.19.1 via RStan [@standevelopmentteam2019]) which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior.
 
@@ -396,11 +396,9 @@ Average predictive comparisons allow parameters in non-linear models to be compa
 
 # Results
 
-## Model parameters
+## Model parameters - estimates
 
-
-
-## fstart and fend
+### fstart and fend  overall - estimates
 
 ## Posterior predictive checks
 
