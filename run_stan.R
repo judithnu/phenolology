@@ -48,6 +48,13 @@ prepforstan <- function(df, file) {
 # Read in and process data
 phendf <- read_data(slim=FALSE)
 
+msf <- mean(phendf$sum_forcing)
+sdf <- sd(phendf$sum_forcing)
+
+phendf$normalized <- (phendf$sum_forcing - msf)/sdf
+
+phendf <- rename(phendf, sum_forcing_old = sum_forcing, sum_forcing=normalized)
+
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)
 df <- stanindexer(df)
@@ -96,12 +103,22 @@ test <- stan("slopes_nc.stan",
 fit <- stan("slopes_nc.stan",
             model_name = paste(Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
             data = rdump,
-            pars = c("b_clone", "b_tree", "phi"), include=FALSE,
-            chains = 4, cores = 4, warmup = 5000, iter = 8000,
-            control = list(max_treedepth = 15, adapt_delta = .9),
+            pars = c( "z_year", "z_clone", "phi"), include=FALSE,
+            chains = 4, cores = 4, warmup = 1000, iter = 3000#,
+            #control = list(max_treedepth = 14, adapt_delta = .9),
 )
 
 
 saveRDS(fit, file = paste(Sys.Date(), "slopes_nc", sex, ".rds", sep='_'))
 
+##############
 
+
+# ggplot(phendf, aes(x=DoY, y=normalized)) +
+#   geom_point() + 
+#   geom_point(aes(x=DoY, y=sum_forcing), color="red") +
+#   facet_wrap("Year")
+# 
+# ggplot(phendf, aes(x=sum_forcing)) +
+#   stat_ecdf() +
+#   facet_wrap("Phenophase_Derived")
