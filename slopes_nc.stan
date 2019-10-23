@@ -108,7 +108,7 @@ generated quantities{
  // b_tree_mean = mean(b_tree);
  
  // calculate h50s on scaled risto scale
- kappa_rs = ((kappa/beta) * 1.527)/(-11.975);
+ kappa_rs = (kappa* 1.527) + (beta * -11.975);
  
   
   // simulate data for model testing

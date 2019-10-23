@@ -20,7 +20,7 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 # MODEL DATA #####################
 
 
-ffit.stan <- readRDS("2019-10-22_slopes_nc_FEMALE_.rds")
+ffit.stan <- readRDS("2019-10-23_slopes_nc_FEMALE_.rds")
 mfit.stan <- readRDS("2019-10-17_slopes_nc_MALE_.rds")
 
 
@@ -129,7 +129,7 @@ energy <- dplyr::filter(np, Parameter== "energy__")
 # compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
 
 print("rhats > 1 for")
-names(which(rhats > 1.01))
+names(which(rhats > 1.02))
 which(is.na(rhats))
 
 color_scheme_set("purple")
@@ -140,7 +140,7 @@ mcmc_rhat(rhats) +
 # estimate of the number of independent draws from the posterior dist of the estimand of interest. n_eff in stan is based on ability of draws to estimate the true mean value of the param. because draws are not independent if there is autocorrelation between draws, neff is usually smaller than total N. the larger the ration of n_eff to N, the better. ratios depend not just on the model but on the algorithm used to fit the model
 
 print("Effective sample size < 0.5 for")
-names(which(ratios < 0.5))
+names(which(ratios < 0.05))
 badratios <- ratios[which(ratios<0.5)]
 
 mcmc_neff(badratios, size = 1.5) +
