@@ -9,13 +9,13 @@ forcingtype = "scaled_ristos" # choose forcing type for use in phendf output for
 
 
 # Data --------------------------------------------------------------------
-if (machine=="mycon") homedir <- '../phd/'
-if (machine=="72") homedir <- '../research_phd/'
+# if (machine=="mycon") homedir <- '../phd/'
+# if (machine=="72") homedir <- '../phd/'
 
-phendat <- read.csv(paste(homedir, "data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv", sep=''), stringsAsFactors = FALSE)
+phendat <- read.csv("../phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv", stringsAsFactors = FALSE)
 phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
 
-climdat <- read.csv(paste(homedir, "data/Climate/formatted/PCIC_all_seed_orchard_sites_adjusted.csv", sep=''), header = TRUE, stringsAsFactors=FALSE) %>%
+climdat <- read.csv("../phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_adjusted.csv", header = TRUE, stringsAsFactors=FALSE) %>%
     mutate(DoY = yday(Date)) %>%
     rename(mean_temp = mean_temp_corrected) # use mean temps that PCIC raw with a ClimateNA correction
 
@@ -80,9 +80,6 @@ calculate_scaled_ristos <- function(climate_df) {
 # Climate data processing
 clim <- mutate(climdat, Year = year(Date))
 clim <- subset(clim, Year %in% unique(phendat$Year)) # drop climate data not in phenology dataset
-
-
-
 
 
 # Calculate Forcing Units and Forcing sums
