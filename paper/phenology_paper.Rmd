@@ -407,22 +407,17 @@ Across all sites, years, provenances, and clones, the model predictions match th
 Predictions are most certain for stage 1 at low levels of forcing, for stage 2 at moderate levels of forcing, and for stage 3 at high levels of forcing.
 
 
-## Average Predictive Comparison
+## Average Predictive Comparisons
 
-## Provenance differences
+[Figure showing cold and hot year APC]
 
-[FIGURE SHOWING THE PROPORTION OF TREES THAT HAVE REACHED STAGE 2 AND STAGE 3 AT EACH SITE/PROV COMBINATION over forcing units]
+An increase of X accumulated forcing units, on average, provokes a transition to the next phenological state. X forcing units is approximately Y days in a cold year and Z days in a hot year.
 
-1) How strong are the genetic vs. environmental effects on pollination phenology?
+On average, a change in site causes a X change in the number of forcing units required for a tree to begin flowering. In a cold year, this translates into Y days. In a hot year, this translates into Z days.
 
-To answer this question I will compare the parameters of models fit by provenance. If different provenances have significantly different model parameters - that is, have different heat sum requirements for pollen shed and cone receptivity by provenance, then the rest of my project will be limited to the provenances I have data from. If not, I can use the same models across the entire range when predicting phenological events.
 
-The budburst and spring pollination phenology of temperate tree species is determined by temperature, and there may be some regional variation in the temperatures required for pollen shed and cone receptivity;
-in lodgepole pine, the threshold for shoot elongation was 5.1 $^\circ\mathrm{C}$ for coastal and interior provenances, but 6.5 $^\circ\mathrm{C}$ for northern provenances [@Chuine2001].
 
-However, seedling spring vegetative phenology data from four growth chamber temperature and moisture treatments in the AdapTree project suggests that budburst shows substantial clinal variation (> 10% of phenotypic variance explained) only in the coldest treatment tested (MAT of 1 $^\circ\mathrm{C}$), and much colder than the seed orchard locations (Figure \ref{siteprovclimate}, Figure \ref{Liepe_Pheno_Corr}, @Liepe2014 (submitted)). Analysis of phenotypic data from an outdoor common garden in Vancouver (*personal commmunication, Ian Maclachlan, AdapTree Graduate Student, January, 1 2015*) also shows that very little variation exists among provenances for spring phenology, regardless of whether seedlings originate from wild-stand or selectively bred seed orchard seedlots.
 
-![Variance in budbreak and budset for lodgepole pine explained by provenance climate. Seedlings from 281 locations across lodgepole's BC range were grown in growth chambers under four treatments: approximated seasonal and daily variation in temperature for geographic locations with a MAT of 1, 6, and 11 $^\circ\mathrm{C}$, with the warmest treatment having a dry and wet version. Pearson's correlation coefficient between phenotypic traits in lodgepole pine and provenance climates are presented. The vertical line represents the critical $r^2$ value after an adjustment for multiple inferences. From @Liepe2014 (submitted). \label{Liepe_Pheno_Corr}](/home/sus/Documents/research_phd/phd_proposal/figure/Liepe_phen_corr.png)
 
 2) How does faster spring warm-up like we expect under climate change affect within population mating success and frequency of outcrossing?
 
