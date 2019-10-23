@@ -34,7 +34,7 @@ phendf <- read_data(slim=TRUE)
 
 fdf <- splitsex(phendf, "FEMALE")
 # fdf$recordID <- group_indices(fdf, Index, DoY) #create an index for each observation
-# 
+#
 # dups <-  which(diff(fdf$recordID) < 1)
 # fdf <- fdf %>% arrange(recordID)
 # whydups <- fdf[sort(c(dups, dups+1)) ,]
@@ -50,7 +50,7 @@ postrep <- gather(postrep, key = "yrep", value = "state", starts_with("staterep"
     mutate(repid = str_extract(yrep, "\\d+"))
 postrep$state <- as.factor(postrep$state)
 postrep$Phenophase_Derived <- as.factor(postrep$Phenophase_Derived)
-postrep$staterep <- group_indices(postrep, Sex, state, yrep) 
+postrep$staterep <- group_indices(postrep, Sex, state, yrep)
 
 slimpostrep <- postrep %>% # create a version of postrep for fast merges
   select(recordID, Index, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
@@ -60,7 +60,7 @@ slimpostrep <- postrep %>% # create a version of postrep for fast merges
 # calculate proportion of correct predictions by observation and phenophase
 postrep <- postrep %>%
   mutate(correctyn = case_when(state==Phenophase_Derived ~ 1,
-                             state!=Phenophase_Derived ~ 0)) 
+                             state!=Phenophase_Derived ~ 0))
 propstate <- postrep %>%
   group_by(recordID, state, Sex) %>%
   summarise(propstate = n()/length(reps)) # calculate proportion of each state predicted for each observation
@@ -76,7 +76,7 @@ ppc_phenophase <- postrep %>%
   group_by(Sex, Phenophase_Derived) %>%
   summarise(prop_correct = sum(correctyn)/n()) %>% # calculate proportion correct for each observation
   left_join(slimpostrep) %>%
-  arrange(Sex, Phenophase_Derived) 
+  arrange(Sex, Phenophase_Derived)
 
 ppc_phenophase_site <- postrep %>%
   group_by(Sex, Phenophase_Derived, Site) %>%
