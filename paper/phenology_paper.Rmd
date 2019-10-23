@@ -394,6 +394,10 @@ I should perform this analysis on the unslimmed data.
 #### Average predictive comparisons
 Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models. Using $f_start$ as the expected value, average predictive comparisons were calculated for site, provenance, clone, and year following @gelman2007b. The average predictive comparison for forcing units was calculated with phenological state as the expected value. [link to code supplement] 
 
+#### Validation
+
+I will validate the model by comparing predictions to phenological measurements from the National Phenology Network.
+
 # Results
 
 ## Model parameters - estimates
@@ -557,6 +561,29 @@ compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
 
 # Discussion
 
+## Conclusions regarding goals or hypotheses in intro
+
+### Provenance differences
+
+[FIGURE SHOWING THE PROPORTION OF TREES THAT HAVE REACHED STAGE 2 AND STAGE 3 AT EACH SITE/PROV COMBINATION over forcing units]
+
+1) How strong are the genetic vs. environmental effects on pollination phenology?
+
+To answer this question I will compare the parameters of models fit by provenance. If different provenances have significantly different model parameters - that is, have different heat sum requirements for pollen shed and cone receptivity by provenance, then the rest of my project will be limited to the provenances I have data from. If not, I can use the same models across the entire range when predicting phenological events.
+
+The budburst and spring pollination phenology of temperate tree species is determined by temperature, and there may be some regional variation in the temperatures required for pollen shed and cone receptivity;
+in lodgepole pine, the threshold for shoot elongation was 5.1 $^\circ\mathrm{C}$ for coastal and interior provenances, but 6.5 $^\circ\mathrm{C}$ for northern provenances [@Chuine2001].
+
+However, seedling spring vegetative phenology data from four growth chamber temperature and moisture treatments in the AdapTree project suggests that budburst shows substantial clinal variation (> 10% of phenotypic variance explained) only in the coldest treatment tested (MAT of 1 $^\circ\mathrm{C}$), and much colder than the seed orchard locations (Figure \ref{siteprovclimate}, Figure \ref{Liepe_Pheno_Corr}, @Liepe2014 (submitted)). Analysis of phenotypic data from an outdoor common garden in Vancouver (*personal commmunication, Ian Maclachlan, AdapTree Graduate Student, January, 1 2015*) also shows that very little variation exists among provenances for spring phenology, regardless of whether seedlings originate from wild-stand or selectively bred seed orchard seedlots.
+
+![Variance in budbreak and budset for lodgepole pine explained by provenance climate. Seedlings from 281 locations across lodgepole's BC range were grown in growth chambers under four treatments: approximated seasonal and daily variation in temperature for geographic locations with a MAT of 1, 6, and 11 $^\circ\mathrm{C}$, with the warmest treatment having a dry and wet version. Pearson's correlation coefficient between phenotypic traits in lodgepole pine and provenance climates are presented. The vertical line represents the critical $r^2$ value after an adjustment for multiple inferences. From @Liepe2014 (submitted). \label{Liepe_Pheno_Corr}](/home/sus/Documents/research_phd/phd_proposal/figure/Liepe_phen_corr.png)
+
+## Reflective analysis of scholarly work and conclusions in light of current knowledge in the field
+
+## Comments on significance and contribution
+
+## Comments on strengths and limitations
+
 ### Limitations of the dataset
 
 Benefits of this dataset include the large number of trees, long time series, multiple provenances grown at multiple sites giving a semi-common garden design, and the inclusion of clones. Limitations include interval and end censoring, especially at Prince George, irregular scoring systems, subjective scoring, non-random clone selection, and selective breeding.
@@ -601,7 +628,11 @@ For lodgepole pine growing in natural environments, chilling is always met and s
 in the AdapTree project, lodgepole pine seedlings grown for three to four weeks at 4 $^\circ\mathrm{C}$ met their chilling requirements.
 Thus, I expect to be able to disregard the state of chilling and fit only Equations \ref{forcing} and \ref{simp_force_amt}).
 Once the model is parameterized I will be able to calculate the timing of pollen shed and cone receptivity across the lodgepole pine species range using location specific climate data from seed orchards and ClimateWNA [@Wang2012]. 
-I will validate the model by comparing predictions to phenological measurements from the National Phenology Network.
+
+
+## Discussion of potential applications
+
+## Future directions
 
 # Acknowledgements
 Thanks to R. Johnstone for help with transcription. GySgt T. Kerr, Ret. provided invaluable commentary on an earlier draft.
