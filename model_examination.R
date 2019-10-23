@@ -16,10 +16,11 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
     )
 }
 
+
 # MODEL DATA #####################
 
 
-ffit.stan <- readRDS("2019-10-21_slopes_nc_FEMALE_.rds")
+ffit.stan <- readRDS("2019-10-22_slopes_nc_FEMALE_.rds")
 mfit.stan <- readRDS("2019-10-17_slopes_nc_MALE_.rds")
 
 
@@ -71,6 +72,7 @@ if (sex=="FEMALE") {
     ratios <- fratios
     color_scheme_set("purple")
 }
+
 if (sex=="MALE") {
     sarray <- marray
     np <- mnp
@@ -127,7 +129,8 @@ energy <- dplyr::filter(np, Parameter== "energy__")
 # compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
 
 print("rhats > 1 for")
-names(which(rhats > 1.05))
+names(which(rhats > 1.01))
+which(is.na(rhats))
 
 color_scheme_set("purple")
 mcmc_rhat(rhats) +
