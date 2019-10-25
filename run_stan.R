@@ -47,13 +47,13 @@ prepforstan <- function(df, file) {
 
 # Read in and process data
 phendf <- read_data(slim=FALSE)
-
-msf <- mean(phendf$sum_forcing)
-sdf <- sd(phendf$sum_forcing)
-
-phendf$normalized <- (phendf$sum_forcing - msf)/sdf
-
-phendf <- rename(phendf, sum_forcing_old = sum_forcing, sum_forcing=normalized)
+# 
+# msf <- mean(phendf$sum_forcing)
+# sdf <- sd(phendf$sum_forcing)
+# 
+# phendf$normalized <- (phendf$sum_forcing - msf)/sdf
+# 
+# phendf <- rename(phendf, sum_forcing_old = sum_forcing, sum_forcing=normalized)
 
 # filter for sex of interest
 df <- filter(phendf, Sex == sex)
@@ -92,33 +92,22 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 ################
 
 # Fit model  #############
-test <- stan("slopes_nc.stan",
+test <- stan("phenology.stan",
              model_name = paste("test", Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
              data = rdump,
-             pars = c("b_clone", "z_year", "phi"), include=FALSE,
+             pars = c( "z_year", "phi"), include=FALSE,
              chains = 1, cores = 1, warmup = 20, iter = 25,
              save_dso=FALSE
 ) # quick check for small problems
 
-fit <- stan("slopes_nc.stan",
-            model_name = paste(Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
+fit <- stan("phenology.stan",
+            model_name = paste(Sys.Date(), sex, "phenology", forcingtype, sep="_"),
             data = rdump,
-            pars = c( "z_year", "z_clone", "phi"), include=FALSE,
-            chains = 4, cores = 4, warmup = 1000, iter = 3000#,
+            pars = c( "phi"), include=FALSE,
+            chains = 4, cores = 4, warmup = 1000, iter = 4000#,
             #control = list(max_treedepth = 14, adapt_delta = .9),
 )
 
 
-saveRDS(fit, file = paste(Sys.Date(), "slopes_nc", sex, ".rds", sep='_'))
+saveRDS(fit, file = paste(Sys.Date(), "phenology_uc", sex, ".rds", sep=''))
 
-##############
-
-
-# ggplot(phendf, aes(x=DoY, y=normalized)) +
-#   geom_point() + 
-#   geom_point(aes(x=DoY, y=sum_forcing), color="red") +
-#   facet_wrap("Year")
-# 
-# ggplot(phendf, aes(x=sum_forcing)) +
-#   stat_ecdf() +
-#   facet_wrap("Phenophase_Derived")
