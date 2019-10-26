@@ -104,10 +104,10 @@ fit <- stan("phenology.stan",
             model_name = paste(Sys.Date(), sex, "phenology", forcingtype, sep="_"),
             data = rdump,
             pars = c( "phi"), include=FALSE,
-            chains = 4, cores = 4, warmup = 1000, iter = 4000#,
+            chains = 4, cores = 4, warmup = 1000, iter = 9000#,
             #control = list(max_treedepth = 14, adapt_delta = .9),
 )
 
 
-saveRDS(fit, file = paste(Sys.Date(), "phenology_uc", sex, ".rds", sep=''))
+saveRDS(fit, file = paste(Sys.Date(), "phenology", sex, ".rds", sep=''))
 
