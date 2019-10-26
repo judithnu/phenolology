@@ -8,7 +8,7 @@ library(gtools)
 fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-10-04climatena.rds") %>%
     as.data.frame() %>%
   select(-contains("state_rep")) %>%
-  sample_frac(0.2)
+  sample_frac(0.05)
 
 mmod <- readRDS("slopes_nc_scaled_ristos_MALE2019-10-04climatena.rds") %>%
     as.data.frame() %>%
@@ -72,6 +72,54 @@ denom <- nrow(udf) * nrow(fmod) * ncol(diff)
 siteapc <- usum/denom
 
 
+#############################
+
+# WEIGHTS
+
+fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-10-04climatena.rds") %>%
+  as.data.frame() %>%
+  select(-contains("state_rep")) %>%
+  sample_frac(0.10)
+
+# original data (this code should match relevant bits in run_stan)
+phendf <- read_data(slim = FALSE)
+
+# identify combinations of effects that actually occur
+
+fdf <- splitsex(phendf, "FEMALE")
+mdf <- splitsex(phendf, "MALE")
+
+# Site effects
+udf <- unique_grouper(fdf, mdf) %>%
+  filter(Sex=="FEMALE") %>%
+  distinct() %>%
+  select("SPU_Name", "Clone", "Year") # v
+
+weights <- matrix(nrow=nrow(udf), ncol = nrow(udf))
+
+for (i in 1:nrow(udf)) { # This calculation is slow af
+  for (j in i:nrow(udf)) {
+    weights[i,j] <- sum(udf[i,] %in% udf[j,])
+  }
+}
+
+#make weights matrix symmetric
+weights[is.na(weights)] <- 0 # NA bottom half should be 0s so that addition works later
+tweights <- t(weights)
+diag(tweights) <- 0 # replace diagonal so self doesn't get counted twice
+
+# calculate weights
+weights <- (weights + tweights)/ncol(udf)
+
+# renormalize weights
+wdf <- as.data.frame(weights)
+wdf$totweights <- rowSums(weights)
+wdf <- wdf/wdf$totweights # 
+
+
+
+############################
+
 
 library(predcomps)
 
@@ -115,6 +163,7 @@ apc1 <- GetPredCompsDF(predfun, df1, inputVars = c("Price", "Quality"),
                        numForTransitionStart = numForTransitionStart,
                        numForTransitionEnd = numForTransitionEnd,
                        onlyIncludeNearestN = onlyIncludeNearestN)
+
 ##############################
 x <- 0:50
 mu1 <- .5*x 
