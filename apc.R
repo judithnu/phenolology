@@ -71,6 +71,50 @@ denom <- nrow(udf) * nrow(fmod) * ncol(diff)
 
 siteapc <- usum/denom
 
+
+
+library(predcomps)
+
+priceCoef <- -.12
+qualityCoef <- .1
+qualityNoiseStdDev <- 5
+nWines=50000
+nRowsForPlottingSample <- 1000
+
+numForTransitionStart <- 500
+numForTransitionEnd <- 10000
+onlyIncludeNearestN = 100
+
+priceQualitySlope <- .4
+
+df1 <- local({
+  price <- sample(20:120, nWines, replace=TRUE)
+  quality <- price * priceQualitySlope + 22 + rnorm(nWines, sd=qualityNoiseStdDev)
+  purchaseProbability <- logistic(priceCoef*(price - 70) + qualityCoef*(quality - 50)  )
+  purchased  <- rbinom(n = length(purchaseProbability), size=1, prob=purchaseProbability)
+  data.frame(Quality = quality, 
+             Price = price, 
+             PurchaseProbability = purchaseProbability, 
+             Purchased = purchased)
+})
+
+
+df1Sample <- df1[sample.int(nWines, size=nRowsForPlottingSample), ]
+qplot(Price, Quality, alpha=I(.5), data = df1Sample) + 
+  expand_limits(y=c(0,100))
+
+logitFit1 <- glm(Purchased ~ Price + Quality, data = df1, family = "binomial")
+logitFit1
+
+predfun <- function(df) {
+  with(df, Price + Quality)
+}
+df1$y <- predfun(df1)
+
+apc1 <- GetPredCompsDF(predfun, df1, inputVars = c("Price", "Quality"),
+                       numForTransitionStart = numForTransitionStart,
+                       numForTransitionEnd = numForTransitionEnd,
+                       onlyIncludeNearestN = onlyIncludeNearestN)
 ##############################
 x <- 0:50
 mu1 <- .5*x 
