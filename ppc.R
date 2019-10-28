@@ -4,7 +4,7 @@
 source('phenology_functions.R')
 
 forcingtype = 'scaled_ristos'
-samplefrac = 0.2
+samplefrac = 0.05
 
 
 library(tidyverse)
@@ -14,30 +14,26 @@ library(bayesplot)
 
 
 #model
-fmod <- readRDS("2019-10-13_slopes_nc_FEMALE_.rds") %>%
+fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
     as.data.frame() %>%
   sample_frac(samplefrac)
 
-mmod <- readRDS("2019-10-13_slopes_nc_MALE_.rds") %>%
+mmod <- readRDS("2019-10-28phenologyMALE.rds") %>%
     as.data.frame() %>%
-  sample_frac(samplefrac)
+  sample_frac(samplefrac) 
+
 
 state_repf <- t(as.matrix(dplyr::select(fmod, contains("state_rep"))))
 state_repm <- t(as.matrix(dplyr::select(mmod, contains("state_rep"))))
 
-reps <- c(1:nrow(fmod))
-colnames(state_repm) <- paste("staterep", reps, sep="_")
-colnames(state_repf) <- paste("staterep", reps, sep="_")
+modelconfig <- c(1:nrow(fmod)) # reps -> modelconfig
+colnames(state_repm) <- paste("modelconfig", modelconfig, sep="_") #staterep -> modelconfig
+colnames(state_repf) <- paste("modelconfig", modelconfig, sep="_")
 
 # original data (this code should match relevant bits in run_stan)
-phendf <- read_data(slim=TRUE)
+phendf <- read_data(slim=FALSE)
 
 fdf <- splitsex(phendf, "FEMALE")
-# fdf$recordID <- group_indices(fdf, Index, DoY) #create an index for each observation
-#
-# dups <-  which(diff(fdf$recordID) < 1)
-# fdf <- fdf %>% arrange(recordID)
-# whydups <- fdf[sort(c(dups, dups+1)) ,]
 mdf <- splitsex(phendf, "MALE")
 
 #merge data and predicted phenological states for females
@@ -46,11 +42,11 @@ postcheckm <- cbind(mdf, state_repm)
 postrep <- rbind(postcheckf, postcheckm)
 postrep$recordID <- group_indices(postrep, Index, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique)
 
-postrep <- gather(postrep, key = "yrep", value = "state", starts_with("staterep")) %>%
+postrep <- gather(postrep, key = "yrep", value = "state", starts_with("modelconfig")) %>%
     mutate(repid = str_extract(yrep, "\\d+"))
 postrep$state <- as.factor(postrep$state)
 postrep$Phenophase_Derived <- as.factor(postrep$Phenophase_Derived)
-postrep$staterep <- group_indices(postrep, Sex, state, yrep)
+postrep$modelconfig <- group_indices(postrep, Sex, state, yrep)
 
 slimpostrep <- postrep %>% # create a version of postrep for fast merges
   select(recordID, Index, DoY, Sex, Year, Site, Orchard, Clone, TreeUnique, sum_forcing,
@@ -63,7 +59,7 @@ postrep <- postrep %>%
                              state!=Phenophase_Derived ~ 0))
 propstate <- postrep %>%
   group_by(recordID, state, Sex) %>%
-  summarise(propstate = n()/length(reps)) # calculate proportion of each state predicted for each observation
+  summarise(propstate = n()/length(modelconfig)) # calculate proportion of each state predicted for each observation
 
 ppc <- postrep %>%
   group_by(recordID) %>%
@@ -87,6 +83,14 @@ ppc_phenophase_site <- postrep %>%
 
 # plot model predictions
 
+ggplot(postrep, aes(x=sum_forcing, color=state, group=modelconfig)) +
+  stat_ecdf(alpha=0.1) +
+  stat_ecdf(data=phendf, aes(x=sum_forcing, group=as.factor(Phenophase_Derived)), alpha=1.0, inherit.aes = FALSE) +
+  facet_wrap("Sex") +
+  ggtitle("Probability of reaching a given phase as forcing accumulates") +
+  scale_color_viridis_d(option="cividis", begin=0.4)
+  
+
 ggplot(ppc, aes(x=sum_forcing, y=prop_correct)) +
   geom_point(alpha=0.2, pch=16) +
   facet_wrap("Sex") +
@@ -94,8 +98,20 @@ ggplot(ppc, aes(x=sum_forcing, y=prop_correct)) +
 
 ggplot(ppc, aes(x=sum_forcing, y=prop_correct)) +
     geom_point(alpha=0.2, pch=16) +
-    facet_grid(Sex ~ Phenophase_Derived) +
+    facet_grid(Phenophase_Derived ~ Sex) +
   ggtitle("Proportion of predictions that match data across forcing units by observation")
+
+se <- function(x) sqrt(var(x)/length(x))
+
+forcing_ppc_summary <- ppc %>% group_by(sum_forcing, Phenophase_Derived, Sex) %>%
+  summarise(mean=mean(prop_correct), se=se(prop_correct))
+
+ggplot(forcing_ppc_summary, aes(x=sum_forcing, y=mean)) +
+  geom_point(alpha=0.8, pch=16) + 
+  facet_grid(Phenophase_Derived ~ Sex) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, alpha=0.5) +
+  ggtitle("Proportion of predictions that match data across forcing units by observation")
+  
 
 
 postrep_long <- pivot_longer(postrep, cols=c(state, Phenophase_Derived), names_to = "obsorpred", values_to = "state")
@@ -150,7 +166,7 @@ ggplot(frep2, aes(x=sum_forcing, group=yrep), alpha=0.01, color="gray") +
     stat_ecdf(data=fdf2, aes(x=sum_forcing), color="red", inherit.aes=FALSE)
 
 # interesting
-ggplot(postcheckf, aes(x=DoY, group=staterep, color=as.factor(state))) +
+ggplot(postcheckf, aes(x=DoY, group=modelconfig, color=as.factor(state))) +
     stat_ecdf(linetype=3) +
     stat_ecdf(aes(x=DoY, color=as.factor(Phenophase_Derived)), inherit.aes = FALSE) +
     facet_wrap("Year")
