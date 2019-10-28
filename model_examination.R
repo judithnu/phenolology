@@ -140,11 +140,17 @@ mcmc_rhat(rhats) +
 # estimate of the number of independent draws from the posterior dist of the estimand of interest. n_eff in stan is based on ability of draws to estimate the true mean value of the param. because draws are not independent if there is autocorrelation between draws, neff is usually smaller than total N. the larger the ration of n_eff to N, the better. ratios depend not just on the model but on the algorithm used to fit the model
 
 print("Effective sample size < 0.5 for")
-names(which(ratios < 0.05))
+names(which(ratios < 0.5))
 badratios <- ratios[which(ratios<0.5)]
+
+print("Effective sample size < 0.1 for")
+names(which(ratios < 0.1))
+vbadratios <- ratios[which(ratios < 0.1)]
 
 mcmc_neff(badratios, size = 1.5) +
     yaxis_text(hjust = 1)
+
+mcmc_neff_hist(neff_ratio(ffit.stan))
 
 # Autocorrelation
 #n_eff/N decreases as autocorrelation becomes more extreme. Visualize autocorrelation using mcmc_acf or mcmc_acf_bar. Postive autocorrelation is bad because it means the chain gets stuck. Ideally, it drops quickly to zero as lag increasses. negative autocorrelation indicates fast convergence of sample mean towards true
@@ -190,3 +196,26 @@ compare_fm(fint_beta, mint_beta)
 mcmc_intervals(fpostdf, regex_pars = c("prov", "site", "sigma")) + ggtitle("Scaled ristos effects")
 mcmc_intervals(fpostdf, regex_pars = c("clone")) + ggtitle("Clone intercepts")
 
+# rank plots
+
+mcmc_rank_hist(ffit.stan, regex_pars = "year")
+mcmc_rank_overlay(ffit.stan, regex_pars = c("year", "prov"))
+mcmc_rank_overlay(ffit.stan, regex_pars = "site")
+mcmc_rank_overlay(ffit.stan, regex_pars = "clone\\[.0")
+mcmc_rank_overlay(ffit.stan, regex_pars = "sigma")
+mcmc_rank_overlay(ffit.stan, regex_pars = "mean")
+
+# calculate bulk andtail ess
+
+
+ness <- data.frame(parameter = attr(farray, which="dimnames")[3], tail=NA, bulk=NA, rhat=NA)
+for (i in 1:nrow(ness)) {
+    ness$tail[i] <- ess_tail(farray[,,i]) 
+    ness$bulk[i] <- ess_bulk(farray[,,i]) # rank normalized
+    ness$rhat[i] <- Rhat(farray[,,i])
+}
+
+dplyr::arrange(ness, tail)
+dplyr::arrange(ness, bulk)
+dplyr::arrange(ness, rhat) %>%
+    filter(rhat > 1.01)
