@@ -20,8 +20,8 @@ compare_fm <- function(femplot, mplot, nrow = 2, ...) {
 # MODEL DATA #####################
 
 
-ffit.stan <- readRDS("2019-10-23phenology_ucFEMALE.rds")
-mfit.stan <- readRDS("2019-10-17_slopes_nc_MALE_.rds")
+ffit.stan <- readRDS("2019-10-28phenologyFEMALE.rds")
+mfit.stan <- readRDS("2019-10-28phenologyMALE.rds")
 
 
 fshiny <- as.shinystan(ffit.stan)
