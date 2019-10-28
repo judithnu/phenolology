@@ -7,6 +7,8 @@ sex <- "FEMALE"
 
 forcingtype = "scaled_ristos"
 
+test = FALSE
+
 
 # Dependencies and options ##################
 # library(rethinking)
@@ -92,22 +94,24 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 ################
 
 # Fit model  #############
-test <- stan("phenology.stan",
-             model_name = paste("test", Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
-             data = rdump,
-             pars = c( "z_year", "phi"), include=FALSE,
-             chains = 1, cores = 1, warmup = 20, iter = 25,
-             save_dso=FALSE
-) # quick check for small problems
-
-fit <- stan("phenology.stan",
-            model_name = paste(Sys.Date(), sex, "phenology", forcingtype, sep="_"),
-            data = rdump,
-            pars = c( "phi"), include=FALSE,
-            chains = 4, cores = 4, warmup = 1000, iter = 9000#,
-            #control = list(max_treedepth = 14, adapt_delta = .9),
-)
-
-
-saveRDS(fit, file = paste(Sys.Date(), "phenology", sex, ".rds", sep=''))
+if (test==TRUE)
+{
+  test <- stan("phenology.stan",
+               model_name = paste("test", Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
+               data = rdump,
+               pars = c( "z_year", "phi"), include=FALSE,
+               chains = 1, cores = 1, warmup = 20, iter = 25,
+               save_dso=FALSE
+  ) # quick check for small problems
+} else {
+  fit <- stan("phenology.stan",
+              model_name = paste(Sys.Date(), sex, "phenology", forcingtype, sep="_"),
+              data = rdump,
+              pars = c( "phi"), include=FALSE,
+              chains = 4, cores = 4, warmup = 1000, iter = 4500#,
+              #control = list(max_treedepth = 14, adapt_delta = .9),
+  )
+  
+  saveRDS(fit, file = paste(Sys.Date(), "phenology", sex, ".rds", sep=''))
+}
 
