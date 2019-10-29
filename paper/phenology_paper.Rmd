@@ -192,7 +192,9 @@ Observations were not made every day and survey periods varied in length. At Pri
 
 [DESCRIBE DATA TRANSCRIPTION AND CLEANING].
 
-There were some differences in how data was recorded at the Prince George Tree Improvement Station versus the other sites. At Prince George, trees were marked as flowering or not flowering on each day of observation. At other sites, only the first day observed flowering and the first day observed finished flowering were recorded. I inferred that trees were not yet flowering on observation days prior to their first recorded flowering date. I cleaned and harmonized the data for analysis in a single model using R scripts provided so that, for pollen cones and seed cones, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 finished flowering. 
+There were some differences in how data was recorded at the Prince George Tree Improvement Station versus the other sites. At Prince George, trees were marked as flowering or not flowering on each day of observation. At other sites, only the first day observed flowering and the first day observed finished flowering were recorded. At sites using that minimal recording schema, I was able to infer states for many clones for some observation dates at the orchard. *E.g*, if tree A and B are in the same orchard and A is observed to be receptive on Monday and tree B on Tuesday, then I assumed that tree B was not yet receptive on Monday. 
+
+I cleaned and harmonized the data for analysis in a single model using R scripts [provided] so that, for pollen cones and seed cones, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 finished flowering. 
 
 There are three phenological stages of interest each for a tree's male and female cones
 
@@ -394,7 +396,17 @@ Since phenology observations are not recorded until the flowering period begins,
 I should perform this analysis on the unslimmed data.
 
 #### Average predictive comparisons
-Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models. Using $f_start$ as the expected value, average predictive comparisons were calculated for site, provenance, clone, and year following @gelman2007b. The average predictive comparison for forcing units was calculated with phenological state as the expected value. [link to code supplement] 
+Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models. Using $f_start$ as the expected value, average predictive comparisons were calculated for site, provenance, clone, and year following @gelman2007b.
+
+Comparison calculations are weighted to reflect the distribution of data.
+
+The weighting function compares the elements of $v$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $v$'s matches are summed and then divided by 3, creating a weight for each row x row comparison, which makes an $n_v$ x $n_v$ matrix of weights. The overall weight for a given $v$ should be the sum of all weights for its comparisons. $v_{tot}$
+
+The method is not fully specified in @gelman2007b, especially the weighting function. @chudzicki2018 implemented average predictive comparisons in the predcomps package for datasets with continuous numeric or ordered categorical data which allowed them to follow @gelman2007b's recommendation to use a Mahalanobis distance function for weights instead. @chudzicki2018 further develops the method, pointing out that $v_{tot}$ is inappropriate to use as it weights $v$ not by their prevalence in the data, but by how similar they are to other $v$. Weights must be normalized by dividing by the maximum $v$ row comparison weight. Now $v$'s are properly weighted by their distribution in the dataset.
+
+Nearest neighbor shit.
+
+
 
 #### Validation
 
