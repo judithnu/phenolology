@@ -320,16 +320,16 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 
 The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors were designed to force the correct sign (positive) and order of magnitude [@lemoineMovingNoninformativePriors2019]. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
-The model was fit in the probabilistic programming language Stan (vers. 2.19.1 via RStan [@standevelopmentteam2019]) which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior.
+The model was fit in the probabilistic programming language Stan (vers. 2.19.2 via RStan [@standevelopmentteam2019]) which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior.
 
-Sampling efficiency for the year cluster was improved with a non-centered parameterization. I ran 8 independent chains for 1500 iterations, discarding 700 warm-up iterations for a total of 6400 posterior samples for each parameter.
+I ran 4 independent chains for 4500 iterations, discarding 1000 warm-up iterations for a total of 14,000 posterior samples for each parameter. 
 
 #### Model Assumptions 
 I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for damage and abnormal development from very cold and very warm temperatures.  [Cite Sarvas's weird hot stuff and some late spring phenology]
 
 #### Model diagnostics
 
-Rhat, Neff, etc.
+Rank-normalized bulk  and tail effective sample sizes were at least X and Rhats for all parameters were below 1.01. (Energy? Etc?)
 
 #### Flowering period timing and length
 
@@ -367,7 +367,7 @@ $$length=d_{end}-d_{begin}$$
 
 #### Posterior predictive checks
 
-To check the realism of the model, the observations of phenological states were compared to model predictions. When the model was fit in Stan, I also simulated one phenological state from all model configurations for each phenological observation in the dataset. As effects were fit with partial pooling, there should be some regression toward the [WHICH] mean. 
+To check the realism of the model, the observations of phenological states were compared to model predictions. When the model was fit in Stan, I also simulated one phenological state from all model configurations for each phenological observation in the dataset.  
 
 ![Cumulative distribution of accumulated forcing for observed phenophases and predicted states](../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png)
 
