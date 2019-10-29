@@ -126,7 +126,7 @@ My aim was to model pollination phenology in lodgepole pine and calculate synchr
 
 Lodgepole pine is a wind-pollinated monecious conifer with an extensive range and well documented local adaptation. While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Pollen and seed cone buds differentiate in late summer and early fall, then go dormant. As temperatures warm the following year, buds resume development and strobili "flower"; receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
 
-![Rangemap of lodgepole pine. After @Little1971 \label{range}.](/home/sus/Documents/research_phd/maps/SpeciesDistribution/distmap_pincon.png)
+![Rangemap of lodgepole pine. After @Little1971 \label{range}.](../../phd/maps/SpeciesDistribution/distmap_pincon.png)
 
 ### Data
 
@@ -138,7 +138,7 @@ This project takes advantage of an existing lodgepole pine pollination phenology
 ##### Sites
 Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 7 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another around Vernon, BC. Sites span about 5 $^\circ$ of latitude and are at elevations from 466 to 638 m.
 
-![Map of seed orchard locations. Seed orchard locations are in red. Weather data gridpoints are in blue. Boxed area in map on left is shown in greater detail on the right. \label{Sites} ](/home/sus/Documents/research_phd/maps/SiteMaps/sitemapwithPCIC.png)
+![Map of seed orchard locations. Seed orchard locations are in red. Weather data gridpoints are in blue. Boxed area in map on left is shown in greater detail on the right. \label{Sites} ](../../phd/maps/SiteMaps/sitemapwithPCIC.png)
 
 
 ##### Provenances
@@ -150,10 +150,10 @@ Thirteen out of 17 orchards in my data set are first generation orchards and sho
 
 Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone, PGTIS typically observed 2-4 ramets per clone.
 
-![Contingency table of years of data for Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](/home/sus/Documents/research_phd/phd_proposal/figure/contingencytable.png)
+![Contingency table of years of data for Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](../../phd/phd_proposal/figure/contingencytable.png)
 
 
-![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPU}](/home/sus/Documents/research_phd/maps/SPUmaps/SPUmap_subset.png)
+![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. Data is also available for East Kootenay Low, but will likely not be included in any analysis as it includes only one year at one site. \label{SPU}](../../phd/maps/SPUmaps/SPUmap_subset.png)
 
 [table with Site Columns and SPU rows with years of data as values]
  [table of number of trees/clones in a given year for a given site/spu combo]
@@ -369,21 +369,23 @@ $$length=d_{end}-d_{begin}$$
 
 To check the realism of the model, the observations of phenological states were compared to model predictions. When the model was fit in Stan, I also simulated one phenological state from all model configurations for each phenological observation in the dataset. As effects were fit with partial pooling, there should be some regression toward the [WHICH] mean. 
 
-![Proportion of states correctly predicted by the model for each phenophase. \label{ppc_prop}](~/Documents/research_phd/Lab_Notebook/images/2019-10-14_proportionstatescorrpredicted.png)
+![Cumulative distribution of accumulated forcing for observed phenophases and predicted states](../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png)
+
+![Proportion of states correctly predicted by the model for each phenophase. \label{ppc_prop}](../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png)
 
 Flowering is predicted with greater accuracy than the other phases and males flowering is predicted better than female flowering. Phases 1 and 3 are less well predicted, but phase 1 is particularly poorly predicted, especially for males. Phases 1 and 3 are less well represented in the data than flowering.
 
 Overall trends are largely driven by predictions at Prince George, for which there is the most data. When broken down by site you can see that phase1 and 3 are usually retrodicted better at Prince George than at other sites. Phase 1 for males is particularly poorly predicted. Phase 2 is less well predicted for Prince George than any other site, however. PRT is surprisingly well predicted. I have 3 years of data with 2 provenances for PRT, but Kalamalka has 5 years of data and 3 provenances. 
 
-![Proportion of states correctly predicted by the model for each phenophase and site. \label{ppc_site}](~/Documents/research_phd/Lab_Notebook/images/2019-10-16_propstatescorrpredsite.png)
+![Proportion of states correctly predicted by the model for each phenophase and site. \label{ppc_site}](../../phd/LabNotebook/images/2019-10-28ppcsite.png)
 
 When the model incorrectly retrodicts a phenophase, it usually predicts an adjacent phenophase.
 
-![Count of states predicted at each observed phenophase. \label{ppc_counts}](~/Documents/research_phd/Lab_Notebook/images/2019-10-16_modelpredsateachobsphenophase.png)
+![Count of states predicted at each observed phenophase. \label{ppc_counts}](../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png)
 
 The model is very likely to correctly predict phase 1 and 3 at very high and low amounts of accumulated forcing.
 
-![Proportion of observations correctly predicted as forcing accumulates \label{ppc_forcing}](~/Documents/research_phd/Lab_Notebook/images/2019-10-16_proppredforcingunits.png)
+![Proportion of observations correctly predicted as forcing accumulates \label{ppc_forcing}](../../phd/LabNotebook/images/2019-10-28ppcforcingphase.png)
 
 While I don't expect a perfect retrodiction of the sample, it is a bit worrying that 1 and 3 are so hard to predict for the model. I think this is because the only 1 and 3 data I included were the most marginal 1 and 3s - right at transition points. This should improve predictions for flowering (phase 2), but makes 1 and 3 look worse. 
 
@@ -576,7 +578,7 @@ in lodgepole pine, the threshold for shoot elongation was 5.1 $^\circ\mathrm{C}$
 
 However, seedling spring vegetative phenology data from four growth chamber temperature and moisture treatments in the AdapTree project suggests that budburst shows substantial clinal variation (> 10% of phenotypic variance explained) only in the coldest treatment tested (MAT of 1 $^\circ\mathrm{C}$), and much colder than the seed orchard locations (Figure \ref{siteprovclimate}, Figure \ref{Liepe_Pheno_Corr}, @Liepe2014 (submitted)). Analysis of phenotypic data from an outdoor common garden in Vancouver (*personal commmunication, Ian Maclachlan, AdapTree Graduate Student, January, 1 2015*) also shows that very little variation exists among provenances for spring phenology, regardless of whether seedlings originate from wild-stand or selectively bred seed orchard seedlots.
 
-![Variance in budbreak and budset for lodgepole pine explained by provenance climate. Seedlings from 281 locations across lodgepole's BC range were grown in growth chambers under four treatments: approximated seasonal and daily variation in temperature for geographic locations with a MAT of 1, 6, and 11 $^\circ\mathrm{C}$, with the warmest treatment having a dry and wet version. Pearson's correlation coefficient between phenotypic traits in lodgepole pine and provenance climates are presented. The vertical line represents the critical $r^2$ value after an adjustment for multiple inferences. From @Liepe2014 (submitted). \label{Liepe_Pheno_Corr}](/home/sus/Documents/research_phd/phd_proposal/figure/Liepe_phen_corr.png)
+![Variance in budbreak and budset for lodgepole pine explained by provenance climate. Seedlings from 281 locations across lodgepole's BC range were grown in growth chambers under four treatments: approximated seasonal and daily variation in temperature for geographic locations with a MAT of 1, 6, and 11 $^\circ\mathrm{C}$, with the warmest treatment having a dry and wet version. Pearson's correlation coefficient between phenotypic traits in lodgepole pine and provenance climates are presented. The vertical line represents the critical $r^2$ value after an adjustment for multiple inferences. From @Liepe2014 (submitted). \label{Liepe_Pheno_Corr}](../../phd/phd_proposal/figure/Liepe_phen_corr.png)
 
 ## Reflective analysis of scholarly work and conclusions in light of current knowledge in the field
 
@@ -620,7 +622,7 @@ knitr::kable(orchard_meta)
 ### selection only from a portion of the range
 Provenances and sites included in my data exclude the coldest and wettest parts of the range. Figure \ref{siteprovclimate} shows the 1961-1990 climate normal mean annual temperature (MAT) and mean annual precipitation (MAP) for data from all lodgepole pine provenances in BC, provenances included in my data set, and sites where provenances were grown. Orchard sites are generally much warmer and drier than many locations where lodgepole pine grow. I may have difficulty extrapolating into the coolest and wettest parts of the lodgepole pine range, depending on actual yearly conditions at sites for which I have data. However, this may be advantageous when it comes to predicting phenology under climate change.
 
-![Provenance (SPU) climates of data included in this proposal, provenances not included in this proposal, and sites where provenances were grown. MAT is mean annual temperature and MAP is mean annual precipitation. \label{siteprovclimate}](/home/sus/Documents/research_phd/phd_proposal/figure/climate.png)
+![Provenance (SPU) climates of data included in this proposal, provenances not included in this proposal, and sites where provenances were grown. MAT is mean annual temperature and MAP is mean annual precipitation. \label{siteprovclimate}](../../phd/phd_proposal/figure/climate.png)
 
 ## no chilling
 Previous models for lodgepole pine have fitted spring growth phenology models without considering chilling [@Chuine2001] and, in general, budburst models for boreal tree species have not required chilling to give accurate predictions [@Linkosalo2000].
