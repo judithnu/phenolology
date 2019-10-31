@@ -143,15 +143,15 @@ df1 <- local({
   quality <- price * priceQualitySlope + 22 + rnorm(nWines, sd=qualityNoiseStdDev)
   purchaseProbability <- logistic(priceCoef*(price - 70) + qualityCoef*(quality - 50)  )
   purchased  <- rbinom(n = length(purchaseProbability), size=1, prob=purchaseProbability)
-  data.frame(Quality = quality, 
-             Price = price, 
-             PurchaseProbability = purchaseProbability, 
+  data.frame(Quality = quality,
+             Price = price,
+             PurchaseProbability = purchaseProbability,
              Purchased = purchased)
 })
 
 
 df1Sample <- df1[sample.int(nWines, size=nRowsForPlottingSample), ]
-qplot(Price, Quality, alpha=I(.5), data = df1Sample) + 
+qplot(Price, Quality, alpha=I(.5), data = df1Sample) +
   expand_limits(y=c(0,100))
 
 logitFit1 <- glm(Purchased ~ Price + Quality, data = df1, family = "binomial")
@@ -169,8 +169,8 @@ apc1 <- GetPredCompsDF(predfun, df1, inputVars = c("Price", "Quality"),
 
 ##############################
 x <- 0:50
-mu1 <- .5*x 
-mu2 <- 2*x 
+mu1 <- .5*x
+mu2 <- 2*x
 
 
 site.1 <- rnorm(length(x), mu1, 0.5)
