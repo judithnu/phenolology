@@ -404,7 +404,7 @@ The weighting function compares the elements of $v$ in pairs of rows. Matches ar
 
 The method is not fully specified in @gelman2007b, especially the weighting function. @chudzicki2018 implemented average predictive comparisons in the predcomps package for datasets with continuous numeric or ordered categorical data which allowed them to follow @gelman2007b's recommendation to use a Mahalanobis distance function for weights instead. @chudzicki2018 further develops the method, pointing out that $v_{tot}$ is inappropriate to use as it weights $v$ not by their prevalence in the data, but by how similar they are to other $v$. Weights must be normalized by dividing by the maximum $v$ row comparison weight. Now $v$'s are properly weighted by their distribution in the dataset.
 
-Nearest neighbor shit.
+$v$'s that are very dissimilar can dominate the overall weight for a row/$v$, so @chudzicki2018 recommends choosing a fixed number of nearest rows. I'm not sure I'm going to do this.
 
 
 
