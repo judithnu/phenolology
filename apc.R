@@ -94,9 +94,9 @@ mdf <- splitsex(phendf, "MALE")
 
 # Site effects
 udf <- unique_grouper(fdf, mdf) %>%
-  filter(Sex=="FEMALE") %>%
+  #filter(Sex=="FEMALE") %>%
   distinct() %>%
-  select("SPU_Name", "Clone", "Year") # v
+  select("SPU_Name", "Clone", "Year", "Sex") # v
 
 weights <- matrix(nrow=nrow(udf), ncol = nrow(udf))
 
@@ -106,7 +106,7 @@ for (i in 1:nrow(udf)) { # This calculation is slow af
   }
 }
 
-#make weights matrix symmetric
+  #make weights matrix symmetric
 weights[is.na(weights)] <- 0 # NA bottom half should be 0s so that addition works later
 tweights <- t(weights)
 diag(tweights) <- 0 # replace diagonal so self doesn't get counted twice
@@ -117,7 +117,7 @@ weights <- (weights + tweights)/ncol(udf)
 # renormalize weights
 wdf <- as.data.frame(weights)
 wdf$totweights <- rowSums(weights)
-wdf <- wdf/wdf$totweights # 
+wdf <- wdf/wdf$totweights # dataframe with weights (normalized) for each comparison of v's that occur in the dataset
 
 
 
