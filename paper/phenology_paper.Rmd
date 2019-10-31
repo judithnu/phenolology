@@ -420,9 +420,19 @@ I will validate the model by comparing predictions to phenological measurements 
 
 ## Posterior predictive checks
 
-Across all sites, years, provenances, and clones, the model predictions match the observation the majority of the time. Stage 2 and males are most likely to be predicted corrected. 
+One state prediction ("retrodiction") was made for each observation in the dataset and for each model configuration. Retrodicted and observed states were then compared using a sample of *5%* [COMPARE TO CODE FOR CORRECT # AND ADD ACTUAL NUMBER] of the model configurations for computational speed.
 
-Predictions are most certain for stage 1 at low levels of forcing, for stage 2 at moderate levels of forcing, and for stage 3 at high levels of forcing.
+Predictions generally match observations well; ~70% of female flowering observations are matched by retrodictions and ~77% for males. The beginning of phase 2 is generally predicted to begin at slightly higher forcing accumulations than observed and phase 3 at lower \ref{ppc_cum}. 
+
+![Cumulative distribution of accumulated forcing for all phenological states for males and females \label{ppc_cum}](../../phd/LabNotebook/images/2019-10-27ppccumulative.png)
+
+The model tends to retrodict phase 1 less well than other phases. Phase 1 data is poorly represented in the dataset, especially for males. Sites with limited data, like KettleRiver, are particularly poorly retrodicted. Exact retrodiction is not expected or desired: the partial pooling in the model should cause some regression to the overall population mean. Phase 2 is retrodicted most accurately, usually at least 75% of the time.
+
+Individual trees (strobili? - check Webber notes) have shorter active periods for female than male strobili, so the data was more likely to capture the beginning and end of flowering for female data. This is why female stage 1 is retrodicted at ~72% and males at only ~ 51%.
+
+![Cumulative distribution of accumulated forcing for all phenological states for males and females ](../../phd/LabNotebook/images/2019-10-28ppcsite.png)
+
+
 
 
 ## Average Predictive Comparisons
