@@ -1,19 +1,20 @@
 # Average Predictive comparisons
+# references Gelman & Pardoe 2007 + dchudz predcomps
 
 source('phenology_functions.R')
 
 library(tidyverse)
 library(gtools)
 
-fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-10-04climatena.rds") %>%
+fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
     as.data.frame() %>%
   select(-contains("state_rep")) %>%
   sample_frac(0.05)
 
-mmod <- readRDS("slopes_nc_scaled_ristos_MALE2019-10-04climatena.rds") %>%
+mmod <- readRDS("2019-10-28phenologyMALE.rds") %>%
     as.data.frame() %>%
   select(-contains("state_rep")) %>%
-  sample_frac(0.2)
+  sample_frac(0.05)
 
 
 # original data (this code should match relevant bits in run_stan)
@@ -76,13 +77,15 @@ siteapc <- usum/denom
 
 # WEIGHTS
 
-fmod <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-10-04climatena.rds") %>%
+fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
   as.data.frame() %>%
   select(-contains("state_rep")) %>%
-  sample_frac(0.10)
+  sample_frac(0.05)
 
-# original data (this code should match relevant bits in run_stan)
-phendf <- read_data(slim = FALSE)
+mmod <- readRDS("2019-10-28phenologyMALE.rds") %>%
+  as.data.frame() %>%
+  select(-contains("state_rep")) %>%
+  sample_frac(0.05)
 
 # identify combinations of effects that actually occur
 
