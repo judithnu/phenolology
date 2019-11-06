@@ -396,17 +396,9 @@ Since phenology observations are not recorded until the flowering period begins,
 I should perform this analysis on the unslimmed data.
 
 #### Average predictive comparisons
-Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models. Using $f_start$ as the expected value, average predictive comparisons were calculated for site, provenance, clone, and year following @gelman2007b.
+Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007b, shirley2015). The APC for site, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for sex, site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
 
-Comparison calculations are weighted to reflect the distribution of data.
-
-The weighting function compares the elements of $v$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $v$'s matches are summed and then divided by 3, creating a weight for each row x row comparison, which makes an $n_v$ x $n_v$ matrix of weights. The overall weight for a given $v$ should be the sum of all weights for its comparisons. $v_{tot}$
-
-The method is not fully specified in @gelman2007b, especially the weighting function. @chudzicki2018 implemented average predictive comparisons in the predcomps package for datasets with continuous numeric or ordered categorical data which allowed them to follow @gelman2007b's recommendation to use a Mahalanobis distance function for weights instead. @chudzicki2018 further develops the method, pointing out that $v_{tot}$ is inappropriate to use as it weights $v$ not by their prevalence in the data, but by how similar they are to other $v$. Weights must be normalized by dividing by the maximum $v$ row comparison weight. Now $v$'s are properly weighted by their distribution in the dataset.
-
-$v$'s that are very dissimilar can dominate the overall weight for a row/$v$, so @chudzicki2018 recommends choosing a fixed number of nearest rows. I'm not sure I'm going to do this.
-
-
+Comparison calculations are weighted to reflect the distribution of data, but the weighting function is not specified in @gelman2007b. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of my effects are. I developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
 
 #### Validation
 
