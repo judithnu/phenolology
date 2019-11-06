@@ -1,7 +1,7 @@
 ---
 title: "Predicting pollination phenology in lodgepole pine"
 author: "Susannah Tysor"
-date: May 8, 2019
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   pdf_document:
     fig_caption: yes
@@ -32,9 +32,9 @@ library(tidyverse)
 phenology_data <- read.csv("../data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
   filter(forcing_type==forcingtype)
 phenology_data_model <- read.csv("../data/phenology_heatsum.csv", header=TRUE, stringsAsFactors = FALSE)
-
+# 
 # seed orchard provenances
-SPU_dat <- read.csv("../../research_phd/data/OrchardInfo/LodgepoleSPUs.csv",
+SPU_dat <- read.csv("../../phd/data/OrchardInfo/LodgepoleSPUs.csv",
                     header=TRUE, stringsAsFactors = FALSE) %>%
   dplyr::select(SPU_Name, Orchard) %>%
   rename(Provenance=SPU_Name)
@@ -85,10 +85,10 @@ I confirm that pollination phenology in lodgepole pine is not strongly influence
 # Introduction
 As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
 This effect is already obvious in many species [@Parmesan2006; @Franks2014]. 
-Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects [VAGUE] on dependent species [@Inouye2008; @Chuine2001a].
+Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects [VAGUE] on dependent species [@Inouye2008; @Chuine2001b].
 
 [POLISH THIS INTRO SENTENCE]
-Conifers are a big part of the enormous northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013a). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @Aitken2008a). 
+Conifers are a big part of the enormous northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @aitken2008). 
 
 Coniferous forest trees are wind pollinated wtih pollination possible over large distances. [EXAMPLES]
 Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination .rpe
@@ -98,7 +98,7 @@ Shifts in the timing of pollen shed and cone receptivity (pollination phenology)
 Lodgepole pine is a good representative of these issues - an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
 Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Figure \ref{range}) with widespread and significant local adaptation in many traits. 
 For example, populations from both northern interior British Columbia and northern Idaho can survive in areas with mean annual temperatures between -4 and 6 $^\circ\mathrm{C}$, but the northern British Columbia population survives best where mean annual temperatures are ~ 1 $^\circ\mathrm{C}$ and the Idaho population best at ~ 4 $^\circ\mathrm{C}$ [@Rehfeldt1999a]. 
-Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@Rehfeldt1983]. [Summarize/cite adaptree work]
+Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@rehfeldt1983]. [Summarize/cite adaptree work]
 
 
 
@@ -106,7 +106,7 @@ Pollen is an important vector for identifying gene flow in lodgepole pine becaus
 
 Pollination phenology determines which populations can exchange genes, but predicting the timing of pollen shed and cone receptivity has not been done in lodgepole pine.  Pollination phenology examples are uncommon. [Talk about Sarvas investigations for mechanistic background, why using temperature, etc.]
 Simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts.
-@Owens2006 reports that lodgepole pine pollen shed and cone receptivity occur when degree days reach about 500 at a threshold of 5 $^\circ\mathrm{C}$, but this is the only report of pollination phenology modeling for lodgepole pine and limited details are provided. 
+@owensReproductiveBiologyLodgepole2006 reports that lodgepole pine pollen shed and cone receptivity occur when degree days reach about 500 at a threshold of 5 $^\circ\mathrm{C}$, but this is the only report of pollination phenology modeling for lodgepole pine and limited details are provided. 
 Models of lodgepole pine vegetative phenology, on the other hand, are better represented in the literature (*e.g.* @Chuine2001), and pollen shed and cone receptivity are not expected to have additional or more complex triggers or model forms than budburst [@Chuine2013a].
 
 Predicting pollination phenology will also have practical benefits. Seed orchard managers in British Columbia are particularly concerned about protandry, when all pollen in an area is shed before cones become receptive (*personal communication, Chris Walsh, Former Seed Orchard Manager, Kalamalka Seed Orchards, February 13, 2013*). 
@@ -132,7 +132,7 @@ Lodgepole pine is a wind-pollinated monecious conifer with an extensive range an
 
 #### Phenology Data
 
-This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards. Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. To plan for future seed production and orchard establishment and management, seed orchard managers monitored pollination phenology and seed production. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@Webber2007]. Collection continued intermittently through 2012.
+This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards. Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. To plan for future seed production and orchard establishment and management, seed orchard managers monitored pollination phenology and seed production. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@webberCollectionCropStatistics2007]. Collection continued intermittently through 2012.
 
 
 ##### Sites
@@ -161,8 +161,7 @@ Most provenances are represented at 2 to 3 sites and have at least three years o
 ##### Phenology scoring protocol
 Protocol C in [@Woods1996] was used as the basis for collecting pollen shed and cone receptivity data, though operational constraints led to some modifications. Workers monitored seed orchards for the beginning of pollen shed and cone receptivity. ~15 clones, usually represented by 2 trees each, were selected for specific observations. When the active period seemed to be starting, workers went into the orchard every few days to make observations on the selected trees.
 
-Stages of pollen and seed cone development are described by [Owens & Molder 1984 and updated in Owens2006] and were used as a general guide for determining the phenological state of pollen and seed cones. Pollen cones are flowering when tapping causes pollen to be released and seed cones are flowering when there are gaps between the bract-scale complexes. Pollination drops are also produced during flowering, though they recede midday if pollen is not present [@Owens2006]. 
-q8
+Stages of pollen and seed cone development are described by @owens1984 and updated in @owensReproductiveBiologyLodgepole2006 and were used as a general guide for determining the phenological state of pollen and seed cones. Pollen cones are flowering when tapping causes pollen to be released and seed cones are flowering when there are gaps between the bract-scale complexes. Pollination drops are also produced during flowering, though they recede midday if pollen is not present [@owensReproductiveBiologyLodgepole2006]. 
 
 "Flowering" states were recorded for both pollen shed and cone receptivity at the level of each tree. Protocol C recommends marking the dates when 20% of the cones on a tree have begun flowering and when 80% of the cones on a tree have finished flowering. Operationally, there was some subjectivity and tree-level states for each cone type should be interpreted as "starting flowering" and "finished flowering." There is some subjectivity here. 
 
@@ -396,9 +395,9 @@ Since phenology observations are not recorded until the flowering period begins,
 I should perform this analysis on the unslimmed data.
 
 #### Average predictive comparisons
-Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007b, shirley2015). The APC for site, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for sex, site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
+Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007, shirley2015). The APC for site, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for sex, site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
 
-Comparison calculations are weighted to reflect the distribution of data, but the weighting function is not specified in @gelman2007b. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of my effects are. I developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
+Comparison calculations are weighted to reflect the distribution of data, but the weighting function is not specified in @gelman2007. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of my effects are. I developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
 
 #### Validation
 
@@ -448,7 +447,7 @@ I will examine the variability of the start date across the range ($t_1$) to see
 
 ## Model summary
 
-```{r model data}
+```{r model data, eval=FALSE}
 ffit.stan <- readRDS("slopes_nc_scaled_ristos_FEMALE2019-08-27_climatena.rds")
 mfit.stan <- readRDS("slopes_nc_scaled_ristos_MALE2019-08-27_climatena.rds")
 
@@ -485,18 +484,18 @@ post <- full_join(mpost, fpost)
 Clones not included
 
 *Female*
-```{r param female table}
+```{r param female table, eval=FALSE}
 kable(
 fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
 ```
 
 *Male*
-```{r param male table}
+```{r param male table, eval=FALSE}
 kable(
 msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
 ```
 
-```{r compare plot function}
+```{r compare plot function, eval=FALSE}
 
 compare_fm <- function(femplot, mplot, nrow = 2, ...) {
     bayesplot_grid(
@@ -619,11 +618,11 @@ In 1.75 generation orchards, data from 10 year tests of mother tree offspring ar
 Offspring from controlled crosses between trees in first generation orchards are tested in field trials and the best trees are then cloned and grafted onto root stock in advanced generation orchards. 
 
 ```{r calculate orchard generations}
-orchards_in_data <- read.csv("~/Documents/research_phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/derived_phenophase.csv", header=TRUE, stringsAsFactors = FALSE) %>% 
+orchards_in_data <- read.csv("../../phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/derived_phenophase.csv", header=TRUE, stringsAsFactors = FALSE) %>% 
     select(Orchard, Year, ) %>%
     group_by(Orchard) %>%
     dplyr::summarise(Years = n_distinct(Year))
-orchard_gen <- read.csv("~/Documents/research_phd/data/OrchardInfo/OrchardGen.csv", header=TRUE, stringsAsFactors = FALSE)
+orchard_gen <- read.csv("../../phd/data/OrchardInfo/OrchardGen.csv", header=TRUE, stringsAsFactors = FALSE)
 
 orchard_meta <- dplyr::left_join(orchards_in_data, orchard_gen) %>%
     unique()
@@ -651,4 +650,6 @@ Once the model is parameterized I will be able to calculate the timing of pollen
 ## Future directions
 
 # Acknowledgements
-Thanks to R. Johnstone for help with transcription. GySgt T. Kerr, Ret. provided invaluable commentary on an earlier draft.
+Thanks to R. Johnstone for help with transcription. Workers with BC Seed Orchards for collecting such an extraordinary dataset and J. Woods, C. Walsh, R. Wagner, and J.Webber for assistance obtaining and interpreting the historical data. GySgt T. Kerr, Ret. provided invaluable commentary on an earlier draft.
+
+# References
