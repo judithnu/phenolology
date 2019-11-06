@@ -6,6 +6,8 @@ source('phenology_functions.R')
 library(tidyverse)
 library(gtools)
 
+# Following Harold's example, but only over v1. How do I make it over all v? And add weights?
+
 fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
     as.data.frame() %>%
   select(-contains("state_rep")) %>%
@@ -37,18 +39,25 @@ pardf <- rbind(fpardf, mpardf)
 # calculate the start of forcing for all model configurations for the first "observation"
 udf[1,]
 
-
+# select all site betas (model configs) from model
 site1 <- select(fmod, `b_site[1]`)
 site2 <- select(fmod, `b_site[2]`)
 site3 <- select(fmod, `b_site[3]`)
+
+#select all prov, clone, and year betas (model configs) that for the provenance, clone, and year 
+# in the first row of the dataset (at one v)
 prov <- select(fmod, matches(paste("b_prov", fdf$ProvenanceID[1], sep="\\[")))
 clone <- select(fmod, matches(paste("b_clone", fdf$CloneID[1], sep="\\[")))
 year <- select(fmod, matches(paste("b_year", fdf$YearID[1], sep="\\[")))
+#select the overall beta
 beta <- select(fmod, beta)
 
+# calculate the total beta for each site and 1 v
 betas1 <- beta + site1 + prov + clone + year
 betas2 <- beta + site2 + prov + clone + year
 betas3 <- beta + site3 + prov + clone + year
+
+# select the kappas from the model
 kappa1 <- select(fmod, `kappa[1]`)
 kappa2 <- select(fmod, `kappa[2]`)
 
@@ -57,25 +66,26 @@ calcstageforcing <- function(p=0.2, beta=betas, kappa) {
   return(prob)
 }
 
+# calculate the expected value for starting for each site at v1
 start1 <- calcstageforcing(p=0.2, beta=betas1, kappa=kappa1)
 start2 <- calcstageforcing(p=0.2, beta=betas2, kappa=kappa1)
 start3 <- calcstageforcing(p=0.2, beta=betas3, kappa=kappa1)
 end <- calcstageforcing(p=0.8, kappa=kappa2)
 
+# calculate the squared difference in expected value for starting for each site at v1
 diff1 <- (start1-start2)^2
 diff2 <- (start1-start3)^2
 diff3 <- (start2-start3)^2
-diff <- cbind(diff1, diff2, diff3)
+diff <- cbind(diff1, diff2, diff3) #combine into a dataframe
+
 diffsum <- colSums(diff) # sum over model configs
 usum <- sum(diffsum)# sum over param combinations
 denom <- nrow(udf) * nrow(fmod) * ncol(diff)
 
 siteapc <- usum/denom
 
+# WEIGHTS ###################
 
-#############################
-
-# WEIGHTS
 
 fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
   as.data.frame() %>%
@@ -92,35 +102,41 @@ mmod <- readRDS("2019-10-28phenologyMALE.rds") %>%
 fdf <- splitsex(phendf, "FEMALE")
 mdf <- splitsex(phendf, "MALE")
 
-# Site effects
+# Site effects - create the "v" dataframe. Select all data that isn't the site.
 udf <- unique_grouper(fdf, mdf) %>%
   #filter(Sex=="FEMALE") %>%
   distinct() %>%
   select("SPU_Name", "Clone", "Year", "Sex") # v
 
-weights <- matrix(nrow=nrow(udf), ncol = nrow(udf))
+# create weights dataframe
+weights <- matrix(nrow=nrow(udf), ncol = nrow(udf)) #empty matrix for weights with a row and column 
+# for every row in udf (for every v)
 
+# calculate a matrix where the upper half holds every row-col comparison
 for (i in 1:nrow(udf)) { # This calculation is slow af
   for (j in i:nrow(udf)) {
     weights[i,j] <- sum(udf[i,] %in% udf[j,])
   }
 }
 
-  #make weights matrix symmetric
+# now make the matrix look like a times table where every row-row comparison is available 
+# starting from the row or the column
+  #make weights matrix symmetric. fill out the weights matrix by flipping the upper triangle matrix across
+  # the diagona
 weights[is.na(weights)] <- 0 # NA bottom half should be 0s so that addition works later
 tweights <- t(weights)
 diag(tweights) <- 0 # replace diagonal so self doesn't get counted twice
-
-# calculate weights
+# calculate weights for bottom triangle
 weights <- (weights + tweights)/ncol(udf)
 
-# renormalize weights
+# normalize weights
 wdf <- as.data.frame(weights)
-wdf$totweights <- rowSums(weights)
+wdf$totweights <- rowSums(weights) # total weight for each v
 wdf <- wdf/wdf$totweights # dataframe with weights (normalized) for each comparison of v's that occur in the dataset
 
+# test : are all totweights == 1?
 
-
+# Predcomps
 ############################
 
 
