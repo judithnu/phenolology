@@ -11,12 +11,14 @@ library(gtools)
 fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
     as.data.frame() %>%
   select(-contains("state_rep")) %>%
-  sample_frac(0.05)
+  #sample_frac(0.05)
+  sample_n(10)
 
 mmod <- readRDS("2019-10-28phenologyMALE.rds") %>%
     as.data.frame() %>%
   select(-contains("state_rep")) %>%
-  sample_frac(0.05)
+ # sample_frac(0.05)
+  sample_n(10)
 
 
 # original data (this code should match relevant bits in run_stan)
@@ -28,7 +30,8 @@ fdf <- splitsex(phendf, "FEMALE")
 mdf <- splitsex(phendf, "MALE")
 
 
-udf <- unique_grouper(fdf, mdf)
+udf <- unique_grouper(fdf, mdf) %>%
+  sample_n(10) 
 
 fpardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE")
 mpardf <- build_par_df(mcmcdf = mmod, datdf = mdf, sex = "MALE")
