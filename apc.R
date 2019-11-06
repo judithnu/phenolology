@@ -38,6 +38,26 @@ mpardf <- build_par_df(mcmcdf = mmod, datdf = mdf, sex = "MALE")
 
 pardf <- rbind(fpardf, mpardf)
 
+calcstageforcing <- function(p=0.2, beta=betas, kappa) {
+  prob <- (logit(p) + kappa)/beta
+  return(prob)
+}
+
+fstart_real <- mutate(pardf, fstart_real = calcstageforcing(p=0.2, 
+                                                     beta= beta + b_site + b_prov + b_clone + b_year,
+                                                     kappa = kappa1))
+
+allcomb <- expand.grid(udf$IndSexGroup, udf$IndSexGroup) %>%
+  filter(Var1 != Var2) %>% # get a list of all row combinations
+  arrange(Var1) %>%
+  rename(IndSexGroup = Var2) %>%
+  left_join(udf) %>%
+  rename(IndSexGroup.B = IndSexGroup) %>%
+  rename(IndSexGroup = Var1) %>%
+  left_join(udf, suffix=c("", ".B"), by="IndSexGroup") %>%
+  arrange(Sex, Sex.B, Site, Site.B, SPU_Name, SPU_Name.B, Clone, Year)
+
+# now add weights
 
 # calculate the start of forcing for all model configurations for the first "observation"
 udf[1,]
@@ -64,10 +84,7 @@ betas3 <- beta + site3 + prov + clone + year
 kappa1 <- select(fmod, `kappa[1]`)
 kappa2 <- select(fmod, `kappa[2]`)
 
-calcstageforcing <- function(p=0.2, beta=betas, kappa) {
-  prob <- (logit(p) + kappa)/beta
-  return(prob)
-}
+
 
 # calculate the expected value for starting for each site at v1
 start1 <- calcstageforcing(p=0.2, beta=betas1, kappa=kappa1)
@@ -139,9 +156,7 @@ wdf <- wdf/wdf$totweights # dataframe with weights (normalized) for each compari
 
 # test : are all totweights == 1?
 
-# Predcomps
-############################
-
+# Predcomps ###############
 
 library(predcomps)
 
