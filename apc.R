@@ -5,6 +5,7 @@ source('phenology_functions.R')
 
 library(tidyverse)
 library(gtools)
+library(assertthat)
 
 ########## FUNCTIONS ####################
 
@@ -124,7 +125,7 @@ mmod$iter <- 1:nrow(mmod)
 
 
 # original data 
-phendf <- read_data(slim = FALSE)
+phendf <- read_data(slim = FALSE) 
 
 # identify combinations of effects that actually occur
 
@@ -133,7 +134,8 @@ mdf <- splitsex(phendf, "MALE")
 
 
 udf <- unique_grouper(fdf, mdf) %>%
-  filter(Sex=="FEMALE")
+  filter(Sex=="FEMALE") %>%
+  sample_n(10)
 
 # pairs of rows and their weights
 pairs <- GetPairs(X=udf, u="SiteID", v=c("ProvenanceID", "CloneID", "YearID"))
@@ -146,7 +148,7 @@ nrow(pairs) == (nrow(udf) * nrow(udf)) - nrow(udf)
 # pardf is a dataframe with nrow(fmod) x nrow(udf) rows that contains identifying information for data 
 # and the parameter values associated with the data
 pardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE") %>%
-  dplyr::select(-Index, -DoY, -contains("Phenophase"), -Date, -TreeUnique, -mean_temp, -OrchardID, -contains("forcing"), -TreeID) %>%
+  dplyr::select(-Index, -DoY, -contains("Phenophase"), -Date, -TreeUnique, -mean_temp, -OrchardID, -contains("forcing"), -TreeID, -contains("_mean"), -contains("sigma_")) %>%
   distinct()
 #mpardf <- build_par_df(mcmcdf = mmod, datdf = mdf, sex = "MALE")
 
@@ -166,13 +168,104 @@ site1 <- select(fmod, "b_site[1]", iter) # THIS IS WRONG. See what happens in Ge
 # Try merging pardf with pairs, changing the .B, and then merging again with pairs.
 # Then I should be able to use the predict function for yhat1 and yhat2 (GetComparisonDFFFromPairs)
 
-compdf <- select(fstart, -contains("Site")) %>%
-  left_join(site1, by="iter") %>%
-  rename(b_site = 'b_site[1]') %>%
-  mutate(fstart_site1 = calcstageforcing(p=0.2, 
-                                         beta= beta + b_site + b_prov + b_clone + b_year,
-                                         kappa = kappa1))
+pairsWithParams <- left_join(pairs,pardf)  # adds 1 row to pairs for every sample, so dim should be nrow(fmod) * nrow(pairs)
+nrow(pairsWithParams) == nrow(fmod)*nrow(pairs)
 
+
+
+# merge with pardf (should not add any rows)
+# readd B suffix to anything that doesn't end in .A
+# remove .A suffix
+
+# add a temporary suffix .A to nonB columns EXCEPT for iter
+foo <- pairsWithParams %>%
+  select(-ends_with(".B"), -iter)
+colnames(foo) <- paste(colnames(foo), ".A", sep="")
+
+# remove B suffix
+foob <- pairsWithParams %>%
+  select(ends_with(".B"), -iter)
+colnames(foob) <- str_extract(colnames(foob), "\\w+")
+
+#recombine and add params
+foo <- cbind(foo, foob)
+foo <- left_join(foo, pardf) # join after combining to maintain order and weights
+
+#correct colnames (re-add B suffix)
+iter <- foo$iter
+Bs <- select(foo, -iter, -ends_with(".A"))
+colnames(Bs) <- paste(colnames(Bs), ".B", sep="")
+  # delete A suffix
+As <- select(foo, ends_with(".A"))
+colnames(As) <- str_extract(colnames(As), "\\w+")
+foo <- data.frame(Bs, iter, As) %>%
+  select(contains("Original"), contains("ID"), contains("b_"), contains("beta"), contains("kappa1"), Weight, iter) %>% #can drop some of those other cols earlier i think
+  select(OriginalRowNumber.B, beta.B, SiteID.B, b_site.B, ProvenanceID.B, b_prov.B, YearID.B, b_year.B, CloneID.B, b_clone.B, kappa1.B,
+         OriginalRowNumber, beta, SiteID, b_site, ProvenanceID, b_prov, YearID, b_year, CloneID, b_clone, kappa1, iter, Weight) #arrange cols
+
+calc_fstart <- function(df) {
+  forcing <- with(df, {
+    (logit(0.2) + kappa1)/(beta + b_site + b_prov + b_clone + b_year)
+  })
+  return(forcing)
+}
+
+hist(calc_fstart(foo))
+
+GetComparisonDFFromPairs.function <- function(predictionFunction, pairs, u, v) {
+  uNew <- paste(u,".B",sep="")
+  pairs$yHat1 <- predictionFunction(pairs)
+  pairsNew <- structure(pairs[,c(v,uNew)], names=c(v,u)) #renaming u in pairsNew so we can call predictionFunction
+  pairs$yHat2 <- predictionFunction(pairsNew)  
+  return(pairs)
+}
+
+
+compdf <- GetComparisonDFFromPairs.function(calc_fstart, foo, u=c("SiteID", "b_site"), v=c("beta", "ProvenanceID", "b_prov", "CloneID", "b_clone", "YearID", "b_year", "kappa1"))
+
+ggplot(compdf, aes(x=yHat1)) +
+  geom_histogram() +
+  geom_histogram(aes(x=yHat2), color="blue", alpha=0.5)
+
+ComputeApcFromPairs <- function(predictionFunction, pairs, u, v, absolute=FALSE, impact=FALSE) {
+  uNew <- paste(u,".B",sep="")
+  ComparisonDF <- GetComparisonDFFromPairs(predictionFunction, pairs, u, v)
+  absoluteOrIdentity <- if (absolute) abs else identity
+  uDiff <- ComparisonDF[[uNew]] - ComparisonDF[[u]]
+  denom <- if (impact) sum(ComparisonDF$Weight) else sum(ComparisonDF$Weight * uDiff * sign(uDiff))
+  Apc <- sum(absoluteOrIdentity(ComparisonDF$Weight * (ComparisonDF$yHat2 - ComparisonDF$yHat1) * sign(uDiff))) / denom
+  return(Apc)
+}
+
+# This needs to account for samples and it doesn't right now
+# Summation order don't matter https://www.math.ubc.ca/~feldman/m321/twosum.pdf
+
+num <- (sum(compdf$Weight * (compdf$yHat2 - compdf$yHat1)))^2
+denom <- sum(compdf$Weight) * nrow(fmod)
+apc <- (num/denom)^1/2
+
+# calculate standard error
+seframe <- compdf %>%
+  group_by(iter) %>%
+  mutate(numnk = Weight*(yHat2 - yHat1)^2) %>%
+  summarise(apciter = sum(numnk)/sum(Weight))
+
+t1 <- 1/(2*apc)
+t2 <- 1/(nrow(seframe)-1)
+t3 <- sum(seframe$apciter - apc^2)^2
+seApc <- t1*sqrt(t2*t3)
+
+
+############# garbage below
+
+
+# compdf <- select(fstart, -contains("Site")) %>%
+#   left_join(site1, by="iter") %>%
+#   rename(b_site = 'b_site[1]') %>%
+#   mutate(fstart_site1 = calcstageforcing(p=0.2, 
+#                                          beta= beta + b_site + b_prov + b_clone + b_year,
+#                                          kappa = kappa1))
+# 
 
 fstart$fstart_site1 <- compdf$fstart_site1 # add expected value for u1 to fstart df
 
@@ -262,6 +355,7 @@ GetComparisonDFFromPairs.function <- function(predictionFunction, pairs, u, v) {
   pairs$yHat2 <- predictionFunction(pairsNew)  
   return(pairs)
 }
+
 
 
 # now add weights
