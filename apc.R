@@ -6,22 +6,124 @@ source('phenology_functions.R')
 library(tidyverse)
 library(gtools)
 
-# Following Harold's example, but only over v1. How do I make it over all v? And add weights?
+########## FUNCTIONS ####################
 
+calcstageforcing <- function(p=0.2, beta=betas, kappa) {
+  prob <- (logit(p) + kappa)/beta
+  return(prob)
+}
+
+# this function is based on a similar function in predcomps ###########
+GetPairs <- function(X, u, v,
+                     numForTransitionStart = NULL,
+                     numForTransitionEnd = NULL,
+                     onlyIncludeNearestN = NULL) {
+  
+  assertthat::assert_that(length(u) == 1) # make sure we have exactly 1 input var of interest
+  for (columnName in c(u,v)) {
+    assert_that(columnName %in% names(X))
+    columnClass <- class(X[[columnName]])
+    # if (!(columnClass) %in% c("integer", "numeric")) {
+    #   stop(sprintf("Sorry, column %s is of class %s. I can only deal with integer and numeric types for now.", columnName, columnClass))
+    # }
+  }
+  
+  if (!is.null(numForTransitionStart)) {
+    X1 <- X[sample.int(nrow(X), size=numForTransitionStart), c(v,u)] 
+  } else {
+    X1 <- X[c(v,u)] # all v with u
+  }
+  
+  if (!is.null(numForTransitionEnd)) {
+    X2 <- X[sample.int(nrow(X), size=numForTransitionEnd), c(v,u)]
+  } else {
+    X2 <- X[c(v,u)] # all v with u
+  }
+  
+  X1$OriginalRowNumber <- 1:nrow(X1)
+  X2$OriginalRowNumber.B <- 1:nrow(X2)
+  
+  vMatrix1 <- as.matrix(X1[,v])
+  vMatrix2 <- as.matrix(X2[,v])
+  
+  
+  # covV=cov(vMatrix2)
+  # 
+  #distMatrix <- apply(vMatrix1, 1, function(row) mahalanobis(vMatrix2, row, covV))
+  
+  # calculate weights for unordered categorical variables
+  weights <- matrix(nrow=nrow(X), ncol = nrow(X)) #empty matrix for weights with a row and column 
+  # for every row in udf (for every v)
+  
+  # calculate a matrix where the upper half holds every row-col comparison
+  for (i in 1:nrow(vMatrix1)) { # This calculation is slow af
+    for (j in i:nrow(vMatrix1)) {
+      weights[i,j] <- sum(vMatrix1[i,] %in% vMatrix1[j,])
+    }
+  }
+  
+  # now make the matrix look like a times table where every row-row comparison is available 
+  # starting from the row or the column
+  #make weights matrix symmetric. fill out the weights matrix by flipping the upper triangle matrix across
+  # the diagona
+  weights[is.na(weights)] <- 0 # NA bottom half should be 0s so that addition works later
+  tweights <- t(weights)
+  diag(tweights) <- 0 # replace diagonal so self doesn't get counted twice
+  # calculate weights for bottom triangle
+  weights <- (weights + tweights)/length(v)
+  
+  distMatrix <- weights
+  dim(distMatrix)
+  
+  colnames(distMatrix) <- 1:ncol(distMatrix)
+  rownames(distMatrix) <- 1:nrow(distMatrix)
+  distDF <- as.data.frame(as.table(distMatrix))
+  names(distDF) <- c("OriginalRowNumber.B", "OriginalRowNumber", "Weight")
+  
+  
+  if (!is.null(onlyIncludeNearestN)) {
+    distDF <- distDF %>%
+      group_by(OriginalRowNumber) %>%
+      filter(rank(Weight, ties.method="random") < onlyIncludeNearestN)
+  }
+  
+  
+  pairs <- merge(X1, distDF, by = "OriginalRowNumber")
+  pairs <- merge(X2, pairs, by = "OriginalRowNumber.B", suffixes = c(".B", ""))
+  #pairs$Weight <- 1/(mahalanobisConstantTerm + pairs$MahalanobisDistance)
+  
+  # If we haven't sampled, then OriginalRowNumber == OriginalRowNumber.B means that 
+  # the transition start and end are the same, so we should remove those rows.
+  if (is.null(numForTransitionStart) && is.null(numForTransitionEnd)) {
+    pairs <- subset(pairs, OriginalRowNumber != OriginalRowNumber.B)
+  }
+  
+  # Renormalize weights:
+  pairs <- pairs %>% group_by(OriginalRowNumber) %>% mutate(Weight = Weight/sum(Weight))
+  pairs$Weight[is.nan(pairs$Weight)] <- 0
+  
+  return(data.frame(pairs))
+}
+
+#################
+
+start_time <- Sys.time()
 fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
-    as.data.frame() %>%
+  as.data.frame() %>%
   select(-contains("state_rep")) %>%
   #sample_frac(0.05)
-  sample_n(10)
+  sample_n(10) 
+fmod$iter <- 1:nrow(fmod)
 
 mmod <- readRDS("2019-10-28phenologyMALE.rds") %>%
-    as.data.frame() %>%
+  as.data.frame() %>%
   select(-contains("state_rep")) %>%
- # sample_frac(0.05)
+  # sample_frac(0.05)
   sample_n(10)
+mmod$iter <- 1:nrow(mmod)
 
 
-# original data (this code should match relevant bits in run_stan)
+# original data 
 phendf <- read_data(slim = FALSE)
 
 # identify combinations of effects that actually occur
@@ -31,21 +133,89 @@ mdf <- splitsex(phendf, "MALE")
 
 
 udf <- unique_grouper(fdf, mdf) %>%
-  sample_n(10) 
+  filter(Sex=="FEMALE")
 
-fpardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE")
-mpardf <- build_par_df(mcmcdf = mmod, datdf = mdf, sex = "MALE")
+# pairs of rows and their weights
+pairs <- GetPairs(X=udf, u="SiteID", v=c("ProvenanceID", "CloneID", "YearID"))
 
-pardf <- rbind(fpardf, mpardf)
+nrow(pairs) == (nrow(udf) * nrow(udf)) - nrow(udf)
 
-calcstageforcing <- function(p=0.2, beta=betas, kappa) {
-  prob <- (logit(p) + kappa)/beta
-  return(prob)
-}
+# I need to rethink these functions to be smaller because (now that I'm not doing ppc) I don't need to keep every observation
+# just udf
 
-fstart_real <- mutate(pardf, fstart_real = calcstageforcing(p=0.2, 
-                                                     beta= beta + b_site + b_prov + b_clone + b_year,
-                                                     kappa = kappa1))
+# pardf is a dataframe with nrow(fmod) x nrow(udf) rows that contains identifying information for data 
+# and the parameter values associated with the data
+pardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE") %>%
+  dplyr::select(-Index, -DoY, -contains("Phenophase"), -Date, -TreeUnique, -mean_temp, -OrchardID, -contains("forcing"), -TreeID) %>%
+  distinct()
+#mpardf <- build_par_df(mcmcdf = mmod, datdf = mdf, sex = "MALE")
+
+
+# calculate apc for site 1
+fstart <- mutate(pardf, fstart_real = calcstageforcing(p=0.2, 
+                                                       beta= beta + b_site + b_prov + b_clone + b_year,
+                                                       kappa = kappa1)) 
+#add a column to pardf with the estimated fstart from the model
+
+
+# calculate fstart as if all trees had grown at site 1
+site1 <- select(fmod, "b_site[1]", iter) # THIS IS WRONG. See what happens in GetComparisonDFFromPairs.
+# I wonder if I could use GetComparisonDFFfrompairs if I created 2 pardfs and then joined them, one with original and one with "B" from the pairs. 
+# Then I could use the predictfunction. I really don't understand how that function works though.
+
+# Try merging pardf with pairs, changing the .B, and then merging again with pairs.
+# Then I should be able to use the predict function for yhat1 and yhat2 (GetComparisonDFFFromPairs)
+
+compdf <- select(fstart, -contains("Site")) %>%
+  left_join(site1, by="iter") %>%
+  rename(b_site = 'b_site[1]') %>%
+  mutate(fstart_site1 = calcstageforcing(p=0.2, 
+                                         beta= beta + b_site + b_prov + b_clone + b_year,
+                                         kappa = kappa1))
+
+
+fstart$fstart_site1 <- compdf$fstart_site1 # add expected value for u1 to fstart df
+
+
+# IF I'M GOING WRONG, THIS IS LIKELY WHERE. I should be merging in only comparisons between site 1 data and all other data
+# So maybe that means doing a different kind of join? But I think this is right. 
+compdfwithweights <- full_join(fstart, pairs) # requires A LOT of RAM # get the weight for each comparison
+
+#signed (identity)
+difference <- compdfwithweights$fstart_site1 - compdfwithweights$fstart_real
+diffweighted <- difference * compdfwithweights$Weight
+num <- sum(diffweighted)
+denom <- sum(compdfwithweights$Weight) * nrow(fmod)
+apc <- num/denom
+print(apc)
+
+#absolute
+difference <- compdfwithweights$fstart_site1 - compdfwithweights$fstart_real
+diffabs <- abs(difference)
+diffweighted <- diffabs * compdfwithweights$Weight
+num <- sum(diffweighted)
+denom <- sum(compdfwithweights$Weight) * nrow(fmod)
+apc <- num/denom
+print(apc)
+
+#gelman
+difference <- compdfwithweights$fstart_site1 - compdfwithweights$fstart_real
+diffsq <- difference^2
+diffweighted <- diffsq * compdfwithweights$Weight
+num <- sum(diffweighted)
+denom <- sum(compdfwithweights$Weight) * nrow(fmod)
+apc <- sqrt(num/denom)
+
+end_time <- Sys.time()
+
+end_time-start_time
+
+# next up is calculating APC for all sites - turning the above into a function
+
+#################
+# ( (data * data) - data) * samples
+
+##################3
 
 allcomb <- expand.grid(udf$IndSexGroup, udf$IndSexGroup) %>%
   filter(Var1 != Var2) %>% # get a list of all row combinations
@@ -56,6 +226,43 @@ allcomb <- expand.grid(udf$IndSexGroup, udf$IndSexGroup) %>%
   rename(IndSexGroup = Var1) %>%
   left_join(udf, suffix=c("", ".B"), by="IndSexGroup") %>%
   arrange(Sex, Sex.B, Site, Site.B, SPU_Name, SPU_Name.B, Clone, Year)
+
+
+
+
+
+
+# Now to calculate the predictive comparison
+
+# Expected value real
+
+pardf <- pardf %>% mutate(fstart_real = calcstageforcing(p=0.2, beta = beta+b_clone+b_site+b_prov+b_year, kappa=kappa1))
+
+ComputeApcFromPairs <- function(predictionFunction, pairs, u, v, absolute=FALSE, impact=FALSE) {
+  uNew <- paste(u,".B",sep="")
+  ComparisonDF <- GetComparisonDFFromPairs(predictionFunction, pairs, u, v)
+  absoluteOrIdentity <- if (absolute) abs else identity
+  uDiff <- ComparisonDF[[uNew]] - ComparisonDF[[u]]
+  denom <- if (impact) sum(ComparisonDF$Weight) else sum(ComparisonDF$Weight * uDiff * sign(uDiff))
+  Apc <- sum(absoluteOrIdentity(ComparisonDF$Weight * (ComparisonDF$yHat2 - ComparisonDF$yHat1) * sign(uDiff))) / denom
+  return(Apc)
+}
+
+calc_fstart <- function(p=0.2, beta=betas, kappa, model, pairs) {
+  # calc expected value
+  b_prov <- select(matches(paste("b_prov", pairs$ProvenanceID[1], sep="\\[")))[1] #choose the first sample and the first row
+  prob <- (logit(p) + kappa)/beta
+  return(prob)
+}
+
+GetComparisonDFFromPairs.function <- function(predictionFunction, pairs, u, v) {
+  uNew <- paste(u,".B",sep="")
+  pairs$yHat1 <- predictionFunction(pairs)
+  pairsNew <- structure(pairs[,c(v,uNew)], names=c(v,u)) #renaming u in pairsNew so we can call predictionFunction
+  pairs$yHat2 <- predictionFunction(pairsNew)  
+  return(pairs)
+}
+
 
 # now add weights
 
@@ -141,18 +348,21 @@ for (i in 1:nrow(udf)) { # This calculation is slow af
 
 # now make the matrix look like a times table where every row-row comparison is available 
 # starting from the row or the column
-  #make weights matrix symmetric. fill out the weights matrix by flipping the upper triangle matrix across
-  # the diagona
+#make weights matrix symmetric. fill out the weights matrix by flipping the upper triangle matrix across
+# the diagona
 weights[is.na(weights)] <- 0 # NA bottom half should be 0s so that addition works later
 tweights <- t(weights)
 diag(tweights) <- 0 # replace diagonal so self doesn't get counted twice
 # calculate weights for bottom triangle
 weights <- (weights + tweights)/ncol(udf)
+#STOP
 
 # normalize weights
 wdf <- as.data.frame(weights)
 wdf$totweights <- rowSums(weights) # total weight for each v
-wdf <- wdf/wdf$totweights # dataframe with weights (normalized) for each comparison of v's that occur in the dataset
+#wdf <- wdf/max(wdf$totweights) # dataframe with weights (normalized) for each comparison of v's that occur in the dataset
+
+wdf <- data.frame(OriginalRowNumber = rownames(wdf), Weight = wdf$totweights)
 
 # test : are all totweights == 1?
 
@@ -223,7 +433,7 @@ tfit <- ulam(
     mu <- beta[siteID]*x,
     beta[siteID] ~ normal(0,1),
     sigma ~ exponential(2)
-    ),
+  ),
   data=dat, declare_all_data = FALSE)
 
 summary(tfit)
