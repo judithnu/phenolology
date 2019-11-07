@@ -321,16 +321,11 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 
 The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors were designed to force the correct sign (positive) and order of magnitude [@lemoineMovingNoninformativePriors2019]. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
-The model was fit in the probabilistic programming language Stan (vers. 2.19.2 via RStan [@standevelopmentteam2019]) which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior.
-
-I ran 4 independent chains for 4500 iterations, discarding 1000 warm-up iterations for a total of 14,000 posterior samples for each parameter. 
+The model was fit in the probabilistic programming language Stan (vers. 2.19.2 via RStan [@standevelopmentteam2019]), which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior. I ran 4 independent chains for 4500 iterations, discarding 1000 warm-up iterations for a total of 14,000 posterior samples for each parameter. Model convergence and performance were considered good; $\hat R$ was $< 1.01$ and bulk effective sample size was more than 100x the number of chains for all parameter values (Female model: Tail ESS 2,231-11,286, median 9,326; Bulk ESS 1,434-31,750, median 11,059. Male model: Tail ESS 2,843-11,332, median 9,371; Bulk ESS 1,617-30,793, median 11,633) [@vehtari2019]. There were no divergences. Visual inspection of energy plots and rank plots showed acceptable sampling behavior.
 
 #### Model Assumptions 
 I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for damage and abnormal development from very cold and very warm temperatures.  [Cite Sarvas's weird hot stuff and some late spring phenology]
 
-#### Model diagnostics
-
-Rank-normalized bulk  and tail effective sample sizes were at least X and Rhats for all parameters were below 1.01. (Energy? Etc?)
 
 #### Flowering period timing and length
 

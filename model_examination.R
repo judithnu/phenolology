@@ -4,19 +4,6 @@ library(shinystan)
 library(bayesplot)
 #library(ggplot2)
 
-# FUNCTIONS ###############
-
-compare_fm <- function(femplot, mplot, nrow = 2, ...) {
-    bayesplot_grid(
-        femplot, mplot,
-        grid_args = list(nrow = nrow),
-        subtitles = c("female",
-                      "male"),
-        ...
-    )
-}
-
-
 # MODEL DATA #####################
 
 
@@ -48,7 +35,7 @@ fratios <- neff_ratio(ffit.stan)
 
 msum <- rstan::summary(mfit.stan)$summary
 msum <- as.data.frame(msum)
-marray <- as.array(ffit.stan) # diagnostics
+marray <- as.array(mfit.stan) # diagnostics
 #postlist <- rstan::extract(ffit.stan)
 #mpostdf <- as.data.frame(mfit.stan)
 #mpost_re <- extract.samples(mfit.stan)
@@ -61,7 +48,7 @@ mrhats <- rhat(mfit.stan)
 mratios <- neff_ratio(mfit.stan)
 
 # Diagnostics #######################
-sex = "FEMALE"
+sex = "MALE"
 
 if (sex=="FEMALE") {
     sarray <- farray
@@ -83,11 +70,23 @@ if (sex=="MALE") {
     color_scheme_set("yellow")
 }
 
+# Trace and rank plots
 mcmc_trace(sarray, regex_pars = "site") + ggtitle(paste(sex, "site"))
 mcmc_trace(sarray, regex_pars = "prov") + ggtitle(paste(sex, "prov"))
 mcmc_trace(sarray, regex_pars = "sigma") + ggtitle(paste(sex, "sigma"))
 mcmc_trace(sarray, regex_pars = "year") + ggtitle(paste(sex, "year"))
 mcmc_trace(sarray, regex_pars = "kappa") + ggtitle(paste(sex, "kappa"))
+
+## rank plots
+
+mcmc_rank_hist(ffit.stan, regex_pars = "year")
+mcmc_rank_overlay(ffit.stan, regex_pars = c("year", "prov"))
+mcmc_rank_overlay(ffit.stan, regex_pars = "site")
+mcmc_rank_overlay(ffit.stan, regex_pars = "clone\\[.0")
+mcmc_rank_overlay(ffit.stan, regex_pars = "sigma")
+mcmc_rank_overlay(ffit.stan, regex_pars = "mean")
+
+# Divergences
 
 divergences <- filter(np, Parameter=="divergent__" & Value==1)
 print("divergences = ")
@@ -129,7 +128,7 @@ energy <- dplyr::filter(np, Parameter== "energy__")
 # compare a chain's behavior to other randomly intialized chains. Split R_hat measures ratio of the average variance of draws within each chain to the variance of the pooled draws across chains. If all chains at equilibrium, 1. If they haven't converged, > 1.
 
 print("rhats > 1 for")
-names(which(rhats > 1.02))
+names(which(rhats > 1.01))
 which(is.na(rhats))
 
 color_scheme_set("purple")
@@ -150,7 +149,26 @@ vbadratios <- ratios[which(ratios < 0.1)]
 mcmc_neff(badratios, size = 1.5) +
     yaxis_text(hjust = 1)
 
-mcmc_neff_hist(neff_ratio(ffit.stan))
+mcmc_neff_hist(neff_ratio(ffit.stan)) # THIS IS FEMALE SPECIFIC, CHANGE TO CORRECT SEX
+
+# calculate bulk andtail ess
+
+
+ness <- data.frame(parameter = attr(sarray, which="dimnames")[3], tail=NA, bulk=NA, rhat=NA)
+for (i in 1:nrow(ness)) {
+    ness$tail[i] <- ess_tail(sarray[,,i]) 
+    ness$bulk[i] <- ess_bulk(sarray[,,i]) # rank normalized
+    ness$rhat[i] <- Rhat(sarray[,,i])
+}
+
+ness <- ness[!str_detect(ness$parameters, "state_rep"),]
+
+head(dplyr::arrange(ness, tail))
+dplyr::arrange(ness, -tail)
+dplyr::arrange(ness, bulk)
+dplyr::arrange(ness, -bulk)
+dplyr::arrange(ness, rhat) %>%
+    filter(rhat > 1.01)
 
 # Autocorrelation
 #n_eff/N decreases as autocorrelation becomes more extreme. Visualize autocorrelation using mcmc_acf or mcmc_acf_bar. Postive autocorrelation is bad because it means the chain gets stuck. Ideally, it drops quickly to zero as lag increasses. negative autocorrelation indicates fast convergence of sample mean towards true
@@ -196,26 +214,6 @@ compare_fm(fint_beta, mint_beta)
 mcmc_intervals(fpostdf, regex_pars = c("prov", "site", "sigma")) + ggtitle("Scaled ristos effects")
 mcmc_intervals(fpostdf, regex_pars = c("clone")) + ggtitle("Clone intercepts")
 
-# rank plots
-
-mcmc_rank_hist(ffit.stan, regex_pars = "year")
-mcmc_rank_overlay(ffit.stan, regex_pars = c("year", "prov"))
-mcmc_rank_overlay(ffit.stan, regex_pars = "site")
-mcmc_rank_overlay(ffit.stan, regex_pars = "clone\\[.0")
-mcmc_rank_overlay(ffit.stan, regex_pars = "sigma")
-mcmc_rank_overlay(ffit.stan, regex_pars = "mean")
-
-# calculate bulk andtail ess
 
 
-ness <- data.frame(parameter = attr(farray, which="dimnames")[3], tail=NA, bulk=NA, rhat=NA)
-for (i in 1:nrow(ness)) {
-    ness$tail[i] <- ess_tail(farray[,,i]) 
-    ness$bulk[i] <- ess_bulk(farray[,,i]) # rank normalized
-    ness$rhat[i] <- Rhat(farray[,,i])
-}
 
-dplyr::arrange(ness, tail)
-dplyr::arrange(ness, bulk)
-dplyr::arrange(ness, rhat) %>%
-    filter(rhat > 1.01)
