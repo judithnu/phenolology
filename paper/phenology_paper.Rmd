@@ -395,9 +395,15 @@ Since phenology observations are not recorded until the flowering period begins,
 I should perform this analysis on the unslimmed data.
 
 #### Average predictive comparisons
-Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007, shirley2015). The APC for site, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for sex, site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
+Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007, @shirley2015). The APC for site, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
 
-Comparison calculations are weighted to reflect the distribution of data, but the weighting function is not specified in @gelman2007. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of my effects are. I developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
+Average predictive comparisons for each effect $u$ were calculated by calculating the squared difference between the expected value at a given data point (where datapoints were all uniquely occuring combinations of site, provenance, clone, and year in the phenology dataset) $n$ for the input variable of interest $u^{(k)}$ and the other input variables $v$ and that datapoint for its actual value of $u$, mulitiplying that squared difference by a weight $\omega$ that represents the similarity in $v$ between a datapoint with $u_i$ versus $u^{(k)}$. The weighted average of these squared differences is taken over all datapoints, values of u, and samples. [IS THIS SENTENCE REALLY TRUE?]
+
+$$\hat \Delta_u = \sqrt{(\frac{\sum_{i=1}^{n}\sum_{k=1}^{K}\sum_{s=1}^S[\sum_{j\in\{k\}}\omega_{ij}](\mathrm{E}(y|u^{(k)},v_i, \theta^{(s)})-\mathrm{E}(y|u_i,v_i, \theta^{(s)}))^2}
+{\mathrm{S}\sum_{i=1}^{n}\sum_{k=1}^{K}[\sum_{j\in\{k\}}\omega_{ij}]})}$$
+
+
+Comparison calculations are weighted ($\omega$) to reflect the distribution of data, but the weighting function is not specified in @gelman2007. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of my effects are. I developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
 
 #### Validation
 
@@ -409,22 +415,9 @@ I will validate the model by comparing predictions to phenological measurements 
 
 ### fstart and fend  overall - estimates
 
-## Posterior predictive checks
+## Sex differences
 
-One state prediction ("retrodiction") was made for each observation in the dataset and for each model configuration. Retrodicted and observed states were then compared using a sample of *5%* [COMPARE TO CODE FOR CORRECT # AND ADD ACTUAL NUMBER] of the model configurations for computational speed.
-
-Predictions generally match observations well; ~70% of female flowering observations are matched by retrodictions and ~77% for males. The beginning of phase 2 is generally predicted to begin at slightly higher forcing accumulations than observed and phase 3 at lower \ref{ppc_cum}. 
-
-![Cumulative distribution of accumulated forcing for all phenological states for males and females \label{ppc_cum}](../../phd/LabNotebook/images/2019-10-27ppccumulative.png)
-
-The model tends to retrodict phase 1 less well than other phases. Phase 1 data is poorly represented in the dataset, especially for males. Sites with limited data, like KettleRiver, are particularly poorly retrodicted. Exact retrodiction is not expected or desired: the partial pooling in the model should cause some regression to the overall population mean. Phase 2 is retrodicted most accurately, usually at least 75% of the time.
-
-Individual trees (strobili? - check Webber notes) have shorter active periods for female than male strobili, so the data was more likely to capture the beginning and end of flowering for female data. This is why female stage 1 is retrodicted at ~72% and males at only ~ 51%.
-
-![Cumulative distribution of accumulated forcing for all phenological states for males and females ](../../phd/LabNotebook/images/2019-10-28ppcsite.png)
-
-
-
+Do site, clone, prov, year effects differ between male and females? See apcs to begin
 
 ## Average Predictive Comparisons
 
