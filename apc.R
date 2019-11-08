@@ -7,7 +7,17 @@ library(tidyverse)
 library(gtools)
 library(assertthat)
 
+s = 110
+n = 400
+
 ########## FUNCTIONS ####################
+
+vectorlen <- function(n, s) {
+  pairs <- (n^2) - n
+  ps <- pairs * s^2
+  diff <- 2^31 - ps 
+  return(list(ps, diff))
+}
 
 calcstageforcing <- function(p=0.2, beta=betas, kappa) {
   prob <- (logit(p) + kappa)/beta
@@ -113,14 +123,14 @@ fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
   as.data.frame() %>%
   select(-contains("state_rep")) %>%
   #sample_frac(0.05)
-  sample_n(10) 
+  sample_n(s) 
 fmod$iter <- 1:nrow(fmod)
 
 mmod <- readRDS("2019-10-28phenologyMALE.rds") %>%
   as.data.frame() %>%
   select(-contains("state_rep")) %>%
   # sample_frac(0.05)
-  sample_n(10)
+  sample_n(s)
 mmod$iter <- 1:nrow(mmod)
 
 
@@ -135,7 +145,7 @@ mdf <- splitsex(phendf, "MALE")
 
 udf <- unique_grouper(fdf, mdf) %>%
   filter(Sex=="FEMALE") %>%
-  sample_n(10)
+  sample_n(n)
 
 # pairs of rows and their weights
 pairs <- GetPairs(X=udf, u="SiteID", v=c("ProvenanceID", "CloneID", "YearID"))
@@ -147,26 +157,11 @@ nrow(pairs) == (nrow(udf) * nrow(udf)) - nrow(udf)
 
 # pardf is a dataframe with nrow(fmod) x nrow(udf) rows that contains identifying information for data 
 # and the parameter values associated with the data
-pardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE") %>%
-  dplyr::select(-Index, -DoY, -contains("Phenophase"), -Date, -TreeUnique, -mean_temp, -OrchardID, -contains("forcing"), -TreeID, -contains("_mean"), -contains("sigma_")) %>%
+pardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE") %>% # since I'm removing so much after, I think I can make a better build function here
+  dplyr::select(-Index, -DoY, -contains("Phenophase"), -Date, -TreeUnique, -mean_temp, -contains("Orchard"), 
+                -contains("forcing"), -TreeID, -contains("_mean"), -contains("sigma_"), -contains("kappa2"), -Sex,
+                -Site, -SPU_Name, -Clone, -Year) %>%
   distinct()
-#mpardf <- build_par_df(mcmcdf = mmod, datdf = mdf, sex = "MALE")
-
-
-# calculate apc for site 1
-fstart <- mutate(pardf, fstart_real = calcstageforcing(p=0.2, 
-                                                       beta= beta + b_site + b_prov + b_clone + b_year,
-                                                       kappa = kappa1)) 
-#add a column to pardf with the estimated fstart from the model
-
-
-# calculate fstart as if all trees had grown at site 1
-site1 <- select(fmod, "b_site[1]", iter) # THIS IS WRONG. See what happens in GetComparisonDFFromPairs.
-# I wonder if I could use GetComparisonDFFfrompairs if I created 2 pardfs and then joined them, one with original and one with "B" from the pairs. 
-# Then I could use the predictfunction. I really don't understand how that function works though.
-
-# Try merging pardf with pairs, changing the .B, and then merging again with pairs.
-# Then I should be able to use the predict function for yhat1 and yhat2 (GetComparisonDFFFromPairs)
 
 pairsWithParams <- left_join(pairs,pardf)  # adds 1 row to pairs for every sample, so dim should be nrow(fmod) * nrow(pairs)
 nrow(pairsWithParams) == nrow(fmod)*nrow(pairs)
@@ -189,6 +184,7 @@ colnames(foob) <- str_extract(colnames(foob), "\\w+")
 
 #recombine and add params
 foo <- cbind(foo, foob)
+rm(foob)
 foo <- left_join(foo, pardf) # join after combining to maintain order and weights
 
 #correct colnames (re-add B suffix)
@@ -210,7 +206,6 @@ calc_fstart <- function(df) {
   return(forcing)
 }
 
-hist(calc_fstart(foo))
 
 GetComparisonDFFromPairs.function <- function(predictionFunction, pairs, u, v) {
   uNew <- paste(u,".B",sep="")
@@ -223,9 +218,9 @@ GetComparisonDFFromPairs.function <- function(predictionFunction, pairs, u, v) {
 
 compdf <- GetComparisonDFFromPairs.function(calc_fstart, foo, u=c("SiteID", "b_site"), v=c("beta", "ProvenanceID", "b_prov", "CloneID", "b_clone", "YearID", "b_year", "kappa1"))
 
-ggplot(compdf, aes(x=yHat1)) +
-  geom_histogram() +
-  geom_histogram(aes(x=yHat2), color="blue", alpha=0.5)
+# ggplot(compdf, aes(x=yHat1)) +
+#   geom_histogram() +
+#   geom_histogram(aes(x=yHat2), color="blue", alpha=0.5)
 
 ComputeApcFromPairs <- function(predictionFunction, pairs, u, v, absolute=FALSE, impact=FALSE) {
   uNew <- paste(u,".B",sep="")
