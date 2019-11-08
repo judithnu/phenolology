@@ -240,9 +240,9 @@ ComputeApcFromPairs <- function(predictionFunction, pairs, u, v, absolute=FALSE,
 # This needs to account for samples and it doesn't right now
 # Summation order don't matter https://www.math.ubc.ca/~feldman/m321/twosum.pdf
 
-num <- (sum(compdf$Weight * (compdf$yHat2 - compdf$yHat1)))^2
+num <- (sum(compdf$Weight * (compdf$yHat2 - compdf$yHat1)^2))
 denom <- sum(compdf$Weight) * nrow(fmod)
-apc <- (num/denom)^1/2
+apc <- sqrt(num/denom)
 
 # calculate standard error
 seframe <- compdf %>%
@@ -252,8 +252,16 @@ seframe <- compdf %>%
 
 t1 <- 1/(2*apc)
 t2 <- 1/(nrow(seframe)-1)
-t3 <- sum(seframe$apciter - apc^2)^2
+diff <- seframe$apciter - (apc)^2
+diffsq <- diff^2
+t3 <- sum(diffsq)
 seApc <- t1*sqrt(t2*t3)
+print(seApc)
+
+end_time <- Sys.time()
+end_time-start_time
+print(apc)
+print(seApc)
 
 
 ############# garbage below
