@@ -7,17 +7,13 @@ library(tidyverse)
 library(gtools)
 library(assertthat)
 
-s = 110
-n = 400
+s = 1000
+u = "b_site"
+uid = "SiteID"
+v = c("b_prov", "b_clone", "b_year")
+vid = c("ProvenanceID", "CloneID", "YearID")
 
 ########## FUNCTIONS ####################
-
-vectorlen <- function(n, s) {
-  pairs <- (n^2) - n
-  ps <- pairs * s^2
-  diff <- 2^31 - ps 
-  return(list(ps, diff))
-}
 
 calcstageforcing <- function(p=0.2, beta=betas, kappa) {
   prob <- (logit(p) + kappa)/beta
@@ -116,9 +112,26 @@ GetPairs <- function(X, u, v,
   return(data.frame(pairs))
 }
 
+calc_fstart <- function(df) {
+  forcing <- with(df, {
+    (logit(0.2) + kappa1)/(beta + b_site + b_prov + b_clone + b_year)
+  })
+  return(forcing)
+}
+
+GetComparisonDFFromPairs.function <- function(predictionFunction, pairs, u, v) {
+  uNew <- paste(u,".B",sep="")
+  pairs$yHat1 <- predictionFunction(pairs)
+  pairsNew <- structure(pairs[,c(v,uNew)], names=c(v,u)) #renaming u in pairsNew so we can call predictionFunction
+  pairs$yHat2 <- predictionFunction(pairsNew)  
+  return(pairs)
+}
+
+
 #################
 
 start_time <- Sys.time()
+
 fmod <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
   as.data.frame() %>%
   select(-contains("state_rep")) %>%
@@ -144,17 +157,15 @@ mdf <- splitsex(phendf, "MALE")
 
 
 udf <- unique_grouper(fdf, mdf) %>%
-  filter(Sex=="FEMALE") %>%
-  sample_n(n)
+  filter(Sex=="FEMALE") 
 
 # pairs of rows and their weights
-pairs <- GetPairs(X=udf, u="SiteID", v=c("ProvenanceID", "CloneID", "YearID"))
+#opairs <- GetPairs(X=udf, u="SiteID", v=c("ProvenanceID", "CloneID", "YearID"))
+opairs <- GetPairs(X=udf, u=uid, v=vid) #General
 
-nrow(pairs) == (nrow(udf) * nrow(udf)) - nrow(udf)
+assert_that(nrow(opairs) == (nrow(udf) * nrow(udf)) - nrow(udf), msg="Pairs dataframe is the wrong size")
 
 # I need to rethink these functions to be smaller because (now that I'm not doing ppc) I don't need to keep every observation
-# just udf
-
 # pardf is a dataframe with nrow(fmod) x nrow(udf) rows that contains identifying information for data 
 # and the parameter values associated with the data
 pardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE") %>% # since I'm removing so much after, I think I can make a better build function here
@@ -162,102 +173,95 @@ pardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE") %>% # since I'
                 -contains("forcing"), -TreeID, -contains("_mean"), -contains("sigma_"), -contains("kappa2"), -Sex,
                 -Site, -SPU_Name, -Clone, -Year) %>%
   distinct()
+#BUILD_PAR_DF IS SLOW SLOW OMG FIX IT
+assert_that(nrow(pardf) == nrow(fmod)*nrow(udf))
 
-pairsWithParams <- left_join(pairs,pardf)  # adds 1 row to pairs for every sample, so dim should be nrow(fmod) * nrow(pairs)
-nrow(pairsWithParams) == nrow(fmod)*nrow(pairs)
+# it might be faster to fold this into for loop, or at least allow more samples nrow(fmod)*nrow(opairs) will get big fast
+#pairsWithParams <- left_join(opairs,pardf)  # adds 1 row to pairs for every sample, so dim should be nrow(fmod) * nrow(pairs)
+#assert_that(nrow(pairsWithParams) == nrow(fmod)*nrow(opairs), msg = "pairsWithParams is the wrong size")
 
+# calculate average predictive comparison for each sample
+apc_sample <- data.frame(iter=rep(NA, nrow(fmod)), pc=NA)
 
-
-# merge with pardf (should not add any rows)
-# readd B suffix to anything that doesn't end in .A
-# remove .A suffix
-
-# add a temporary suffix .A to nonB columns EXCEPT for iter
-foo <- pairsWithParams %>%
-  select(-ends_with(".B"), -iter)
-colnames(foo) <- paste(colnames(foo), ".A", sep="")
-
-# remove B suffix
-foob <- pairsWithParams %>%
-  select(ends_with(".B"), -iter)
-colnames(foob) <- str_extract(colnames(foob), "\\w+")
-
-#recombine and add params
-foo <- cbind(foo, foob)
-rm(foob)
-foo <- left_join(foo, pardf) # join after combining to maintain order and weights
-
-#correct colnames (re-add B suffix)
-iter <- foo$iter
-Bs <- select(foo, -iter, -ends_with(".A"))
-colnames(Bs) <- paste(colnames(Bs), ".B", sep="")
+for (i in 1:nrow(fmod)) {
+  print(paste("Working on sample", i, "of", nrow(fmod)))
+  apc_sample$iter[i] <- fmod$iter[i]
+  
+  # Join the pairs with parameter values from the model so I can calculate expected values (yHats)
+    # Get parameter values for rows without B suffix (u_i)
+  pardf_iteri <- filter(pardf, iter==i) # grab parameter values from the first model iteration/sample
+  pairsWithParams <- left_join(opairs, pardf_iteri, by = c(uid, vid))
+  assert_that(nrow(pairsWithParams) == nrow(opairs), msg = "pairsWithParams is the wrong size")
+  
+  tpairs <- filter(pairsWithParams, iter==i)
+  assert_that(nrow(tpairs) == (nrow(udf)*nrow(udf)) - nrow(udf), msg = "You've selected too many rows from pairsWithParams")
+  #tpardf <- filter(pardf, iter==i) %>%
+   # select( contains("ID"), iter, contains("site") ) # NEEDS GENERALIZATION
+  tpardf <- pardf_iteri %>% #GENERAL
+    select( contains("ID"), iter, u)
+  
+    # Format the pairs df and add u parameter values for comparison rows B (u^(k)) 
+    # add a temporary suffix .A to nonB columns EXCEPT for iter
+  As <- tpairs %>%
+    select(-ends_with(".B"), -iter)
+  colnames(As) <- paste(colnames(As), ".A", sep="")
+  
+    # remove B suffix
+  Bs <- tpairs %>%
+    select(ends_with(".B"), -iter)
+  colnames(Bs) <- str_extract(colnames(Bs), "\\w+")
+  
+    #recombine and add params
+  tpairs <- cbind(As, Bs) %>%
+    left_join(tpardf, by=c(uid,vid)) # join after combining to maintain order and weights
+  
+  #correct colnames (re-add B suffix)
+  iter <- tpairs$iter
+  assert_that(length(unique(tpairs$iter))==1, msg="you should only have 1 sample from the model, but you have too many iterations")
+  Bs <- select(tpairs, -iter, -ends_with(".A"))
+  colnames(Bs) <- paste(colnames(Bs), ".B", sep="")
   # delete A suffix
-As <- select(foo, ends_with(".A"))
-colnames(As) <- str_extract(colnames(As), "\\w+")
-foo <- data.frame(Bs, iter, As) %>%
-  select(contains("Original"), contains("ID"), contains("b_"), contains("beta"), contains("kappa1"), Weight, iter) %>% #can drop some of those other cols earlier i think
-  select(OriginalRowNumber.B, beta.B, SiteID.B, b_site.B, ProvenanceID.B, b_prov.B, YearID.B, b_year.B, CloneID.B, b_clone.B, kappa1.B,
-         OriginalRowNumber, beta, SiteID, b_site, ProvenanceID, b_prov, YearID, b_year, CloneID, b_clone, kappa1, iter, Weight) #arrange cols
-
-calc_fstart <- function(df) {
-  forcing <- with(df, {
-    (logit(0.2) + kappa1)/(beta + b_site + b_prov + b_clone + b_year)
-  })
-  return(forcing)
+  As <- select(tpairs, ends_with(".A"))
+  colnames(As) <- str_extract(colnames(As), "\\w+")
+  pairs <- data.frame(Bs, iter, As) %>%
+    select(contains("Original"), contains("ID"), contains("b_"), contains("beta"), contains("kappa1"), Weight, iter) %>% #can drop some of those other cols earlier i think
+   #arrange cols
+    select(OriginalRowNumber.B, paste(uid, ".B", sep=""), paste(u, ".B", sep=""),
+           OriginalRowNumber, beta, kappa1, u, uid, v, vid, iter, Weight) #arrange cols
+           
+  assert_that(nrow(pairs)==nrow(tpairs), msg = "why isn't pairsWithParams the same size as pairs?")
+  
+  
+  compdf <- GetComparisonDFFromPairs.function(calc_fstart, pairs, u=c("SiteID", "b_site"), v=c("beta", "ProvenanceID", "b_prov", "CloneID", "b_clone", "YearID", "b_year", "kappa1"))
+  
+  # Summation order don't matter https://www.math.ubc.ca/~feldman/m321/twosum.pdf
+  
+  num <- sum(compdf$Weight * (compdf$yHat2 - compdf$yHat1)^2)
+  denom <- sum(compdf$Weight) #* nrow(fmod)
+  
+  apc_sample$pc[i] <- num/denom
 }
 
-
-GetComparisonDFFromPairs.function <- function(predictionFunction, pairs, u, v) {
-  uNew <- paste(u,".B",sep="")
-  pairs$yHat1 <- predictionFunction(pairs)
-  pairsNew <- structure(pairs[,c(v,uNew)], names=c(v,u)) #renaming u in pairsNew so we can call predictionFunction
-  pairs$yHat2 <- predictionFunction(pairsNew)  
-  return(pairs)
-}
-
-
-compdf <- GetComparisonDFFromPairs.function(calc_fstart, foo, u=c("SiteID", "b_site"), v=c("beta", "ProvenanceID", "b_prov", "CloneID", "b_clone", "YearID", "b_year", "kappa1"))
-
-# ggplot(compdf, aes(x=yHat1)) +
-#   geom_histogram() +
-#   geom_histogram(aes(x=yHat2), color="blue", alpha=0.5)
-
-ComputeApcFromPairs <- function(predictionFunction, pairs, u, v, absolute=FALSE, impact=FALSE) {
-  uNew <- paste(u,".B",sep="")
-  ComparisonDF <- GetComparisonDFFromPairs(predictionFunction, pairs, u, v)
-  absoluteOrIdentity <- if (absolute) abs else identity
-  uDiff <- ComparisonDF[[uNew]] - ComparisonDF[[u]]
-  denom <- if (impact) sum(ComparisonDF$Weight) else sum(ComparisonDF$Weight * uDiff * sign(uDiff))
-  Apc <- sum(absoluteOrIdentity(ComparisonDF$Weight * (ComparisonDF$yHat2 - ComparisonDF$yHat1) * sign(uDiff))) / denom
-  return(Apc)
-}
-
-# This needs to account for samples and it doesn't right now
-# Summation order don't matter https://www.math.ubc.ca/~feldman/m321/twosum.pdf
-
-num <- (sum(compdf$Weight * (compdf$yHat2 - compdf$yHat1)^2))
-denom <- sum(compdf$Weight) * nrow(fmod)
-apc <- sqrt(num/denom)
-
+# calculate apc by summing over all samples and averaging
+apc <- sqrt(sum(apc_sample$pc)/nrow(apc_sample))
+print(apc)
 # calculate standard error
-seframe <- compdf %>%
-  group_by(iter) %>%
-  mutate(numnk = Weight*(yHat2 - yHat1)^2) %>%
-  summarise(apciter = sum(numnk)/sum(Weight))
 
 t1 <- 1/(2*apc)
-t2 <- 1/(nrow(seframe)-1)
-diff <- seframe$apciter - (apc)^2
+t2 <- 1/(s-1)
+diff <- apc_sample$pc^2 - apc^2
 diffsq <- diff^2
 t3 <- sum(diffsq)
 seApc <- t1*sqrt(t2*t3)
 print(seApc)
 
+
+
 end_time <- Sys.time()
 end_time-start_time
-print(apc)
-print(seApc)
-
+# print(apc)
+# print(seApc)
+# 
 
 ############# garbage below
 
