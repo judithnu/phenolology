@@ -231,6 +231,11 @@ calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf, model_params = 
     compdf$yHat2_med <- medyear$DoY[findInterval(compdf$yHat2,
                                                  medyear$sum_forcing) + 1]
     
+    compdf$yHat1_median <- medianyear$DoY[findInterval(compdf$yHat1,
+                                                    medianyear$sum_forcing) + 1]
+    compdf$yHat2_median <- medyear$DoY[findInterval(compdf$yHat2,
+                                                 medianyear$sum_forcing) + 1]
+    
     compdf$yHat1_hot <- hotyear$DoY[findInterval(compdf$yHat1,
                                                  hotyear$sum_forcing) + 1]
     compdf$yHat2_hot <- hotyear$DoY[findInterval(compdf$yHat2,
@@ -243,16 +248,18 @@ calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf, model_params = 
     apc_sample$sapc_cold[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_cold, compdf$yHat2_cold)
     apc_sample$sapc_hot[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_hot, compdf$yHat2_hot)
     apc_sample$sapc_med[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_med, compdf$yHat2_med)
+    apc_sample$sapc_median[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_median, compdf$yHat2_med)
     
   }
   
   apc <- calc_apc(apc_sample, "sapc")
   coldapc <- calc_apc(apc_sample, "sapc_cold")
   medapc <- calc_apc(apc_sample, "sapc_med")
+  medianapc <- calc_apc(apc_sample, "sapc_median")
   hotapc <- calc_apc(apc_sample, "sapc_hot")
-  apcs <- data.frame(comparison = c("apc", "cold_apc", "med_apc", "hot_apc"), 
-                     apc=c(apc, coldapc, medapc, hotapc))
-  apcs$se <- calc_seApc(apcs$apc, apc_sample[,-1])
+  apcs <- data.frame(comparison = c("apc", "cold_apc", "med_apc", "median_apc", "hot_apc"), 
+                     apc=c(apc, coldapc, medapc, medianapc, hotapc))
+  apcs$se <- calc_seApc(apcs$apc, apc_sample[,-1], n)
   
   return(apcs)
   
