@@ -32,19 +32,13 @@ calc_apc <- function(df, col) {
 }
 
 # calculate standard error where apc is the apc (1 number) and apc_sample is the per sample apc
-calc_seApc <- function(apc, apc_sample) {
+calc_seApc <- function(apc, apc_sample, n) {
   t1 <- 1/(2*apc)
-  t2 <- 1/(s-1)
-  diffsq <- (apc_sample^2 - apc^2)^2
+  t2 <- 1/(n-1)
+  diffsq <- (apc_sample^2 - apc^2)^2 
   t3 <- colSums(diffsq)
   seApc <- t1*sqrt(t2*t3)
   return(seApc)
-}
-
-ilikepipes <- function(a, b) {
-  peeps <- a %>%
-    select(b)
-  return(peeps)
 }
 
 # this function is based on a similar function in predcomps 
