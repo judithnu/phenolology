@@ -15,33 +15,19 @@ mmod_raw <- readRDS("2019-10-28phenologyMALE.rds") %>%
   as.data.frame() %>%
   select(-contains("state_rep"))
 
-# GLOBALS
+# GLOBALS ############
 
 forcingtype = "scaled_ristos"
 # 7000
-s=100
+s=0.5
+r=30
 
 
 ########## FUNCTIONS ####################
 
-
-# calculate apc from sample apcs
-calc_apc <- function(df, col) {
-  apc <- sqrt(sum(df[col])/nrow(df))
-  return(apc)
-}
-
-# calculate standard error where apc is the apc (1 number) and apc_sample is the per sample apc
-calc_seApc <- function(apc, apc_sample, n) {
-  t1 <- 1/(2*apc)
-  t2 <- 1/(n-1)
-  diffsq <- (apc_sample^2 - apc^2)^2 
-  t3 <- colSums(diffsq)
-  seApc <- t1*sqrt(t2*t3)
-  return(seApc)
-}
-
-# this function is based on a similar function in predcomps 
+# this function is based on a similar function in predcomps. Considering a dataset X with variable 
+# of interest uid and other variables vid, this function creates a dataframe where each row is a pairwise 
+# comparison to another row with a weight.
 GetPairs <- function(X, uid, vid,
                      numForTransitionStart = NULL,
                      numForTransitionEnd = NULL,
@@ -128,6 +114,32 @@ GetPairs <- function(X, uid, vid,
   return(data.frame(pairs))
 }
 
+# calculate apc from sample apcs
+# df is a dataframe of predictive comparisons for each sample in a bayesian model 
+# and column is the column containing the predictive comparison
+# calc_apc <- function(df, col) { 
+#   apc <- sqrt(sum(df[col])/nrow(df))
+#   return(apc)
+# }
+
+calc_apc <- function(vec) { 
+  apc <- sqrt(sum(vec)/length(vec))
+  return(apc)
+}
+
+# calculate standard error where apc is the apc (1 number) and apc_sample is the per sample apc
+calc_seApc <- function(apc, apc_sample, n) {
+  t1 <- 1/(2*apc)
+  t2 <- 1/(n-1)
+  diff <- apply(apc_sample, MARGIN=1, FUN=function(x) (x^2 - apc^2))
+  diffsq <- diff^2 
+  t3 <- rowSums(diffsq)
+  seApc <- t1*sqrt(t2*t3)
+  return(seApc)
+}
+
+
+
 # calculate expected value of fstart 
 calc_fstart <- function(df) {
   forcing <- with(df, {
@@ -152,6 +164,16 @@ GetComparisonDFFromPairs.function <- function(predictionFunction, pairs, u, v) {
 #   return(sapc)
 # }
 
+match_fu_to_DoY <- function(climdf, yhat1 = compdf$yHat1, yhat2=compdf$yHat2) {
+  yHat1 <- climdf$DoY[findInterval(yhat1,
+                                   climdf$sum_forcing) + 1]
+  yHat2 <- climdf$DoY[findInterval(yhat2,
+                                   climdf$sum_forcing) + 1]
+  df <- data.frame(yHat1, yHat2)
+  #colnames(df) <- paste(colnames(df), nameappend, sep="_")
+  return(df)
+}
+
 calc_sample_apc <- function(weight, yhat1, yhat2) {
   num <- sum(weight * (yhat2 - yhat1)^2)
   denom <- sum(weight) #* nrow(fmod)
@@ -159,20 +181,25 @@ calc_sample_apc <- function(weight, yhat1, yhat2) {
   return(sapc)
 }
 
-calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf, model_params = pardf, n=nrow(fmod)) {
+calc_doy_apc <- function(colname, apc_sample=apc_sample, df=compdf) {
+  yhats <- select(df, contains(colname), Weight) 
+  sapc <- calc_sample_apc(yhats$Weight, yhats[,1], yhats[,2])
+}
+
+calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf, 
+                                 model_params = pardf, n=nrow(fmod), climlist=climlist) {
   
   # pairs of rows and their weights
-  opairs <- GetPairs(X=phendata, uid=uid, vid=vid) #General
-  
+  opairs <- GetPairs(X=phendata, uid=uid, vid=vid) 
   assert_that(nrow(opairs) == (nrow(phendata) * nrow(phendata)) - nrow(phendata), msg="Pairs dataframe is the wrong size")
   
   # calculate average predictive comparison for each sample
-  apc_sample <- data.frame(iter=rep(NA, nrow(fmod)), sapc=NA, sapc_cold=NA, sapc_med=NA, sapc_hot=NA)
+  names <- names(climlist)
+  apc_sample <- data.frame(iter=NA, forcing=NA, setNames(rep(list(NA), length(names)), names))
   
   # this loop could be parallelized if you were clever
   for (i in 1:n) {
     print(paste("Working on sample", i, "of", n))
-    apc_sample$iter[i] <- i
     
     # Join the pairs with parameter values from the model so I can calculate expected values (yHats)
     # Get parameter values for rows without B suffix (u_i)
@@ -221,44 +248,42 @@ calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf, model_params = 
     compdf <- GetComparisonDFFromPairs.function(calc_fstart, pairs, u=c(u, uid), v=c("beta", "kappa1", v, vid))
     
     # translate fstart into DoY
-    compdf$yHat1_cold <- coldyear$DoY[findInterval(compdf$yHat1,
-                                                   coldyear$sum_forcing) + 1]
-    compdf$yHat2_cold <- coldyear$DoY[findInterval(compdf$yHat2,
-                                                   coldyear$sum_forcing) + 1]
+    climlist <- climlist[order(names(climlist))]
     
-    compdf$yHat1_med <- medyear$DoY[findInterval(compdf$yHat1,
-                                                 medyear$sum_forcing) + 1]
-    compdf$yHat2_med <- medyear$DoY[findInterval(compdf$yHat2,
-                                                 medyear$sum_forcing) + 1]
+    doy_yhats <- sapply(climlist, FUN = match_fu_to_DoY, USE.NAMES = TRUE, yhat1=compdf$yHat1, yhat2=compdf$yHat2)
+    names(doy_yhats) <- paste(rep(attributes(doy_yhats)$dimnames[[1]],length(climlist)), 
+                                 sort(rep(attributes(doy_yhats)$dimnames[[2]],2)), sep="_") #name with the correct yhat # and descriptor
+    doy_yhats <- do.call(cbind.data.frame, doy_yhats)
     
-    compdf$yHat1_median <- medianyear$DoY[findInterval(compdf$yHat1,
-                                                    medianyear$sum_forcing) + 1]
-    compdf$yHat2_median <- medyear$DoY[findInterval(compdf$yHat2,
-                                                 medianyear$sum_forcing) + 1]
+    # add doy yhats to comparison df
+    compdf <- cbind(compdf, doy_yhats)
     
-    compdf$yHat1_hot <- hotyear$DoY[findInterval(compdf$yHat1,
-                                                 hotyear$sum_forcing) + 1]
-    compdf$yHat2_hot <- hotyear$DoY[findInterval(compdf$yHat2,
-                                                 hotyear$sum_forcing) + 1]
+    # calculate sample apc for fstart
+    sapc <- calc_sample_apc(compdf$Weight, compdf$yHat1, compdf$yHat2)
+
+    # calculate sample apc for doy in various years
+    doy_apc <- sapply(names(climlist), FUN = calc_doy_apc, USE.NAMES=TRUE, df=compdf)
     
-    # Summation order don't matter https://www.math.ubc.ca/~feldman/m321/twosum.pdf
+    apc_sample[i,] <- c(iter=i, sapc=sapc, doy_apc)
+
     
-    
-    apc_sample$sapc[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1, compdf$yHat2)
-    apc_sample$sapc_cold[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_cold, compdf$yHat2_cold)
-    apc_sample$sapc_hot[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_hot, compdf$yHat2_hot)
-    apc_sample$sapc_med[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_med, compdf$yHat2_med)
-    apc_sample$sapc_median[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_median, compdf$yHat2_med)
-    
+    # apc_sample$sapc_cold[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_cold, compdf$yHat2_cold)
+    # apc_sample$sapc_hot[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_hot, compdf$yHat2_hot)
+    # apc_sample$sapc_med[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_med, compdf$yHat2_med)
+    # apc_sample$sapc_median[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_median, compdf$yHat2_median)
   }
+ 
+  apcs <- apply(apc_sample[,-1], MARGIN=2, FUN=calc_apc)
+  apcs <- data.frame(comparison = names(apcs), apcs )
   
-  apc <- calc_apc(apc_sample, "sapc")
-  coldapc <- calc_apc(apc_sample, "sapc_cold")
-  medapc <- calc_apc(apc_sample, "sapc_med")
-  medianapc <- calc_apc(apc_sample, "sapc_median")
-  hotapc <- calc_apc(apc_sample, "sapc_hot")
-  apcs <- data.frame(comparison = c("apc", "cold_apc", "med_apc", "median_apc", "hot_apc"), 
-                     apc=c(apc, coldapc, medapc, medianapc, hotapc))
+
+  # apc <- calc_apc(apc_sample, "sapc")
+  # coldapc <- calc_apc(apc_sample, "sapc_cold")
+  # medapc <- calc_apc(apc_sample, "sapc_med")
+  # medianapc <- calc_apc(apc_sample, "sapc_median")
+  # hotapc <- calc_apc(apc_sample, "sapc_hot")
+  # apcs <- data.frame(comparison = c("apc", "cold_apc", "med_apc", "median_apc", "hot_apc"), 
+  #                    apc=c(apc, coldapc, medapc, medianapc, hotapc))
   apcs$se <- calc_seApc(apcs$apc, apc_sample[,-1], n)
   
   return(apcs)
@@ -279,10 +304,10 @@ start_time <- Sys.time()
 ## Model data #####
 
 
-fmod <- sample_n(fmod_raw, s) 
+fmod <- sample_frac(fmod_raw, s) 
 fmod$iter <- 1:nrow(fmod)
 
-mmod <- sample_n(mmod_raw, s)
+mmod <- sample_frac(mmod_raw, s)
 mmod$iter <- 1:nrow(mmod)
 
 ## Climate data ####
@@ -303,9 +328,6 @@ coldyear <- filter(clim, siteyear == climsort$siteyear[1]) %>%
 hotyear <- filter(clim, siteyear == climsort$siteyear[nrow(climsort)]) %>%
   arrange(sum_forcing)
 
-# choose three random years?
-#
-
 medianforcing <- filter(clim, sum_forcing==median(climsort$sum_forcing))$siteyear
 medyear <- filter(clim, siteyear==medianforcing) %>%
   arrange(sum_forcing)
@@ -314,10 +336,24 @@ medianyear <- data.frame(DoY = coldyear$DoY, coldyear=coldyear$sum_forcing, hoty
   mutate(sum_forcing = (coldyear+hotyear)/2) %>%
   select(DoY, sum_forcing)
 
+ryears <- sample(unique(climsort$siteyear), r)
+
+randomyears <- list()
+for (i in 1:length(ryears)) {
+  randomyears[[i]] <- filter(clim, siteyear==ryears[i]) %>%
+    select(DoY, sum_forcing, siteyear) %>%
+    arrange(DoY) 
+}
+names(randomyears) <- ryears
+climlist <- list(hot=hotyear, cold=coldyear, median=medianyear) %>%
+  append(randomyears)
+
+# graph years
 ggplot(hotyear, aes(x=DoY, y=sum_forcing)) +
   geom_line(color="red") +
   geom_line(data=coldyear, aes(x=DoY, y=sum_forcing), color="blue") +
-  geom_line(data=medyear, aes(x=DoY, y=sum_forcing))
+  geom_line(data=medyear, aes(x=DoY, y=sum_forcing)) +
+  geom_line(data=medianyear, aes(x=DoY, y=sum_forcing), color="gray")
 
 ## Phenology data ####
 phendf <- read_data(slim = FALSE) 
@@ -336,18 +372,17 @@ udf <- unique_grouper(fdf, mdf) %>%
 # I need to rethink these functions to be smaller because (now that I'm not doing ppc) I don't need to keep every observation
 # pardf is a dataframe with nrow(fmod) x nrow(udf) rows that contains identifying information for data 
 # and the parameter values associated with the data
-pardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE") %>% # since I'm removing so much after, I think I can make a better build function here
-  dplyr::select(-Index, -DoY, -contains("Phenophase"), -Date, -TreeUnique, -mean_temp, -contains("Orchard"), 
-                -contains("forcing"), -TreeID, -contains("_mean"), -contains("sigma_"), -contains("kappa2"), -Sex,
-                -Site, -SPU_Name, -Clone, -Year) %>%
-  distinct()
+pardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE") %>% 
+  dplyr::select(-contains("Ind"), -contains("_mean"), -contains("sigma_"), -contains("kappa2"), -Sex,
+             -Site, -SPU_Name, -Clone, -Year) #%>%
+  #distinct()
 #BUILD_PAR_DF IS SLOW SLOW OMG FIX IT
 assert_that(nrow(pardf) == nrow(fmod)*nrow(udf))
 #stop here
 
 site_apc <- calc_apc_of_variable(u="b_site", uid = "SiteID", v=c("b_year", "b_prov", "b_clone"), 
                                  vid = c("YearID", "ProvenanceID", "CloneID"), 
-                                 phendata = udf, model_params = pardf, n=nrow(fmod))
+                                 phendata = udf, model_params = pardf, n=nrow(fmod), climlist=climlist)
 prov_apc <- calc_apc_of_variable(u="b_prov", uid = "ProvenanceID", v=c("b_site", "b_year", "b_clone"), 
                                  vid = c("SiteID", "YearID", "CloneID"),
                                  phendata = udf, model_params = pardf)
