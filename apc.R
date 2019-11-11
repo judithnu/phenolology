@@ -18,8 +18,8 @@ mmod_raw <- readRDS("2019-10-28phenologyMALE.rds") %>%
 # GLOBALS
 
 forcingtype = "scaled_ristos"
-
-s=1000
+# 7000
+s=100
 
 
 ########## FUNCTIONS ####################
@@ -276,7 +276,7 @@ start_time <- Sys.time()
 
 # read in data
 
-## Model data
+## Model data #####
 
 
 fmod <- sample_n(fmod_raw, s) 
@@ -285,7 +285,7 @@ fmod$iter <- 1:nrow(fmod)
 mmod <- sample_n(mmod_raw, s)
 mmod$iter <- 1:nrow(mmod)
 
-## Climate data
+## Climate data ####
 clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
   filter(forcing_type==forcingtype)
 
@@ -303,16 +303,23 @@ coldyear <- filter(clim, siteyear == climsort$siteyear[1]) %>%
 hotyear <- filter(clim, siteyear == climsort$siteyear[nrow(climsort)]) %>%
   arrange(sum_forcing)
 
+# choose three random years?
+#
+
 medianforcing <- filter(clim, sum_forcing==median(climsort$sum_forcing))$siteyear
 medyear <- filter(clim, siteyear==medianforcing) %>%
   arrange(sum_forcing)
+
+medianyear <- data.frame(DoY = coldyear$DoY, coldyear=coldyear$sum_forcing, hotyear=hotyear$sum_forcing) %>%
+  mutate(sum_forcing = (coldyear+hotyear)/2) %>%
+  select(DoY, sum_forcing)
 
 ggplot(hotyear, aes(x=DoY, y=sum_forcing)) +
   geom_line(color="red") +
   geom_line(data=coldyear, aes(x=DoY, y=sum_forcing), color="blue") +
   geom_line(data=medyear, aes(x=DoY, y=sum_forcing))
 
-## Phenology data
+## Phenology data ####
 phendf <- read_data(slim = FALSE) 
 
 # identify combinations of effects that actually occur
@@ -336,11 +343,11 @@ pardf <- build_par_df(mcmcdf = fmod, datdf = fdf, sex = "FEMALE") %>% # since I'
   distinct()
 #BUILD_PAR_DF IS SLOW SLOW OMG FIX IT
 assert_that(nrow(pardf) == nrow(fmod)*nrow(udf))
-
+#stop here
 
 site_apc <- calc_apc_of_variable(u="b_site", uid = "SiteID", v=c("b_year", "b_prov", "b_clone"), 
                                  vid = c("YearID", "ProvenanceID", "CloneID"), 
-                                 phendata = udf, model_params = pardf)
+                                 phendata = udf, model_params = pardf, n=nrow(fmod))
 prov_apc <- calc_apc_of_variable(u="b_prov", uid = "ProvenanceID", v=c("b_site", "b_year", "b_clone"), 
                                  vid = c("SiteID", "YearID", "CloneID"),
                                  phendata = udf, model_params = pardf)
@@ -352,28 +359,10 @@ clone_apc <- calc_apc_of_variable(u="b_clone", uid = "CloneID", v=c("b_site", "b
                                   phendata = udf, model_params = pardf)
 
 
-apcs <- list(year_apc, prov_apc, site_apc, clone_apc)
+apcs <- list(year=year_apc, prov=prov_apc, site=site_apc, clone=clone_apc)
 
 # calculate apc by summing over all samples and averaging
 
 
 
-
-
-
-t1 <- 1/(2*apc)
-t2 <- 1/(s-1)
-diff <- apc_sample$pc^2 - apc^2
-diffsq <- diff^2
-t3 <- sum(diffsq)
-seApc <- t1*sqrt(t2*t3)
-print(seApc)
-
-
-
-end_time <- Sys.time()
-end_time-start_time
-# print(apc)
-# print(seApc)
-# 
 
