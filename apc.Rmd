@@ -1,12 +1,17 @@
 ---
 title: "Average Predictive Comparisons"
 author: "C. Susannah Tysor"
-date: '2019-10-23'
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r depends, include=FALSE}
+library(tidyverse)
+library(ggExtra)
 ```
 
 ## What is an average predictive comparison?
@@ -15,16 +20,59 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+```{r apc data}
+apcsdf <- read.csv("apc_values.csv", stringsAsFactors = FALSE, header=TRUE)
+
+
+# +/- error
+apcsdf <- apcsdf %>%
+  mutate(upper = apcs + se) %>%
+  mutate(lower= apcs - se) %>%
+  pivot_longer(cols = c(upper, lower), names_to = "side", values_to = "errorbound")
+
+forcing_only_apcs <- filter(apcsdf, comparison=="forcing")
+days_only_apcs <- filter(apcsdf, comparison!="forcing")
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
+On average, changing from one site to another
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+ggplot(forcing_only_apcs, aes(x=apcs, y=ID)) +
+  geom_point() +
+  geom_line(aes(x=errorbound, y=ID)) +
+  geom_vline(xintercept=0) +
+  theme_bw() +
+  removeGrid(y=TRUE, x=FALSE) +
+  xlab("Root mean square of change in fstart") +
+  ylab("") +
+  ggtitle("RMS of change in forcing required for receptivity to begin")
+
+ggplot(filter(days_only_apcs, comparison %in% c("hot", "cold")), aes(x=apcs, y=comparison)) +
+  geom_point() +
+  geom_line(aes(x=errorbound, y=comparison)) +
+  geom_vline(xintercept=0) +
+  theme_bw() +
+  removeGrid(y=TRUE, x=FALSE) +
+  facet_grid(ID ~ .) + 
+  scale_x_continuous(breaks = seq(from=-50, to=50, by=2))
+
+ggplot(days_only_apcs, aes(x=apcs, y=comparison)) +
+  geom_point() +
+ # geom_line(aes(x=errorbound, y=comparison)) +
+  geom_vline(xintercept=0) +
+  theme_bw() +
+  removeGrid(y=TRUE, x=FALSE) +
+  facet_grid(ID ~ .) + 
+  scale_x_continuous(breaks = seq(from=-50, to=50, by=1))
+
+# with error
+ggplot(days_only_apcs, aes(x=apcs, y=comparison)) +
+  geom_point() +
+  geom_line(aes(x=errorbound, y=comparison)) +
+  geom_vline(xintercept=0) +
+  theme_bw() +
+  removeGrid(y=TRUE, x=FALSE) +
+  facet_grid(ID ~ .) + 
+  scale_x_continuous(breaks = seq(from=-50, to=50, by=1))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
