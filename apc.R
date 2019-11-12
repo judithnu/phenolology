@@ -19,7 +19,7 @@ mmod_raw <- readRDS("2019-10-28phenologyMALE.rds") %>%
 
 forcingtype = "scaled_ristos"
 # 7000
-s=0.5
+s=0.1
 r=30
 
 
@@ -114,24 +114,13 @@ GetPairs <- function(X, uid, vid,
   return(data.frame(pairs))
 }
 
-# calculate apc from sample apcs
-# df is a dataframe of predictive comparisons for each sample in a bayesian model 
-# and column is the column containing the predictive comparison
-# calc_apc <- function(df, col) { 
-#   apc <- sqrt(sum(df[col])/nrow(df))
-#   return(apc)
-# }
-
-calc_apc <- function(vec) { 
-  apc <- sqrt(sum(vec)/length(vec))
-  return(apc)
-}
 
 # calculate standard error where apc is the apc (1 number) and apc_sample is the per sample apc
 calc_seApc <- function(apc, apc_sample, n) {
   t1 <- 1/(2*apc)
   t2 <- 1/(n-1)
-  diff <- apply(apc_sample, MARGIN=1, FUN=function(x) (x^2 - apc^2))
+  #diff <- apply(apc_sample, MARGIN=1, FUN=function(x) (x^2 - apc^2)) # RMS
+  diff <- apply(apc_sample, MARGIN=1, FUN=function(x) (x - apc))
   diffsq <- diff^2 
   t3 <- rowSums(diffsq)
   seApc <- t1*sqrt(t2*t3)
@@ -174,28 +163,46 @@ match_fu_to_DoY <- function(climdf, yhat1 = compdf$yHat1, yhat2=compdf$yHat2) {
   return(df)
 }
 
-calc_sample_apc <- function(weight, yhat1, yhat2) {
-  num <- sum(weight * (yhat2 - yhat1)^2)
+# calculate the per-sample apc. Can be calcuated either with absolute differences ("type = "absolute")
+# or signed differences (type = "signed")
+calc_sample_apc <- function(weight, yhat1, yhat2, type = "absolute") {
+  #num <- sum(weight * (yhat2 - yhat1)^2) # squared difference for RMS calculation
+  if (type=="absolute") {
+    num <- sum(weight * abs(yhat2 - yhat1)) # absolute difference
+  } else {
+    num <- sum(weight * (yhat2-yhat1)) # signed difference
+    } 
   denom <- sum(weight) #* nrow(fmod)
   sapc <- num/denom
   return(sapc)
 }
 
-calc_doy_apc <- function(colname, apc_sample=apc_sample, df=compdf) {
+calc_doy_apc <- function(colname, apc_sample=apc_sample, df=compdf, type="absolute") {
   yhats <- select(df, contains(colname), Weight) 
-  sapc <- calc_sample_apc(yhats$Weight, yhats[,1], yhats[,2])
+  sapc <- calc_sample_apc(yhats$Weight, yhats[,1], yhats[,2], type=type)
+}
+
+
+# calculate apc from sample apcs
+
+calc_apc <- function(vec) { 
+ # apc <- sqrt(sum(vec)/length(vec)) #RMS
+  apc <- sum(vec)/length(vec) # absolute or signed comparison
+  return(apc)
 }
 
 calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf, 
                                  model_params = pardf, n=nrow(fmod), climlist=climlist) {
   
   # pairs of rows and their weights
-  opairs <- GetPairs(X=phendata, uid=uid, vid=vid) 
+  opairs <- GetPairs(X=phendata, uid=uid, vid=vid) #slow step if dataset is large
   assert_that(nrow(opairs) == (nrow(phendata) * nrow(phendata)) - nrow(phendata), msg="Pairs dataframe is the wrong size")
   
   # calculate average predictive comparison for each sample
-  names <- names(climlist)
-  apc_sample <- data.frame(iter=NA, forcing=NA, setNames(rep(list(NA), length(names)), names))
+  names_absolute <- names(climlist)
+  names_signed <- paste(names(climlist), "_signed", sep="")
+  names <- c(names_absolute, names_signed)
+  apc_sample <- data.frame(iter=NA, forcing=NA, forcing_signed=NA, setNames(rep(list(NA), length(names)), names))
   
   # this loop could be parallelized if you were clever
   for (i in 1:n) {
@@ -259,12 +266,14 @@ calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf,
     compdf <- cbind(compdf, doy_yhats)
     
     # calculate sample apc for fstart
-    sapc <- calc_sample_apc(compdf$Weight, compdf$yHat1, compdf$yHat2)
+    sapc <- calc_sample_apc(compdf$Weight, compdf$yHat1, compdf$yHat2, type = "absolute")
+    sapc_signed <- calc_sample_apc(compdf$Weight, compdf$yHat1, compdf$yHat2, type = "signed")
 
     # calculate sample apc for doy in various years
-    doy_apc <- sapply(names(climlist), FUN = calc_doy_apc, USE.NAMES=TRUE, df=compdf)
+    doy_apc <- sapply(names(climlist), FUN = calc_doy_apc, USE.NAMES=TRUE, df=compdf, type="absolute")
+    doy_apc_signed <- sapply(names(climlist), FUN = calc_doy_apc, USE.NAMES=TRUE, df=compdf, type="signed")
     
-    apc_sample[i,] <- c(iter=i, sapc=sapc, doy_apc)
+    apc_sample[i,] <- c(iter=i, sapc=sapc, sapc_signed, doy_apc, doy_apc_signed)
 
     
     # apc_sample$sapc_cold[i] <- calc_sample_apc(compdf$Weight, compdf$yHat1_cold, compdf$yHat2_cold)
@@ -290,16 +299,7 @@ calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf,
   
 }
 
-# start_time <- Sys.time()
-# #calc_sample_apc(compdf$Weight, yhat1=compdf$yHat1, yhat2=compdf$yHat2)
-# calc_sample_apc(compdf, "yHat1", "yHat2")
-# end_time <- Sys.time()
-# end_time-start_time
-#################
-
-start_time <- Sys.time()
-
-# read in data
+# read in data #############
 
 ## Model data #####
 
@@ -309,6 +309,20 @@ fmod$iter <- 1:nrow(fmod)
 
 mmod <- sample_frac(mmod_raw, s)
 mmod$iter <- 1:nrow(mmod)
+
+## Phenology data ####
+phendf <- read_data(slim = FALSE) 
+
+# identify combinations of effects that actually occur
+
+fdf <- splitsex(phendf, "FEMALE")
+mdf <- splitsex(phendf, "MALE")
+
+fudf <- unique_grouper(fdf, mdf) %>%
+  filter(Sex=="FEMALE") 
+
+mudf <- unique_grouper(fdf, mdf) %>%
+  filter(Sex=="MALE")
 
 ## Climate data ####
 clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
@@ -320,23 +334,17 @@ clim$siteyear <- paste(clim$Site, clim$Year, sep='') # index clim and tpars by S
 
 # choose cold, hot, and medium years.
 
-climsort <- filter(clim, DoY == 180) %>%
+phendf2 <- filter(phendf, Phenophase_Derived==2)
+
+climsort <- filter(clim, DoY == round(mean(phendf2$DoY))) %>%
   arrange(sum_forcing)
 
 coldyear <- filter(clim, siteyear == climsort$siteyear[1]) %>%
-  arrange(sum_forcing)
+  arrange(DoY)
 hotyear <- filter(clim, siteyear == climsort$siteyear[nrow(climsort)]) %>%
-  arrange(sum_forcing)
+  arrange(DoY)
 
-medianforcing <- filter(clim, sum_forcing==median(climsort$sum_forcing))$siteyear
-medyear <- filter(clim, siteyear==medianforcing) %>%
-  arrange(sum_forcing)
-
-medianyear <- data.frame(DoY = coldyear$DoY, coldyear=coldyear$sum_forcing, hotyear=hotyear$sum_forcing) %>%
-  mutate(sum_forcing = (coldyear+hotyear)/2) %>%
-  select(DoY, sum_forcing)
-
-ryears <- sample(unique(climsort$siteyear), r)
+#ryears <- sample(unique(climsort$siteyear), r) #only run this line to regenerate years
 
 randomyears <- list()
 for (i in 1:length(ryears)) {
@@ -345,59 +353,103 @@ for (i in 1:length(ryears)) {
     arrange(DoY) 
 }
 names(randomyears) <- ryears
-climlist <- list(hot=hotyear, cold=coldyear, median=medianyear) %>%
+climlist <- list(hot=hotyear, cold=coldyear) %>%
   append(randomyears)
 
-# graph years
-ggplot(hotyear, aes(x=DoY, y=sum_forcing)) +
-  geom_line(color="red") +
-  geom_line(data=coldyear, aes(x=DoY, y=sum_forcing), color="blue") +
-  geom_line(data=medyear, aes(x=DoY, y=sum_forcing)) +
-  geom_line(data=medianyear, aes(x=DoY, y=sum_forcing), color="gray")
+# graph different accumulated forcing timeseries 
 
-## Phenology data ####
-phendf <- read_data(slim = FALSE) 
 
-# identify combinations of effects that actually occur
+apcclimdf <- dplyr::bind_rows(climlist)
 
-fdf <- splitsex(phendf, "FEMALE")
-mdf <- splitsex(phendf, "MALE")
+ggplot(clim, aes(x=DoY, y=sum_forcing, group=siteyear)) +
+  geom_line(color="darkgray") +
+  geom_line(data=apcclimdf, aes(x=DoY, y=sum_forcing), color="blue", alpha=0.5) +
+  xlim(c(0,180)) + 
+  ylim(c(0,35)) +
+  geom_vline(xintercept = mean(phendf2$DoY), color="dark gray") +
+  geom_point(data=filter(phendf, Phenophase_Derived==2), aes(x=DoY, y=sum_forcing), 
+             inherit.aes = FALSE, pch=1, alpha=0.5) +
+  ggtitle("Forcing accumulation in 30 randomly chosen years with state 2 phenology", 
+          subtitle = "plus hottest and coldest year") +
+  xlab("Day of Year") +
+  ylab("Accumulated forcing") +
+  theme_bw() +
+  theme(legend.position = "none")
 
-udf <- unique_grouper(fdf, mdf) %>%
-  filter(Sex=="FEMALE") 
+
 
 ######################
 
-
-# I need to rethink these functions to be smaller because (now that I'm not doing ppc) I don't need to keep every observation
 # pardf is a dataframe with nrow(fmod) x nrow(udf) rows that contains identifying information for data 
 # and the parameter values associated with the data
-pardf <- build_par_df(mcmcdf = fmod, datdf = udf, sex = "FEMALE") %>% 
+fpardf <- build_par_df(mcmcdf = fmod, datdf = fudf, sex = "FEMALE") %>% 
   dplyr::select(-contains("Ind"), -contains("_mean"), -contains("sigma_"), -contains("kappa2"), -Sex,
-             -Site, -SPU_Name, -Clone, -Year) #%>%
-  #distinct()
-#BUILD_PAR_DF IS SLOW SLOW OMG FIX IT
-assert_that(nrow(pardf) == nrow(fmod)*nrow(udf))
-#stop here
+             -Site, -SPU_Name, -Clone, -Year)
+assert_that(nrow(fpardf) == nrow(fmod)*nrow(fudf))
 
-site_apc <- calc_apc_of_variable(u="b_site", uid = "SiteID", v=c("b_year", "b_prov", "b_clone"), 
-                                 vid = c("YearID", "ProvenanceID", "CloneID"), 
-                                 phendata = udf, model_params = pardf, n=nrow(fmod), climlist=climlist)
-prov_apc <- calc_apc_of_variable(u="b_prov", uid = "ProvenanceID", v=c("b_site", "b_year", "b_clone"), 
-                                 vid = c("SiteID", "YearID", "CloneID"),
-                                 phendata = udf, model_params = pardf)
-year_apc <- calc_apc_of_variable(u="b_year", uid = "YearID", v=c("b_site", "b_prov", "b_clone"), 
-                                 vid = c("SiteID", "ProvenanceID", "CloneID"), 
-                                 phendata = udf, model_params = pardf)
-clone_apc <- calc_apc_of_variable(u="b_clone", uid = "CloneID", v=c("b_site", "b_prov", "b_year"), 
-                                  vid = c("SiteID", "ProvenanceID", "YearID"), 
-                                  phendata = udf, model_params = pardf)
+mpardf <- build_par_df(mcmcdf = mmod, datdf = mudf, sex = "MALE") %>% 
+  dplyr::select(-contains("Ind"), -contains("_mean"), -contains("sigma_"), -contains("kappa2"), -Sex,
+                -Site, -SPU_Name, -Clone, -Year)
+assert_that(nrow(mpardf) == nrow(mmod)*nrow(mudf))
+
+# you can source all the apc calculation files OR run each one as a local job, which is much faster
+# could probably parallelize somehow, but I don't know
+# move all apc files to apc folder
 
 
-apcs <- list(year=year_apc, prov=prov_apc, site=site_apc, clone=clone_apc)
+apcs_male <- list(site=apc_male_site, prov=apc_male_prov, year=apc_male_year, clone=apc_male_clone)
+apcs_female <- list(site=apc_female_site, prov=apc_female_prov, year=apc_female_year, clone=apc_female_clone)
+mapcsdf <- map2_df(apcs_male, names(apcs), ~ mutate(.x, ID = .y)) %>% 
+  arrange(ID, comparison) %>%
+  mutate(sex="MALE")
+fapcsdf <- map2_df(apcs_female, names(apcs), ~ mutate(.x, ID = .y)) %>% 
+  arrange(ID, comparison) %>%
+  mutate(sex="FEMALE")
+apcsdf <- rbind(mapcsdf, fapcsdf)
+
+write.csv(apcsdf, "apc_values.csv", row.names = FALSE)
+
+# are 1400 samples equivalent to 7000?
+# apcs10 <- list(year=year_apc10, prov=prov_apc10, site=site_apc10, clone=clone_apc10)
+# apcsdf10 <- map2_df(apcs10, names(apcs10), ~ mutate(.x, ID = .y)) %>% arrange(ID, comparison)
+# 
+# apcdiff <- apcsdf10$apcs - apcsdf$apcs
+# sediff <- apcsdf10$se - apcsdf$se
+# 
+# which(sediff > 1)
+
 
 # calculate apc by summing over all samples and averaging
 
+# visualize apc ###############
 
 
+site_apct <- site_apct %>% 
+  separate(comparison, into = c("comparison", "apc_type"), sep="_")
+site_apct[which(is.na(site_apct$apc_type)),]$apc_type <- "absolute"
 
+site_apc_err <- site_apct %>% 
+  mutate(upper = apcs + se) %>%
+  mutate(lower= apcs - se) %>%
+  pivot_longer(cols = c(upper, lower), names_to = "side", values_to = "errorbound")
+
+apc_err <- apcsdf %>%
+  mutate(upper = apcs + se) %>%
+  mutate(lower= apcs - se) %>%
+  pivot_longer(cols = c(upper, lower), names_to = "side", values_to = "errorbound")
+
+library(ggExtra)
+ggplot(apcsdf, aes(x=apcs, y=comparison)) +
+  geom_point() +
+  geom_line(data=apc_err, aes(x=errorbound, y=comparison)) +
+  geom_vline(xintercept=0) +
+  theme_bw() +
+  removeGrid(y=TRUE, x=FALSE) +
+  facet_grid(ID ~ .)
+
+ggplot(site_apct, aes(x=apcs, y=comparison, color=apc_type)) +
+  geom_point() +
+  geom_line(data=site_apc_err, aes(x=errorbound, y=comparison)) +
+  geom_vline(xintercept=0) +
+  theme_bw() +
+  removeGrid(y=TRUE, x=FALSE)
