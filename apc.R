@@ -415,6 +415,8 @@ assert_that(nrow(mpardf) == nrow(mmod)*nrow(mudf))
 # could probably parallelize somehow, but I don't know
 # move all apc files to apc folder
 
+# store apcs ############3
+
 #collect apcs for all sexes and u's and save to disk because that took a long-ass time to calculate
 apcs_male <- list(site=apc_male_site, prov=apc_male_prov, year=apc_male_year, clone=apc_male_clone)
 apcs_female <- list(site=apc_female_site, prov=apc_female_prov, year=apc_female_year, clone=apc_female_clone)
