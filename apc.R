@@ -328,7 +328,7 @@ mudf <- unique_grouper(fdf, mdf) %>%
 clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
   filter(forcing_type==forcingtype)
 
-### get coldest, median, and hottest years
+### choose r climate timeseries from coldest to hottest
 
 clim$siteyear <- paste(clim$Site, clim$Year, sep='') # index clim and tpars by Site-Year
 
@@ -337,44 +337,63 @@ clim$siteyear <- paste(clim$Site, clim$Year, sep='') # index clim and tpars by S
 phendf2 <- filter(phendf, Phenophase_Derived==2)
 
 climsort <- filter(clim, DoY == round(mean(phendf2$DoY))) %>%
-  arrange(sum_forcing)
-
-coldyear <- filter(clim, siteyear == climsort$siteyear[1]) %>%
-  arrange(DoY)
-hotyear <- filter(clim, siteyear == climsort$siteyear[nrow(climsort)]) %>%
-  arrange(DoY)
+  arrange(sum_forcing) %>%
+  mutate(coldtohot=order(sum_forcing))
+# 
+# coldyear <- filter(clim, siteyear == climsort$siteyear[1]) %>%
+#   arrange(DoY)
+# hotyear <- filter(clim, siteyear == climsort$siteyear[nrow(climsort)]) %>%
+#   arrange(DoY)
 
 #ryears <- sample(unique(climsort$siteyear), r) #only run this line to regenerate years
+# 
+# randomyears <- list()
+# for (i in 1:length(ryears)) {
+#   randomyears[[i]] <- filter(clim, siteyear==ryears[i]) %>%
+#     select(DoY, sum_forcing, siteyear) %>%
+#     arrange(DoY) 
+# }
+# names(randomyears) <- ryears
+# climlist <- list(hot=hotyear, cold=coldyear) %>%
+#   append(randomyears)
 
-randomyears <- list()
-for (i in 1:length(ryears)) {
-  randomyears[[i]] <- filter(clim, siteyear==ryears[i]) %>%
+spaceseq <- round(seq(from=1, to =length(unique(climsort$siteyear)), length.out = r))
+syears <- unique(climsort$siteyear)[spaceseq]
+
+spacedyears <- list()
+for (i in 1:length(syears)) {
+  spacedyears[[i]] <- filter(clim, siteyear==syears[i]) %>%
     select(DoY, sum_forcing, siteyear) %>%
     arrange(DoY) 
 }
-names(randomyears) <- ryears
-climlist <- list(hot=hotyear, cold=coldyear) %>%
-  append(randomyears)
 
-# graph different accumulated forcing timeseries 
+names(spacedyears) <- syears
+climlist <- spacedyears 
 
+# graph different accumulated forcing timeseries
 
-apcclimdf <- dplyr::bind_rows(climlist)
+apcclimdf <- dplyr::bind_rows(climlist) %>%
+  left_join(select(climsort, coldtohot, siteyear))
 
 ggplot(clim, aes(x=DoY, y=sum_forcing, group=siteyear)) +
   geom_line(color="darkgray") +
-  geom_line(data=apcclimdf, aes(x=DoY, y=sum_forcing), color="blue", alpha=0.5) +
+  #geom_line(data=apcclimdf, aes(x=DoY, y=sum_forcing, color=coldtohot), alpha=0.5) +
   xlim(c(0,180)) + 
   ylim(c(0,35)) +
   geom_vline(xintercept = mean(phendf2$DoY), color="dark gray") +
-  geom_point(data=filter(phendf, Phenophase_Derived==2), aes(x=DoY, y=sum_forcing), 
-             inherit.aes = FALSE, pch=1, alpha=0.5) +
-  ggtitle("Forcing accumulation in 30 randomly chosen years with state 2 phenology", 
-          subtitle = "plus hottest and coldest year") +
+ # geom_jitter(data=filter(phendf, Phenophase_Derived==2), aes(x=DoY, y=sum_forcing), 
+           #  inherit.aes = FALSE, pch=2, alpha=0.1) +
+  ggtitle("Forcing accumulation in 30 of 105 accumulated forcing time series", 
+          subtitle = "with stage 2 phenology") +
   xlab("Day of Year") +
   ylab("Accumulated forcing") +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  scale_color_viridis_c("cividis") +
+  geom_line(data = filter(clim, siteyear %in% weirdyears), aes(x=DoY, y=sum_forcing, group=siteyear), color="red")
+  
+
+weirdyears <- c("Kalamalka2003", "Tolko2009", "Vernon2011")
 
 
 
