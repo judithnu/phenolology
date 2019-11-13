@@ -19,8 +19,8 @@ mmod_raw <- readRDS("2019-10-28phenologyMALE.rds") %>%
 
 forcingtype = "scaled_ristos"
 # 7000
-s=0.1
-r=30
+samplefrac=0.1
+r=20
 
 
 ########## FUNCTIONS ####################
@@ -304,10 +304,10 @@ calc_apc_of_variable <- function(u, uid, v, vid, phendata = udf,
 ## Model data #####
 
 
-fmod <- sample_frac(fmod_raw, s) 
+fmod <- sample_frac(fmod_raw, samplefrac) 
 fmod$iter <- 1:nrow(fmod)
 
-mmod <- sample_frac(mmod_raw, s)
+mmod <- sample_frac(mmod_raw, samplefrac)
 mmod$iter <- 1:nrow(mmod)
 
 ## Phenology data ####
@@ -396,30 +396,18 @@ assert_that(nrow(mpardf) == nrow(mmod)*nrow(mudf))
 # could probably parallelize somehow, but I don't know
 # move all apc files to apc folder
 
-
+#collect apcs for all sexes and u's and save to disk because that took a long-ass time to calculate
 apcs_male <- list(site=apc_male_site, prov=apc_male_prov, year=apc_male_year, clone=apc_male_clone)
 apcs_female <- list(site=apc_female_site, prov=apc_female_prov, year=apc_female_year, clone=apc_female_clone)
-mapcsdf <- map2_df(apcs_male, names(apcs), ~ mutate(.x, ID = .y)) %>% 
+mapcsdf <- map2_df(apcs_male, names(apcs_male), ~ mutate(.x, ID = .y)) %>% 
   arrange(ID, comparison) %>%
   mutate(sex="MALE")
-fapcsdf <- map2_df(apcs_female, names(apcs), ~ mutate(.x, ID = .y)) %>% 
+fapcsdf <- map2_df(apcs_female, names(apcs_female), ~ mutate(.x, ID = .y)) %>% 
   arrange(ID, comparison) %>%
   mutate(sex="FEMALE")
 apcsdf <- rbind(mapcsdf, fapcsdf)
 
 write.csv(apcsdf, "apc_values.csv", row.names = FALSE)
-
-# are 1400 samples equivalent to 7000?
-# apcs10 <- list(year=year_apc10, prov=prov_apc10, site=site_apc10, clone=clone_apc10)
-# apcsdf10 <- map2_df(apcs10, names(apcs10), ~ mutate(.x, ID = .y)) %>% arrange(ID, comparison)
-# 
-# apcdiff <- apcsdf10$apcs - apcsdf$apcs
-# sediff <- apcsdf10$se - apcsdf$se
-# 
-# which(sediff > 1)
-
-
-# calculate apc by summing over all samples and averaging
 
 # visualize apc ###############
 
