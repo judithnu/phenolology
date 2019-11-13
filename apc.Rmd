@@ -3,6 +3,8 @@ title: "Average Predictive Comparisons"
 author: "C. Susannah Tysor"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -28,42 +30,54 @@ apcsdf <- read.csv("apc_values.csv", stringsAsFactors = FALSE, header=TRUE)
 apcsdf <- apcsdf %>%
   mutate(upper = apcs + se) %>%
   mutate(lower= apcs - se) %>%
-  pivot_longer(cols = c(upper, lower), names_to = "side", values_to = "errorbound")
+  pivot_longer(cols = c(upper, lower), names_to = "side", values_to = "errorbound") %>%
+  separate(comparison, into = c("comparison", "apc_type"), sep="_")
+apcsdf[which(is.na(apcsdf$apc_type)),]$apc_type <- "absolute"
 
 forcing_only_apcs <- filter(apcsdf, comparison=="forcing")
-days_only_apcs <- filter(apcsdf, comparison!="forcing")
+
+
+days_only_apcs <- filter(apcsdf, comparison!="forcing") %>%
+  left_join(select(climsort, coldtohot, siteyear), by=c("comparison"="siteyear")) 
+
 ```
 
 On average, changing from one site to another
 
 ```{r pressure, echo=FALSE}
-ggplot(forcing_only_apcs, aes(x=apcs, y=ID)) +
-  geom_point() +
+ggplot(filter(forcing_only_apcs, apc_type=="absolute"), aes(x=apcs, y=ID, color=ID)) +
+  geom_point(size=2) +
   geom_line(aes(x=errorbound, y=ID)) +
   geom_vline(xintercept=0) +
   theme_bw() +
   removeGrid(y=TRUE, x=FALSE) +
-  xlab("Root mean square of change in fstart") +
+  xlab("change in fstart") +
   ylab("") +
-  ggtitle("RMS of change in forcing required for receptivity to begin")
+  ggtitle("|Change| in forcing required for phenology period start associated with each effect") +
+  facet_grid(sex ~ .) +
+  scale_color_viridis_d(option="cividis", end=0.8)
 
-ggplot(filter(days_only_apcs, comparison %in% c("hot", "cold")), aes(x=apcs, y=comparison)) +
-  geom_point() +
-  geom_line(aes(x=errorbound, y=comparison)) +
+# ggplot(filter(days_only_apcs, comparison %in% c("hot", "cold")), aes(x=apcs, y=comparison)) +
+#   geom_point() +
+#   geom_line(aes(x=errorbound, y=comparison)) +
+#   geom_vline(xintercept=0) +
+#   theme_bw() +
+#   removeGrid(y=TRUE, x=FALSE) +
+#   facet_grid(ID ~ .) + 
+#   scale_x_continuous(breaks = seq(from=-50, to=50, by=2))
+
+ggplot(filter(days_only_apcs, apc_type=="absolute"), aes(x=apcs, y=as.factor(coldtohot), color=sex)) +
+  geom_point(alpha=0.8) +
+  geom_line(aes(x=errorbound, y=as.factor(coldtohot))) +
   geom_vline(xintercept=0) +
   theme_bw() +
   removeGrid(y=TRUE, x=FALSE) +
-  facet_grid(ID ~ .) + 
-  scale_x_continuous(breaks = seq(from=-50, to=50, by=2))
-
-ggplot(days_only_apcs, aes(x=apcs, y=comparison)) +
-  geom_point() +
- # geom_line(aes(x=errorbound, y=comparison)) +
-  geom_vline(xintercept=0) +
-  theme_bw() +
-  removeGrid(y=TRUE, x=FALSE) +
-  facet_grid(ID ~ .) + 
-  scale_x_continuous(breaks = seq(from=-50, to=50, by=1))
+  facet_wrap(ID ~ . ) +
+  scale_color_viridis_d(end=0.8) +
+  ggtitle("|Change| in start of flowering associated with each effect") +
+  xlab("+/- Days") +
+  ylab("Coldest to warmest \n accumulated forcing timeseries at day 151") +
+  scale_y_discrete(labels=NULL, breaks=NULL)
 
 # with error
 ggplot(days_only_apcs, aes(x=apcs, y=comparison)) +
