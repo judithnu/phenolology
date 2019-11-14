@@ -50,11 +50,21 @@ mpredict <- mmod %>%
 predictphen <- rbind(fpredict, mpredict) %>%
   pivot_longer(cols=c("end", "begin"), names_to = "side", values_to = "sum_forcing" )
 
-ggplot(predictphen, aes(x=sum_forcing, fill=Sex, linetype=side)) +
-  geom_density(alpha=0.5) +
+#scaled density
+ggplot(predictphen, aes(x=sum_forcing, y= ..scaled.., fill=Sex, linetype=side)) +
+  geom_density(alpha=0.8) +
+  #geom_density(data=filter(phendf, Phenophase_Derived==2), aes(x=sum_forcing, y= ..scaled..), inherit.aes = FALSE) +
+  stat_ecdf(data=filter(phendf, Phenophase_Derived==2), aes(x=sum_forcing), inherit.aes = FALSE) +
   scale_fill_viridis_d(end=0.8) +
-  ggtitle("Forcing required to begin and end flowering") +
-  theme_bw(base_size=18)
+  scale_color_viridis_d(end=0.8) +
+  ggtitle("Forcing required to begin and end flowering", subtitle = "with cumulative distribution of accumulated forcing \non observed flowering dates") +
+  theme_bw(base_size=18) +
+  theme(legend.position = "none") +
+  xlab("Forcing accumulation") +
+  ylab("") +
+  facet_grid(Sex ~ .)
+
+
 
 # Climate data ####
 clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
@@ -84,12 +94,12 @@ ggplot(filter(DoYpredict, siteyear %in% ryears), aes(x=siteyear, y=DoY, color=Se
   scale_color_viridis_d(end=0.8) +
   scale_x_discrete(labels=NULL)
 
-ggplot(filter(DoYpredict, siteyear %in% ryears), aes(x=DoY, fill=Sex)) +
-  geom_density(alpha=0.5) +
-  facet_grid(. ~ side)+
-  theme(legend.position = "none") +
-  scale_fill_viridis_d(end=0.8) +
-  scale_x_discrete(labels=NULL)
+# ggplot(filter(DoYpredict, siteyear %in% ryears), aes(x=DoY, fill=Sex)) +
+#   geom_density(alpha=0.5) +
+#   facet_grid(. ~ side)+
+#   theme(legend.position = "none") +
+#   scale_fill_viridis_d(end=0.8) +
+#   scale_x_discrete(labels=NULL)
 
 phendf <- read_data(slim = FALSE)
 
