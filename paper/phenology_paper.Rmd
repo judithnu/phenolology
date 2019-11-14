@@ -392,13 +392,15 @@ I should perform this analysis on the unslimmed data.
 #### Average predictive comparisons
 Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007, @shirley2015). The APC for site, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
 
-Average predictive comparisons for each effect $u$ were calculated by calculating the squared difference between the expected value at a given data point (where datapoints were all uniquely occuring combinations of site, provenance, clone, and year in the phenology dataset) $n$ for the input variable of interest $u^{(k)}$ and the other input variables $v$ and that datapoint for its actual value of $u$, mulitiplying that squared difference by a weight $\omega$ that represents the similarity in $v$ between a datapoint with $u_i$ versus $u^{(k)}$. The weighted average of these squared differences is taken over all datapoints, values of u, and samples. [IS THIS SENTENCE REALLY TRUE?]
+Average predictive comparisons for each effect $u$ were calculated by calculating the absolute value of the difference between the expected value at a given data point $n$ (where $n$ were all uniquely occuring combinations of site, provenance, clone, and year in the phenology dataset) for the input variable of interest $u^{(k)}$ and the other input variables $v$ and that datapoint for its actual value of $u$, mulitiplying that difference by a weight $\omega$ that represents the similarity in $v$ between a datapoint with $u_i$ versus $u^{(k)}$. The weighted average of these differences is taken over all data points, all values of u, and samples from the posterior distribution. 
 
-$$\hat \Delta_u = \sqrt{(\frac{\sum_{i=1}^{n}\sum_{k=1}^{K}\sum_{s=1}^S[\sum_{j\in\{k\}}\omega_{ij}](\mathrm{E}(y|u^{(k)},v_i, \theta^{(s)})-\mathrm{E}(y|u_i,v_i, \theta^{(s)}))^2}
-{\mathrm{S}\sum_{i=1}^{n}\sum_{k=1}^{K}[\sum_{j\in\{k\}}\omega_{ij}]})}$$
+$$\hat \Delta_u = \frac{\sum_{i=1}^{n}\sum_{k=1}^{K}\sum_{s=1}^S[\sum_{j\in\{k\}}\omega_{ij}]|\mathrm{E}(y|u^{(k)},v_i, \theta^{(s)})-\mathrm{E}(y|u_i,v_i, \theta^{(s)})|}
+{\mathrm{S}\sum_{i=1}^{n}\sum_{k=1}^{K}[\sum_{j\in\{k\}}\omega_{ij}]}$$
 
 
 Comparison calculations are weighted ($\omega$) to reflect the distribution of data, but the weighting function is not specified in @gelman2007. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of my effects are. I developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
+
+7000 random samples from each model fit in Stan were used to calculate average predictive comparisons.
 
 #### Validation
 
@@ -416,11 +418,13 @@ Do site, clone, prov, year effects differ between male and females? See apcs to 
 
 ## Average Predictive Comparisons
 
-[Figure showing cold and hot year APC]
+Differences in clone or year cause th larger changes in $fstart$ than site or provenance \ref{apcforce}.
+![Absolute value of the change in $fstart$ with standard error \label{apcforce}](../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png)
 
-An increase of X accumulated forcing units, on average, provokes a transition to the next phenological state. X forcing units is approximately Y days in a cold year and Z days in a hot year.
+$fstart$ was translated into day of year for 30 years. Differences within effects almost never cause more than a difference of 3 days. Site and provenance rarely change a prediction by even a day. Year and clone have the largest effects and the effect of clone is especially large for cone receptivity (1-3 days vs 1-2 for males). 
+![Absolute value of the change in start day for 30 years of accumulated forcing time series with standard error. Accumulated forcing time series are ordered from in terms of forcing accumulated at day 151, the mean day of year for phase 2 in the phenology data. \label{apcday}](../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png)
 
-On average, a change in site causes a X change in the number of forcing units required for a tree to begin flowering. In a cold year, this translates into Y days. In a hot year, this translates into Z days.
+
 
 
 
