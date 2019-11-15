@@ -47,10 +47,16 @@ mpredict <- mmod %>%
   mutate(Sex="MALE") %>%
   select(iter, begin, end, Sex)
 
+rm(fmod, mmod)
+
 predictphen <- rbind(fpredict, mpredict) %>%
+  mutate(lengthforcing = end-begin) %>%
   pivot_longer(cols=c("end", "begin"), names_to = "side", values_to = "sum_forcing" )
 
-#scaled density
+rm(mpredict, fpredict)
+gc()
+
+#scaled density of start and end with accumulated forcing (or flowering period - see commented line)
 ggplot(predictphen, aes(x=sum_forcing, y= ..scaled.., fill=Sex, linetype=side)) +
   geom_density(alpha=0.8) +
   #geom_density(data=filter(phendf, Phenophase_Derived==2), aes(x=sum_forcing, y= ..scaled..), inherit.aes = FALSE) +
