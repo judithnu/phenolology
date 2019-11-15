@@ -13,10 +13,6 @@ source('phenology_functions.R')
 # FUNCTIONS ####################################
 
 
-
-
-
-
 calc_flowering_prob <- function(forcingaccum, beta, kappa1, kappa2) {
     prob = logistic2(x=forcingaccum, b=beta, c=kappa1) - logistic2(forcingaccum, b=beta, c=kappa2)
     return(prob)
@@ -246,6 +242,8 @@ full <- group_by(tpars, param, Sex) %>%
 fifty <- group_by(tpars, param, Sex) %>%
     summarize(x=hpd_lower(sum_forcing, prob=.5), xend=hpd_upper(sum_forcing, prob=.5)) %>%
     mutate(interval="0.5")
+
+
 
 hpd_df <- full_join(full, fifty) %>%
     gather(key=end, value=value, x, xend) %>%
