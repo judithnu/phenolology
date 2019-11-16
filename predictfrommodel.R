@@ -141,7 +141,7 @@ ggplot(climphen, aes(x=DoY, y=sum_forcing, group=siteyear)) +
   geom_line(data=short, aes(color="short")) +
   geom_line(data=long, aes(color="long")) +
   scale_color_viridis_d(option="B", end=0.8) +
-  geom_hline(data=predictdoy, aes(yintercept = sum_forcing, linetype=Sex), alpha=0.2)
+  geom_hline(data=predictdoy, aes(yintercept = sum_forcing, color=Sex), alpha=0.005)
 
 
 meantemps <- left_join(predictdoy, select(clim, siteyear, DoY, mean_temp), by=c("siteyear", "DoY"))
