@@ -12,6 +12,8 @@ library(gtools)
 
 source('phenology_functions.R')
 
+phendf <- read_data(slim = FALSE)
+
 
 fmod_raw <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
   as.data.frame() %>%
@@ -83,8 +85,8 @@ ggplot(lengthframephen, aes(x=lengthforcing, fill=Sex)) +
 clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
   filter(forcing_type==forcingtype)
 clim$siteyear <- paste(clim$Site, clim$Year, sep='')
-ryears <- sample(unique(clim$siteyear), 20)
-clim <- filter(clim, siteyear %in% ryears)
+# ryears <- sample(unique(clim$siteyear), 20)
+# clim <- filter(clim, siteyear %in% ryears)
 
 # CLIMATE PREDICTIONS ###########
 splitclim <- split(clim, clim$siteyear)
@@ -108,6 +110,48 @@ assertthat::assert_that(length(unique(predictdoy$siteyear))==length(splitclim)) 
 
 lengthframe <- select(predictdoy, iter, Sex, siteyear, contains("length")) %>%
   distinct()
+
+# calculate the length of the phenological period
+mean(lengthframe$lengthdays)
+sd(lengthframe$lengthdays)
+
+sexlength <- lengthframe %>%
+  group_by(Sex) %>%
+  summarise(median=median(lengthdays),
+            lower.99 = hpd_lower(lengthdays, 0.99),
+            upper.99 = hpd_upper(lengthdays, 0.99),
+            lower.50 = hpd_lower(lengthdays, 0.50),
+            upper.50 = hpd_upper(lengthdays, 0.50)) %>%
+  pivot_longer(cols=c(starts_with("lower"), starts_with("upper")), names_to="interval", values_to = "days") %>%
+  separate(interval, into=c("side", "interval"))
+
+ggplot(filter(sexlength, interval==99), aes(x=days, y=0, color=Sex), size=0.5) +
+  geom_line() +
+  geom_line(data = filter(sexlength, interval==50), aes(x=days, y=0), size=2) +
+  geom_point(aes(x=median, y=0), size=3, pch=1)+
+  facet_grid(rows=vars(Sex)) +
+  theme_bw() +
+  theme(strip.text.y = element_text(angle = 0)) +
+  scale_color_viridis_d(end=0.8)
+
+sexsylength <- lengthframe %>%
+  group_by(Sex, siteyear) %>%
+  summarise(median=median(lengthdays),
+            lower.99 = hpd_lower(lengthdays, 0.99),
+            upper.99 = hpd_upper(lengthdays, 0.99),
+            lower.50 = hpd_lower(lengthdays, 0.50),
+            upper.50 = hpd_upper(lengthdays, 0.50)) %>%
+  pivot_longer(cols=c(starts_with("lower"), starts_with("upper")), names_to="interval", values_to = "days") %>%
+  separate(interval, into=c("side", "interval")) %>%
+  arrange(Sex,median)
+
+# median length of phenological period for males and females
+ggplot(sexsylength, aes(x=median, y=fct_reorder(siteyear, median), colour=Sex)) +
+  geom_point() +
+  facet_grid(rows=vars(Sex)) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  geom_line(aes(x=days, y=fct_reorder(siteyear, median)), color="gray")
 
 # violin plot of start and end day of year for every siteyear
 ggplot(predictdoy, aes(x=siteyear, y=DoY, color=Sex)) +
@@ -195,7 +239,7 @@ ggplot(meantemps, aes(x=DoY, y=mean_temp, group=as.factor(iter)), color=siteyear
 #   scale_fill_viridis_d(end=0.8) +
 #   scale_x_discrete(labels=NULL)
 
-phendf <- read_data(slim = FALSE)
+
 
 firstandlastrf <- phendf %>%
   group_by(Index, Sex, Phenophase_Derived) %>%
