@@ -7,7 +7,7 @@ sex <- "FEMALE"
 
 forcingtype = "scaled_ristos"
 
-test = FALSE
+test = TRUE
 
 
 # Dependencies and options ##################
@@ -49,12 +49,12 @@ prepforstan <- function(df, file) {
 
 # Read in and process data
 phendf <- read_data(slim=FALSE)
-# 
+#
 # msf <- mean(phendf$sum_forcing)
 # sdf <- sd(phendf$sum_forcing)
-# 
+#
 # phendf$normalized <- (phendf$sum_forcing - msf)/sdf
-# 
+#
 # phendf <- rename(phendf, sum_forcing_old = sum_forcing, sum_forcing=normalized)
 
 # filter for sex of interest
@@ -96,8 +96,8 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 # Fit model  #############
 if (test==TRUE)
 {
-  test <- stan("phenology.stan",
-               model_name = paste("test", Sys.Date(), sex, "slopes_nc", forcingtype, sep="_"),
+  test <- stan("phenology_deeper.stan",
+               model_name = paste("test", Sys.Date(), sex, forcingtype, sep="_"),
                data = rdump,
                pars = c( "z_year", "phi"), include=FALSE,
                chains = 1, cores = 1, warmup = 20, iter = 25,
@@ -111,7 +111,7 @@ if (test==TRUE)
               chains = 4, cores = 4, warmup = 1000, iter = 4500#,
               #control = list(max_treedepth = 14, adapt_delta = .9),
   )
-  
+
   saveRDS(fit, file = paste(Sys.Date(), "phenology", sex, ".rds", sep=''))
 }
 
