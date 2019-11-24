@@ -48,10 +48,10 @@ model{
   sigma_clone ~ exponential( 5 );
   sigma_year ~ exponential( 5 );
 
-  mu_site ~ normal(0,1);
-  mu_prov ~ normal(0,1);
-  mu_clone ~ normal(0,1);
-  mu_year ~ normal(0,1);
+  mu_site ~ normal(0,0.2);
+  mu_prov ~ normal(0,0.2);
+  mu_clone ~ normal(0,0.2);
+  mu_year ~ normal(0,0.2);
 
   b_site ~ normal( mu_site , sigma_site );
   b_prov ~ normal( mu_prov , sigma_prov );
