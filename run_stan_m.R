@@ -2,8 +2,8 @@
 
 # Set sex and forcing type ################
 # Choose sex and forcing type
-sex <- "FEMALE"
-#sex <- "MALE"
+#sex <- "FEMALE"
+sex <- "MALE"
 
 forcingtype = "scaled_ristos"
 
@@ -33,17 +33,17 @@ prepforstan <- function(df, file) {
   Nclone <- length(unique(df$CloneID))
   Ntree <- length(unique(df$TreeID))
   Nyear <- length(unique(df$YearID))
-
+  
   SiteID <- df$SiteID
   ProvenanceID <- df$ProvenanceID
   OrchardID <- df$OrchardID
   CloneID <- df$CloneID
   TreeID <- df$TreeID
   YearID <- df$YearID
-
+  
   forcing <- df$sum_forcing
   state <- df$Phenophase_Derived
-
+  
   rstan::stan_rdump(c("N", "K", "Nsite","Nprovenance", "Nclone", "Nyear", "Ntree", "SiteID", "ProvenanceID", "CloneID", "YearID", "TreeID", "forcing", "state"), file)
 }
 
@@ -108,10 +108,10 @@ if (test==TRUE)
               model_name = paste(Sys.Date(), sex, "phenology", forcingtype, sep="_"),
               data = rdump,
               pars = c( "phi"), include=FALSE,
-              chains = 4, cores = 4, warmup = 1000, iter = 4500#,
-              #control = list(max_treedepth = 14, adapt_delta = .9),
+              chains = 4, cores = 4, warmup = 1000, iter = 3500,
+              control = list(max_treedepth = 12)#, adapt_delta = .9),
   )
-
+  
   saveRDS(fit, file = paste(Sys.Date(), "phenology", sex, ".rds", sep=''))
 }
 
