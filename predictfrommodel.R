@@ -228,7 +228,7 @@ ggplot(meantemps, aes(x=DoY, y=sum_forcing, group=as.factor(iter), color=siteyea
 
 ggplot(meantemps, aes(x=DoY, y=mean_temp, group=as.factor(iter)), color=siteyear) +
   geom_line(alpha=0.3) +
-  geom_point(aes(x=DoY, y)
+  geom_point(aes(x=DoY, y)) #INCOMPLETE
 
 
 
@@ -315,81 +315,73 @@ ggplot(data=predictphen, aes(x=side, y=sum_forcing, fill=Sex)) +
   geom_violin(data=firstandlastrf, aes(x=side, y=sum_forcing, fill=Sex), alpha=0.5) #+
   #facet_wrap("Phenophase_Derived")
 
-# better time series #################
+# Calculate overlap #############
+library(intervals)
+widepredictdoy <- predictdoy %>%
+  select(iter, siteyear, Sex, lengthdays, side, DoY) %>%
+  pivot_wider(names_from=side, values_from = DoY) %>%
+  arrange(iter, siteyear)
+widepredictdoy$gindex <- group_indices(widepredictdoy, iter, siteyear, Sex)
 
-medforc = 12.3
-meddoy = 150
-a = c(0.01, 0.1, 1, 10)
-b <- ((medforc)/a)^(1/meddoy)
+femaleintervals <- dplyr::filter(widepredictdoy, Sex=="FEMALE") %>%
+  select(begin, end) %>%
+  Intervals(., closed=c(TRUE, TRUE))
 
-ab <- data.frame(a=a, b=b)
+maleintervals <- dplyr::filter(widepredictdoy, Sex=="MALE") %>%
+  select(begin, end) %>%
+  Intervals(., closed=c(TRUE, TRUE))
 
-x <- seq(0, meddoy, by=1)
+assertthat::assert_that(nrow(maleintervals) == nrow(femaleintervals))
 
-forcingfunction <- function(x, a, b) {
-  y <- a*(b^x)
-  return(y)
-}
+#need to make sure male and female are ordered the same by iter, etc.
+overlap <- interval_intersection(femaleintervals[1,], maleintervals[1,])
+intervals::size(overlap)
 
-forcingfunction(150, a, b)
-forcingfunction(100, a, b)
-forcingfunction(50, a, b)
+  Intervals( matrix( 1:6, ncol = 2 ) )
 
-ts <- data.frame(a=NA, b=NA, paramset=NA, DoY=NA, sum_forcing=NA)
-for (i in 1:nrow(ab)) {
-  a <- ab$a[i]
-  b <- ab$b[i]
-  paramset=i
-  DoY=x
-  sum_forcing <- forcingfunction(x, a, b)
-  tst <- data.frame(a, b, paramset, DoY, sum_forcing)
-  ts <- rbind(ts, tst)
-}
-ts <- ts[-1,]
+#intervals::size to compute length of an interval
 
+to <- Intervals(
+  matrix(
+    c(
+      2,  8,
+      3,  4,
+      5, 10
+    ),
+    ncol = 2, byrow = TRUE
+  ),
+  closed = c( TRUE, TRUE ),
+  type = "Z"
+)
 
+from <- Intervals(
+  matrix(
+    c(
+      2,  8,
+      8,  9,
+      6,  9,
+      11, 12,
+      3,  3
+    ),
+    ncol = 2, byrow = TRUE
+  ),
+  closed = c( TRUE, TRUE ),
+  type = "Z"
+)
 
-ggplot(filter(clim, DoY < 152), aes(x=DoY, y=mean_temp, group=siteyear)) +
-  geom_line()
+to2 <- Intervals(
+  matrix(
+    c(
+      2,  8,
+      8,  9,
+      6,  9,
+      11, 12,
+      3,  3
+    ),
+    ncol = 2, byrow = TRUE
+  ),
+  closed = c( TRUE, TRUE ),
+  type = "Z"
+)
 
-climit <- filter(clim, DoY < 152)
-fit <- lm(log(climit$sum_forcing) ~ climit$DoY)
-climit$sum_forcing_pred <- exp(predict(fit,list(DoY=climit$DoY)))
-climit$sum_forcing_t <- exp((climit$DoY*0.04 - 3.48))
-
-test <- exp((climit$DoY*0.029)+-1.48)
-
-b <- seq(from=0, to=5, by =1)
-a <- (log(12.3) - b)/150
-ab <- data.frame(a=a, b=b)
-
-forcingfunction2 <- function(x, a, b) {
-  y <- exp((x^a) + b)
-  return(y)
-}2b7q8
-
-
-forcingfunction2(150, a, b)
-
-ts2 <- data.frame(a=NA, b=NA, paramset=NA, DoY=NA, sum_forcing=NA)
-for (i in 1:nrow(ab)) {
-  a <- ab$a[i]
-  b <- ab$b[i]
-  paramset <- i
-  DoY <- x
-  sum_forcing <- forcingfunction2(x, a, b)
-  tst <- data.frame(a, b, paramset, DoY, sum_forcing)
-  ts2 <- rbind(ts2, tst)
-}
-ts2 <- ts2[-1,]
-
-ggplot(ts2, aes(x=DoY, y=sum_forcing, color=as.factor(paramset))) +
-  geom_line() #+
-  geom_line(data=filter(clim, DoY < 152), aes( x=DoY, y=sum_forcing, group=siteyear), color="gray", inherit.aes = FALSE, alpha=0.5) +
-  geom_point(data=filter(clim, DoY < 152), aes(x=DoY, y=sum_forcing_pred), inherit.aes=FALSE, color="blue")
-
-ggplot(climit, aes(x=DoY, y=sum_forcing, group=siteyear)) +
-  geom_line(color="gray") +
-  geom_line(data=climit, aes(x=DoY, y=sum_forcing_pred), color="blue") +
-  geom_line(data=climit, aes(x=DoY, y=sum_forcing_t), color="red")
-
+rownames(from) <- letters[1:nrow(from)]
