@@ -1,0 +1,128 @@
+# model predict
+# predict fstart and fend from the model.
+
+library(tidyverse)
+library(gtools)
+# read in climate and model data ##############
+
+source('phenology_functions.R')
+
+phendf <- read_data(slim = FALSE)
+
+fmod_raw <- readRDS("2019-10-28phenologyFEMALE.rds") %>%
+    as.data.frame() %>%
+    select(-contains("state_rep"))
+
+mmod_raw <- readRDS("2019-10-28phenologyMALE.rds") %>%
+    as.data.frame() %>%
+    select(-contains("state_rep"))
+
+# GLOBALS ###########
+forcingtype="scaled_ristos"
+
+# MODELS #############
+fmod <- fmod_raw %>%
+    select(contains("kappa"), beta, contains("mean"), contains("sigma")) %>%
+    sample_frac(0.5)
+fmod$iter <- 1:nrow(fmod)
+rm(fmod_raw)
+
+mmod <- mmod_raw %>%
+    select(contains("kappa"), beta, contains("mean"), contains("sigma")) %>%
+    sample_frac(0.5)
+mmod$iter <- 1:nrow(mmod)
+rm(mmod_raw)
+
+# Simulate effects from model ##########
+
+# rnorm vectorizes ok, uses recycling so be VERY CAREFUL, e.g.
+# > rnorm(4, mean=c(0, 60000), sd=c(1, 1))
+# [1] 1.033847e-01 6.000000e+04 1.433197e+00 6.000185e+04
+
+# model is the stan model with effects b_[effect]_mean and sigma_[effect]
+predict_forcing <- function(model, samples, sex) {
+    site <- rnorm(30*nrow(model), model$b_site_mean, model$sigma_site)
+    prov <- rnorm(30*nrow(model), model$b_prov_mean, model$sigma_prov)
+    clone <- rnorm(30*nrow(model), model$b_clone_mean, model$sigma_clone)
+    year <- rnorm(30*nrow(model), model$b_year_mean, model$sigma_year)
+
+    # calculate fstart and fend
+
+    fbegin <- (logit(0.2) + model$`kappa[1]`)/(model$beta + site + prov + clone + year)
+    fend <-  (logit(0.8) + model$`kappa[2]`)/(model$beta + site + prov + clone + year)
+
+    beginend <- data.frame(iter=rep(model$iter, 30), draw=rep(1:30, nrow(model)), fbegin, fend, Sex=sex )
+
+    return(beginend)
+}
+
+fforce <- predict_forcing(fmod, 30, "FEMALE")
+mforce <- predict_forcing(mmod, 30, "MALE")
+# calculate 50% hpdi here
+
+hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
+hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
+
+
+
+forcinglength <- rbind(fforce, mforce) %>%
+    mutate(forcinglength = fend-fbegin)
+
+forcingperiod <- forcinglength %>%
+    select(-forcinglength) %>%
+    pivot_longer(cols=starts_with("f"), names_to = "side", values_to = "sum_forcing")
+
+forcing_hpdi <- forcingperiod %>%
+    group_by(Sex, side) %>%
+    mutate(hpd_low = hpd_lower(sum_forcing, 0.50), hpd_high = hpd_upper(sum_forcing, 0.50)) %>%
+    filter(sum_forcing > hpd_low & sum_forcing < hpd_high)
+
+clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
+    filter(forcing_type==forcingtype) %>%
+    filter(!Site %in% c("Vernon", "Tolko"))
+clim$siteyear <- paste(clim$Site, clim$Year, sep='')
+# ryears <- sample(unique(clim$siteyear), 20)
+# clim <- filter(clim, siteyear %in% ryears)
+
+# CLIMATE PREDICTIONS ###########
+splitclim <- split(clim, clim$siteyear)
+
+# find the DoY that a given sum of forcing accumulated on
+#x is a dataframe of climate with sum_forcing and the DoY that occured on and
+#y is a dataframe with forcing data related to phenology. that has columns for iteration, sex, and draws. forcing cols must be fbegin and fend
+ifinder <-  function(x, y) {
+    beginindex <- findInterval(y$fbegin, x$sum_forcing)
+    endindex <- findInterval(y$fend, x$sum_forcing)
+    dbegin <- x$DoY[beginindex]
+    dend <- x$DoY[endindex]
+    df <- data.frame(iter=y$iter,
+                     draw=y$draw,
+                     dbegin=dbegin,
+                     dend=dend,
+                     siteyear=x$siteyear[1],
+                     Sex=y$Sex)
+    return(df)
+}
+
+predictdoy <- purrr::map_df(splitclim, ifinder, forcinglength) #%>%
+splitpredict <- split(predictdoy, predictdoy$siteyear)
+#split into male and female, pivot, mutate, then rejoin
+
+foo <- lapply(splitpredict, pivot_wider, names_from = side, values_from = DoY)
+    pivot_wider(names_from = side, values_from = DoY) %>% #expensive operation
+    mutate(lengthdays = end - begin) #%>%
+    pivot_longer(cols=c(end, begin), names_to = "side", values_to = "DoY") %>%
+    left_join(forcingperiod)
+
+assertthat::assert_that(nrow(predictdoy)==nrow(predictphen) * length(splitclim))
+
+
+ggplot(forcingfemale, aes(x=forcing, y= ..scaled.., fill=pp, group=iter)) +
+    geom_density(alpha=0.4) +
+    stat_ecdf(data=filter(phendf, Phenophase_Derived==2), aes(x=sum_forcing), inherit.aes = FALSE, color="yellow") +
+    xlim(c(5, 36)) +
+    facet_grid(pp ~ .) +
+    scale_fill_viridis_d(option="A", end=0.8) +
+    theme_bw(base_size = 18) +
+    theme(legend.position="none") +
+    ggtitle("Forcing requirements for start and end of phenological period")
