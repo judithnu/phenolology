@@ -40,43 +40,46 @@ rm(mmod_raw)
 # [1] 1.033847e-01 6.000000e+04 1.433197e+00 6.000185e+04
 
 # model is the stan model with effects b_[effect]_mean and sigma_[effect]
+# predict the amount of forcing required to start and end the flowering period
+# for each iteration from the model, simulate 30 effects each for site, prov, clone, and year
 predict_forcing <- function(model, samples, sex) {
-    site <- rnorm(30*nrow(model), model$b_site_mean, model$sigma_site)
-    prov <- rnorm(30*nrow(model), model$b_prov_mean, model$sigma_prov)
-    clone <- rnorm(30*nrow(model), model$b_clone_mean, model$sigma_clone)
-    year <- rnorm(30*nrow(model), model$b_year_mean, model$sigma_year)
-
+    site <- rnorm(samples*nrow(model), model$b_site_mean, model$sigma_site)
+    prov <- rnorm(samples*nrow(model), model$b_prov_mean, model$sigma_prov)
+    clone <- rnorm(samples*nrow(model), model$b_clone_mean, model$sigma_clone)
+    year <- rnorm(samples*nrow(model), model$b_year_mean, model$sigma_year)
+    
     # calculate fstart and fend
-
+    
     fbegin <- (logit(0.2) + model$`kappa[1]`)/(model$beta + site + prov + clone + year)
     fend <-  (logit(0.8) + model$`kappa[2]`)/(model$beta + site + prov + clone + year)
-
-    beginend <- data.frame(iter=rep(model$iter, 30), draw=rep(1:30, nrow(model)), fbegin, fend, Sex=sex )
-
+    
+    beginend <- data.frame(iter=rep(model$iter, samples), draw=sort(rep(1:samples, nrow(model))), fbegin, fend, Sex=sex )
+    
     return(beginend)
 }
 
 fforce <- predict_forcing(fmod, 30, "FEMALE")
 mforce <- predict_forcing(mmod, 30, "MALE")
-# calculate 50% hpdi here
 
-hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
-hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
+# # calculate 50% hpdi here
+# 
+# hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
+# hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
+# 
 
 
-
-forcinglength <- rbind(fforce, mforce) %>%
+forcinglengthdf <- rbind(fforce, mforce) %>%
     mutate(forcinglength = fend-fbegin)
 
-forcingperiod <- forcinglength %>%
+forcingperiod <- forcinglengthdf %>%
     select(-forcinglength) %>%
     pivot_longer(cols=starts_with("f"), names_to = "side", values_to = "sum_forcing")
 
-forcing_hpdi <- forcingperiod %>%
-    group_by(Sex, side) %>%
-    mutate(hpd_low = hpd_lower(sum_forcing, 0.50), hpd_high = hpd_upper(sum_forcing, 0.50)) %>%
-    filter(sum_forcing > hpd_low & sum_forcing < hpd_high)
-
+# forcing_hpdi <- forcingperiod %>%
+#     group_by(Sex, side) %>%
+#     mutate(hpd_low = hpd_lower(sum_forcing, 0.50), hpd_high = hpd_upper(sum_forcing, 0.50)) %>%
+#     filter(sum_forcing > hpd_low & sum_forcing < hpd_high)
+# 
 clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
     filter(forcing_type==forcingtype) %>%
     filter(!Site %in% c("Vernon", "Tolko"))
