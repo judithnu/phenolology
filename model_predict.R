@@ -107,18 +107,82 @@ ifinder <-  function(x, y) {
     return(df)
 }
 
-predictdoy <- purrr::map_df(splitclim, ifinder, forcinglength) #%>%
-splitpredict <- split(predictdoy, predictdoy$siteyear)
-#split into male and female, pivot, mutate, then rejoin
+doyperiod <- purrr::map_df(splitclim, ifinder, forcinglengthdf) %>%
+    mutate(doylength = dend-dbegin)
 
-foo <- lapply(splitpredict, pivot_wider, names_from = side, values_from = DoY)
-    pivot_wider(names_from = side, values_from = DoY) %>% #expensive operation
-    mutate(lengthdays = end - begin) #%>%
-    pivot_longer(cols=c(end, begin), names_to = "side", values_to = "DoY") %>%
-    left_join(forcingperiod)
+assertthat::assert_that(nrow(doyperiod)==nrow(forcinglengthdf) * length(splitclim))
 
-assertthat::assert_that(nrow(predictdoy)==nrow(predictphen) * length(splitclim))
+periodlength <- full_join(doyperiod, forcinglengthdf)
 
+assertthat::assert_that(nrow(doyperiod)==nrow(periodlength))
+
+# mean and standard deviation of period length in days at each forcing length
+periodlengthsummary <- periodlength %>%
+    group_by(forcinglength, Sex) %>%
+    summarise(mean=mean(doylength), sd=sd(doylength))
+
+# x climate timeseries, 7000 iterations, 30 draws, then median of start, end, length per iteration 
+# (so median of the x draws per iteration for a given sex and timeseries)
+periodlength_drawsummary <- periodlength %>%
+    group_by(iter, Sex, siteyear) %>%
+    summarise(dbeginm=median(dbegin), dendm=median(dend), doylengthm=median(doylength), 
+              fbeginm=median(fbegin), fendm=median(fend), forcinglengthm=median(forcinglength)) # this is extremely slow
+
+#Actually, medians should be calculated separately for forcing and day terms - 
+#forcing shouldn't be grouped by siteyear! (thought it shouldn't technically matter here)
+
+# x climate timeseries, 7000 iterations, 30 draws
+ggplot(periodlengthsummary, aes(x=forcinglength, y=mean)) +
+    geom_point(pch=1, alpha=0.3) +
+    facet_grid(Sex ~ .) +
+    ylab("Mean DAYS of flowering") +
+    theme_bw() +
+    ggtitle("Length of flowering period in days vs forcing units")
+
+# x climate timeseries, 7000 iterations, 30 draws, then median of start, end, length per iteration 
+# (so median of the x draws per iteration for a given sex and timeseries)
+ggplot(periodlength_drawsummary, aes(x=forcinglengthm, y=doylengthm)) +
+    stat_density_2d(aes(fill = ..level..), geom = "polygon") +
+    theme_bw(base_size=18) +
+    scale_fill_viridis_c(option="B", begin=0.2) +
+    facet_grid(Sex ~ .) +
+    ylab("Days spent flowering") +
+    xlab("Forcing units") +
+    ggtitle("Forcing units required to advance through flowering period", subtitle = "and how many days it takes to do so")
+
+# this is with medians!
+ggplot(periodlength_drawsummary, aes(x=forcinglengthm, y=doylengthm)) +
+    geom_bin2d(binwidth=c(.1, 1)) +
+    theme_bw(base_size=18) +
+    scale_fill_viridis_c(option="cividis") +
+    facet_grid(Sex ~ .) +
+    ylab("Days spent flowering") +
+    xlab("Forcing units") +
+    ggtitle("Forcing units required to advance through flowering period", subtitle = "and how many days it takes to do so")
+
+# # this is with all the draws!, but shows something slightly different because of grouping in drawsummary calc
+ggplot(periodlength, aes(x=forcinglength, y=doylength)) +
+    geom_bin2d(binwidth=c(.1, 1)) +
+    theme_bw(base_size=18) +
+    scale_fill_viridis_c(option="cividis") +
+    facet_grid(Sex ~ .) +
+    ylab("Days spent flowering") +
+    xlab("Forcing units") +
+    ggtitle("Forcing units required to advance through flowering period", subtitle = "and how many days it takes to do so")
+
+# maybe plot this as HDPIntervals in 2 dimensions? how would that even work?
+
+
+
+fit <- lm(doylength ~ forcinglength, periodlength)
+summary(fit)
+
+ggplot(periodlength, aes(x=forcinglength, y=doylength)) +
+    geom_point(pch=1, alpha=0.1)
+
+ggplot(periodlength, aes(x=forcinglength, y=doylength)) +
+    geom_violin() +
+    facet_wrap("Sex")
 
 ggplot(forcingfemale, aes(x=forcing, y= ..scaled.., fill=pp, group=iter)) +
     geom_density(alpha=0.4) +
