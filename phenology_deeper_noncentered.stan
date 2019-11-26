@@ -20,14 +20,14 @@ parameters{
   positive_ordered[K-1] kappa;
   real<lower=0> beta;
 
-  // vector[Nsite] b_site;
-  // vector[Nprovenance] b_prov;
-  vector[Nclone] b_clone;
+  vector[Nsite] b_site;
+  vector[Nprovenance] b_prov;
+  //vector[Nclone] b_clone;
   // vector[Nyear] b_year;
   
-  vector[Nsite] z_site;
-  vector[Nprovenance] z_prov;
-  //vector[Nclone] z_clone;
+ // vector[Nsite] z_site;
+ // vector[Nprovenance] z_prov;
+  vector[Nclone] z_clone;
   vector[Nyear] z_year;
 
   real mu_site;
@@ -58,24 +58,26 @@ model{
   mu_clone ~ normal(0,0.2);
   mu_year ~ normal(0,0.2);
 
-  // b_site ~ normal( mu_site , sigma_site );
-  // b_prov ~ normal( mu_prov , sigma_prov );
-  b_clone ~ normal( mu_clone , sigma_clone );
+  b_site ~ normal( mu_site , sigma_site );
+  b_prov ~ normal( mu_prov , sigma_prov );
+  // b_clone ~ normal( mu_clone , sigma_clone );
   // b_year ~ normal( mu_year, sigma_year );
   
-  z_site ~ normal(0,1);
-  z_prov ~ normal(0,1);
-  //z_clone ~ normal(0,1);
+  // z_site ~ normal(0,1);
+  // z_prov ~ normal(0,1);
+  z_clone ~ normal(0,1);
   z_year ~ normal(0,1);
 
 
   // model
 
   for ( i in 1:N ) {
-    phi[i] = forcing[i] * ( beta + mu_site + z_site[SiteID[i]]*sigma_site + 
-    mu_prov + z_prov[ProvenanceID[i]]*sigma_prov + 
-   // mu_clone + z_clone[CloneID[i]]*sigma_clone + 
-   b_clone[CloneID[i]] +
+    phi[i] = forcing[i] * ( beta + 
+    //mu_site + z_site[SiteID[i]]*sigma_site + 
+    //mu_prov + z_prov[ProvenanceID[i]]*sigma_prov + 
+    b_site[SiteID[i]] +
+    b_prov[ProvenanceID[i]] +
+    mu_clone + z_clone[CloneID[i]]*sigma_clone + 
     mu_year + z_year[YearID[i]]*sigma_year );
   }
   for ( i in 1:N ) state[i] ~ ordered_logistic( phi[i] , kappa );
@@ -84,10 +86,10 @@ model{
 generated quantities{
   //DECLARE
   
-  //effects
-  vector[Nsite] b_site;
-  vector[Nprovenance] b_prov;
-  //vector[Nclone] b_clone;
+  // recentered effects
+  // vector[Nsite] b_site;
+  // vector[Nprovenance] b_prov;
+  vector[Nclone] b_clone;
   vector[Nyear] b_year;
   
   //mean effects
@@ -103,9 +105,9 @@ generated quantities{
   //DEFINE
 
   //reconstruct centered effects
-  b_site = mu_site + z_site*sigma_site;
-  b_prov = mu_prov + z_prov*sigma_prov;
- // b_clone = mu_clone + z_clone*sigma_clone;
+  // b_site = mu_site + z_site*sigma_site;
+  // b_prov = mu_prov + z_prov*sigma_prov;
+  b_clone = mu_clone + z_clone*sigma_clone;
   b_year = mu_year + z_year*sigma_year;
   
   // calculate mean effects across groups

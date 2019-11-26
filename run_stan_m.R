@@ -108,7 +108,7 @@ if (test==TRUE)
               model_name = paste(Sys.Date(), sex, "phenology", forcingtype, sep="_"),
               data = rdump,
               pars = c( "phi"), include=FALSE,
-              chains = 4, cores = 4, warmup = 1000, iter = 3500,
+              chains = 4, cores = 4, warmup = 1000, iter = 4500,
               control = list(max_treedepth = 12)#, adapt_delta = .9),
   )
   

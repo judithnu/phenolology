@@ -8,7 +8,7 @@ library(bayesplot)
 
 
 ffit.stan <- readRDS("2019-10-28phenologyFEMALE.rds")
-mfit.stan <- readRDS("2019-11-24phenologyMALE.rds")
+mfit.stan <- readRDS("2019-11-25phenologyMALE.rds")
 
 
 fshiny <- as.shinystan(ffit.stan)
