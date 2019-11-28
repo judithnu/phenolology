@@ -109,7 +109,7 @@ if (test==TRUE)
               data = rdump,
               pars = c( "phi"), include=FALSE,
               chains = 4, cores = 4, warmup = 1000, iter = 4500,
-              control = list(max_treedepth = 12)#, adapt_delta = .9),
+              control = list(max_treedepth = 13)#, adapt_delta = .9),
   )
   
   saveRDS(fit, file = paste(Sys.Date(), "phenology", sex, ".rds", sep=''))
