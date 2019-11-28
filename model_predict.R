@@ -3,6 +3,7 @@
 
 library(tidyverse)
 library(gtools)
+library(ggstance)
 # read in climate and model data ##############
 
 source('phenology_functions.R')
@@ -23,13 +24,13 @@ forcingtype="scaled_ristos"
 # MODELS #############
 fmod <- fmod_raw %>%
     select(contains("kappa"), beta, contains("mean"), contains("sigma")) %>%
-    sample_frac(0.5)
+    sample_frac(0.25)
 fmod$iter <- 1:nrow(fmod)
 rm(fmod_raw)
 
 mmod <- mmod_raw %>%
     select(contains("kappa"), beta, contains("mean"), contains("sigma")) %>%
-    sample_frac(0.5)
+    sample_frac(0.25)
 mmod$iter <- 1:nrow(mmod)
 rm(mmod_raw)
 
@@ -61,25 +62,72 @@ predict_forcing <- function(model, samples, sex) {
 fforce <- predict_forcing(fmod, 30, "FEMALE")
 mforce <- predict_forcing(mmod, 30, "MALE")
 
-# # calculate 50% hpdi here
-# 
-# hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
-# hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
-# 
-
 
 forcinglengthdf <- rbind(fforce, mforce) %>%
     mutate(forcinglength = fend-fbegin)
 
+# Length of forcing period ###########3
 forcingperiod <- forcinglengthdf %>%
     select(-forcinglength) %>%
     pivot_longer(cols=starts_with("f"), names_to = "side", values_to = "sum_forcing")
 
-# forcing_hpdi <- forcingperiod %>%
-#     group_by(Sex, side) %>%
-#     mutate(hpd_low = hpd_lower(sum_forcing, 0.50), hpd_high = hpd_upper(sum_forcing, 0.50)) %>%
-#     filter(sum_forcing > hpd_low & sum_forcing < hpd_high)
-# 
+# Forcing period hpdi and graphed #############
+hpd_lower = function(x, prob) rethinking::HPDI(x, prob)[1]
+hpd_upper = function(x, prob) rethinking::HPDI(x, prob)[2]
+
+hpd <- function(df, interval) {
+    df <- df %>%
+        group_by(Sex, side) %>%
+        summarise(median = median(sum_forcing), 
+                  hpd_low = hpd_lower(sum_forcing, interval), 
+                  hpd_high = hpd_upper(sum_forcing, interval)) #%>%
+        #pivot_longer(starts_with("hpd"), names_to = "intervalside", values_to = "sum_forcing")
+    df$intervalwidth <- interval
+    return(df)
+}
+
+
+hpd50 <- hpd(forcingperiod, 0.5)
+hpd90 <- hpd(forcingperiod, 0.9)
+hpddf <- rbind(hpd50, hpd90) %>%
+    mutate(y=case_when(side == "fbegin" ~ 0,
+                       side == "fend" ~ 1))
+hpd_length # calculate forcing length hpd.
+
+
+#Forcing accumulation across the flowering period for males and females with model predictions for start and end
+ggplot(hpddf, aes(x=median, y=y, color=Sex, group=side)) +
+    geom_linerangeh(aes( xmin=hpd_low, xmax=hpd_high, y=y, size=1-intervalwidth), alpha=0.5 )+
+    #geom_point(pch=16, size=3) +
+    geom_vline(aes(xintercept=median, color=Sex, group=side)) +
+    facet_grid(rows = vars(Sex)) +
+    #geom_point(aes(x=median, y=y), size=5, alpha=1) +
+    theme_bw(base_size = 18) +
+    theme(strip.text.y = element_text(angle = 0), legend.position = "none") +
+    scale_color_viridis_d(end=0.8) +
+    stat_ecdf(data=filter(phendf, Phenophase_Derived==2), aes(x=sum_forcing), inherit.aes = FALSE) +
+    xlab("accumulated forcing") +
+    ylab("") 
+
+# density plot showing the same thing as the plot above
+ggplot(forcingperiod, aes(x=sum_forcing, y=..scaled..,fill=Sex, linetype=side)) +
+    geom_density(alpha=0.5) +
+    #geom_point(pch=16, size=3) +
+    #geom_vline(data=hpddf, aes(xintercept=median, color=Sex, group=side)) +
+    #facet_grid(rows = vars(Sex)) +
+    #geom_point(aes(x=median, y=y), size=5, alpha=1) +
+    theme_bw(base_size = 18) +
+    theme(strip.text.y = element_text(angle = 0), legend.position = "none") +
+    scale_color_viridis_d(end=0.8) +
+    scale_fill_viridis_d(end=0.8) +
+    stat_ecdf(data=filter(phendf, Phenophase_Derived==2), aes(x=sum_forcing, color=Sex), inherit.aes = FALSE) +
+    xlab("accumulated forcing") +
+    ylab("") +
+    xlim(c(5,25))
+    
+
+# read in climate data ###############
+
 clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
     filter(forcing_type==forcingtype) %>%
     filter(!Site %in% c("Vernon", "Tolko"))
@@ -103,18 +151,109 @@ ifinder <-  function(x, y) {
                      dbegin=dbegin,
                      dend=dend,
                      siteyear=x$siteyear[1],
+                     Site = x$Site[1],
+                     Year = x$Year[1],
                      Sex=y$Sex)
     return(df)
 }
 
-doyperiod <- purrr::map_df(splitclim, ifinder, forcinglengthdf) %>%
+# keep only forcing values in the 90% HPDI
+forcingperiod90 <- forcingperiod %>%
+    left_join(hpd90) %>%
+    filter(sum_forcing > hpd_low && sum_forcing < hpd_high) %>%
+    select(-contains("hpd"), -contains("interval"), -median) %>%
+    pivot_wider(names_from = side, values_from = sum_forcing)
+
+#doyperiod <- purrr::map_df(splitclim, ifinder, forcinglengthdf) %>%
+doyperiod <- purrr::map_df(splitclim, ifinder, forcingperiod90) %>%
     mutate(doylength = dend-dbegin)
 
 assertthat::assert_that(nrow(doyperiod)==nrow(forcinglengthdf) * length(splitclim))
 
-periodlength <- full_join(doyperiod, forcinglengthdf)
+
+#periodlength <- full_join(doyperiod, forcinglengthdf)
+periodlength <- full_join(doyperiod, forcingperiod90)
 
 assertthat::assert_that(nrow(doyperiod)==nrow(periodlength))
+
+doyperiod$Site <- factor(doyperiod$Site, ordered=TRUE, levels = c("KettleRiver", "Kalamalka", "PRT", "Sorrento", "PGTIS"))
+
+ggplot(doyperiod, aes(x=as.factor(Year), y=dbegin)) +
+    geom_bin2d(binwidth=c(1,1)) +
+    facet_grid(rows=vars(Site), cols= vars(Sex)) +
+    scale_fill_continuous(type="viridis", option="B")
+
+ggplot(doyperiod, aes(x=siteyear, y=dbegin, color=Site)) +
+    geom_violin() +
+    facet_wrap("Sex")
+# add hline or grey poly for actual data start. maybe only use the 50% hpdi? or 90? or calculate
+
+# Only HPDIs ################
+
+ifinder_hpd <-  function(x, y) {
+    beginindex <- findInterval(y$fbegin, x$sum_forcing)
+    endindex <- findInterval(y$fend, x$sum_forcing)
+    dbegin <- x$DoY[beginindex]
+    dend <- x$DoY[endindex]
+    df <- data.frame(dbegin=dbegin,
+                     dend=dend,
+                     siteyear=x$siteyear[1],
+                     Site = x$Site[1],
+                     Year = x$Year[1],
+                     Sex=y$Sex, 
+                     intervalwidth=y$intervalwidth, 
+                     hpd_end = y$hpd_end)
+    return(df)
+}
+
+hpd_long <- hpddf %>%
+    pivot_longer(cols=contains("hpd"), names_to = "hpd_end", values_to = "sum_forcing") %>%
+    select(-y, -median) %>%
+    pivot_wider(names_from = side, values_from = sum_forcing) 
+
+doyperiod_hpd <- purrr::map_df(splitclim, ifinder_hpd, hpd_long) %>%
+    mutate(doylength = dend-dbegin) 
+
+doyperiod_hpd_wide <- doyperiod_hpd %>%
+    select(-doylength) %>%
+    pivot_longer(cols=c("dbegin", "dend"), names_to = "side", values_to = "day") %>%
+    pivot_wider(names_from = c(hpd_end, side), values_from = day)
+
+# periodlength_hpd <- full_join(doyperiod_hpd, hpd_long)
+
+doyperiod_hpd$Site <- factor(doyperiod_hpd$Site, ordered=TRUE, levels = c("KettleRiver", "Kalamalka", "PRT", "Sorrento", "PGTIS"))
+
+ggplot(filter(doyperiod_hpd_wide, Year < 2001), aes(xmin=hpd_low, xmax=hpd_high, y=0, color=Sex, size=1-intervalwidth)) +
+    geom_linerangeh(alpha=0.5) +
+    scale_color_viridis_d(end=0.8) +
+    facet_grid(siteyear ~ .)
+
+minmax <- filter(phendf, Phenophase_Derived==2) %>%
+    summarise(minday=min(DoY), maxday=max(DoY))
+
+#50 and 90% HPDI for DoY 
+ggplot(doyperiod_hpd_wide, aes(ymin=hpd_low_dbegin, ymax=hpd_high_dend, 
+                                                    x=Sex, color=Sex, size=1-intervalwidth)) +
+    geom_linerange(alpha=0.5) +
+    geom_linerange(aes(ymin=hpd_high_dbegin, ymax=hpd_low_dend, 
+                       x=Sex, color=Sex, size=1-intervalwidth), alpha=0.5) +
+    scale_color_viridis_d(end=0.8) +
+    facet_grid(Site ~ Year) +
+    geom_hline(yintercept=c(minmax$minday, minmax$maxday)) +
+    theme_bw(base_size=18) +
+    theme(axis.title.x=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          legend.position = "none",
+         strip.text.x = element_text(size=10, angle=0),
+         strip.text.y = element_text(size=8, angle=0),
+          panel.border = element_blank()) +
+    guides(size=FALSE) 
+    
+    
+
+
+
 
 # mean and standard deviation of period length in days at each forcing length
 periodlengthsummary <- periodlength %>%
