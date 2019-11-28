@@ -9,8 +9,6 @@ forcingtype = "scaled_ristos" # choose forcing type for use in phendf output for
 
 
 # Data --------------------------------------------------------------------
-# if (machine=="mycon") homedir <- '../phd/'
-# if (machine=="72") homedir <- '../phd/'
 
 phendat <- read.csv("../phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv", stringsAsFactors = FALSE)
 phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
