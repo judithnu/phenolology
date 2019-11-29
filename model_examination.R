@@ -11,6 +11,7 @@ ffit.stan <- readRDS("2019-10-28phenologyFEMALE.rds")
 mfit.stan <- readRDS("2019-10-28phenologyMALE.rds")
 
 
+
 fshiny <- as.shinystan(ffit.stan)
 launch_shinystan(fshiny)
 
