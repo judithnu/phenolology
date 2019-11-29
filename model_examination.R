@@ -8,7 +8,7 @@ library(bayesplot)
 
 
 ffit.stan <- readRDS("2019-10-28phenologyFEMALE.rds")
-mfit.stan <- readRDS("2019-11-25phenologyMALE.rds")
+mfit.stan <- readRDS("2019-10-28phenologyMALE.rds")
 
 
 fshiny <- as.shinystan(ffit.stan)
@@ -156,7 +156,7 @@ mcmc_neff_hist(neff_ratio(ffit.stan)) # THIS IS FEMALE SPECIFIC, CHANGE TO CORRE
 
 ness <- data.frame(parameter = attr(sarray, which="dimnames")[3], tail=NA, bulk=NA, rhat=NA)
 for (i in 1:nrow(ness)) {
-    ness$tail[i] <- ess_tail(sarray[,,i]) 
+    ness$tail[i] <- ess_tail(sarray[,,i])
     ness$bulk[i] <- ess_bulk(sarray[,,i]) # rank normalized
     ness$rhat[i] <- Rhat(sarray[,,i])
 }
