@@ -124,19 +124,33 @@ ggplot(forcingperiod, aes(x=sum_forcing, y=..scaled..,fill=Sex, linetype=side)) 
     xlab("accumulated forcing") +
     ylab("") +
     xlim(c(5,25))
-    
+
 
 # read in climate data ###############
 
 clim <- read.csv("data/all_clim_PCIC.csv", header=TRUE, stringsAsFactors=FALSE) %>%
     filter(forcing_type==forcingtype) %>%
-    filter(!Site %in% c("Vernon", "Tolko"))
+    filter(Site %in% c("KettleRiver", "Kalamalka", "PGTIS"))
 clim$siteyear <- paste(clim$Site, clim$Year, sep='')
+
+climchange <- read.csv("data/all_clim_PCIC_climchange.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+    filter(forcing_type==forcingtype) %>%
+    filter(Site %in% c("KettleRiver", "Kalamalka", "PGTIS"))
+climchange$siteyear <- paste(climchange$Site, climchange$Year, sep = '')
+
+climplus5 <- read.csv("data/all_clim_PCIC_plus5.csv", header=TRUE, stringsAsFactors = FALSE) %>%
+    filter(forcing_type==forcingtype) %>%
+    filter(Site %in% c("KettleRiver", "Kalamalka", "PGTIS"))
+climplus5$siteyear <- paste(climchange$Site, climplus5$Year, sep = '')
+
+
 # ryears <- sample(unique(clim$siteyear), 20)
 # clim <- filter(clim, siteyear %in% ryears)
 
-# CLIMATE PREDICTIONS ###########
+# CLIMATE PREDICTIONS/MATCHING ###########
 splitclim <- split(clim, clim$siteyear)
+splitclimcc <- split(climchange, climchange$siteyear)
+splitclimplus5 <- split(climplus5, climplus5$siteyear)
 
 # find the DoY that a given sum of forcing accumulated on
 #x is a dataframe of climate with sum_forcing and the DoY that occured on and
@@ -158,25 +172,56 @@ ifinder <-  function(x, y) {
 }
 
 # keep only forcing values in the 90% HPDI
-forcingperiod90 <- forcingperiod %>%
-    left_join(hpd90) %>%
-    filter(sum_forcing > hpd_low && sum_forcing < hpd_high) %>%
-    select(-contains("hpd"), -contains("interval"), -median) %>%
-    pivot_wider(names_from = side, values_from = sum_forcing)
+# forcingperiod90 <- forcingperiod %>%
+#     left_join(hpd90) %>%
+#     filter(sum_forcing > hpd_low && sum_forcing < hpd_high) %>%
+#     select(-contains("hpd"), -contains("interval"), -median) %>%
+#     pivot_wider(names_from = side, values_from = sum_forcing)
 
 #doyperiod <- purrr::map_df(splitclim, ifinder, forcinglengthdf) %>%
-doyperiod <- purrr::map_df(splitclim, ifinder, forcingperiod90) %>%
+doyperiod <- purrr::map_df(splitclim, ifinder, forcinglengthdf) %>%
+    mutate(doylength = dend-dbegin)
+doyperiodcc <- purrr::map_df(splitclimcc, ifinder, forcinglengthdf) %>%
+    mutate(doylength = dend-dbegin)
+doyperiodplus5 <- purrr::map_df(splitclimplus5, ifinder, forcinglengthdf) %>%
     mutate(doylength = dend-dbegin)
 
 assertthat::assert_that(nrow(doyperiod)==nrow(forcinglengthdf) * length(splitclim))
 
 
 #periodlength <- full_join(doyperiod, forcinglengthdf)
-periodlength <- full_join(doyperiod, forcingperiod90)
+#periodlength <- full_join(doyperiod, forcingperiod90)
 
-assertthat::assert_that(nrow(doyperiod)==nrow(periodlength))
+#assertthat::assert_that(nrow(doyperiod)==nrow(periodlength))
 
 doyperiod$Site <- factor(doyperiod$Site, ordered=TRUE, levels = c("KettleRiver", "Kalamalka", "PRT", "Sorrento", "PGTIS"))
+doyperiodcc$Site <- factor(doyperiodcc$Site, ordered=TRUE, levels = c("KettleRiver", "Kalamalka", "PRT", "Sorrento", "PGTIS"))
+doyperiodplus5$Site <- factor(doyperiodplus5$Site, ordered=TRUE, levels = c("KettleRiver", "Kalamalka", "PRT", "Sorrento", "PGTIS"))
+
+doyperiod_hpd_length <- doyperiod %>%
+    group_by(Sex, siteyear) %>%
+    summarise(median=median(doylength),
+              daylength_low_50 = hpd_lower(doylength, 0.5), daylength_high_50=hpd_upper(doylength, 0.5),
+              daylength_low_90 = hpd_lower(doylength, 0.9), daylength_high_90=hpd_upper(doylength, 0.9),
+              Site=unique(Site), Year=unique(Year))
+
+ggplot(doyperiod_hpd_length, aes(x=Sex, y=median, color=Sex)) +
+    geom_point() +
+    geom_linerange(aes(ymin=daylength_low_50, ymax=daylength_high_50), size=1) +
+    geom_linerange(aes(ymin=daylength_low_90, ymax=daylength_high_90), size=0.5) +
+    facet_grid(Site ~ Year) +
+    scale_color_viridis_d(end=0.8) +
+    theme_bw(base_size = 15) +
+    theme(legend.position = "none",
+          axis.title.x=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank()) +
+    ylab("Days") 
+
+doyperiod %>% 
+    group_by(Site, Sex) %>%
+    summarise(medianlength = median(doylength))
+
 
 ggplot(doyperiod, aes(x=as.factor(Year), y=dbegin)) +
     geom_bin2d(binwidth=c(1,1)) +
