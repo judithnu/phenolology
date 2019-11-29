@@ -517,14 +517,14 @@ ggplot(roverlap, aes(x=Year, y=overlapdays, color=temp)) +
     scale_color_viridis_d(option="C", end=0.8)
 
 ggplot(roverlap, aes(x=0, y=overlapdays, fill=temp)) +
-    geom_violin() +
+    geom_violin(draw_quantiles = 0.5) +
     facet_grid(Site ~ pollensource) +
     scale_fill_viridis_d(option="C", end=0.8) +
     theme_bw() +
     ggtitle("Receptivity overlap with pollen shed at 3 sites") +
     theme(axis.title.x=element_blank(),
           axis.text.x=element_blank(),
-          axis.ticks.x=element_blank())
+          axis.ticks.x=element_blank()) #MEDIAN ONLY
 
 
 ggplot(kalamalkaf, aes(x=doylength, y=pg_males, color="pg_males")) +
