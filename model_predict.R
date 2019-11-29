@@ -4,7 +4,7 @@
 library(tidyverse)
 library(gtools)
 library(ggstance)
-# read in climate and model data ##############
+# read in phenology & model data ##############
 
 source('phenology_functions.R')
 
@@ -62,11 +62,11 @@ predict_forcing <- function(model, samples, sex) {
 fforce <- predict_forcing(fmod, 30, "FEMALE")
 mforce <- predict_forcing(mmod, 30, "MALE")
 
-
+# Length of forcing period ###########
 forcinglengthdf <- rbind(fforce, mforce) %>%
     mutate(forcinglength = fend-fbegin)
 
-# Length of forcing period ###########3
+
 forcingperiod <- forcinglengthdf %>%
     select(-forcinglength) %>%
     pivot_longer(cols=starts_with("f"), names_to = "side", values_to = "sum_forcing")
@@ -81,7 +81,7 @@ hpd <- function(df, interval) {
         summarise(median = median(sum_forcing), 
                   hpd_low = hpd_lower(sum_forcing, interval), 
                   hpd_high = hpd_upper(sum_forcing, interval)) #%>%
-        #pivot_longer(starts_with("hpd"), names_to = "intervalside", values_to = "sum_forcing")
+    #pivot_longer(starts_with("hpd"), names_to = "intervalside", values_to = "sum_forcing")
     df$intervalwidth <- interval
     return(df)
 }
@@ -92,7 +92,7 @@ hpd90 <- hpd(forcingperiod, 0.9)
 hpddf <- rbind(hpd50, hpd90) %>%
     mutate(y=case_when(side == "fbegin" ~ 0,
                        side == "fend" ~ 1))
-hpd_length # calculate forcing length hpd.
+
 
 
 #Forcing accumulation across the flowering period for males and females with model predictions for start and end
@@ -259,6 +259,12 @@ hpd_long <- hpddf %>%
 doyperiod_hpd <- purrr::map_df(splitclim, ifinder_hpd, hpd_long) %>%
     mutate(doylength = dend-dbegin) 
 
+
+phendf$Site <- factor(phendf$Site, ordered=TRUE, 
+                      levels= rev(c("KettleRiver", "Vernon", "Kalamalka", "PRT", "Tolko", "PGTIS")))
+doyperiod_hpd$Site <- factor(doyperiod_hpd$Site, ordered=TRUE, 
+                             levels= rev(c("KettleRiver", "Vernon", "Kalamalka", "PRT", "Tolko", "PGTIS")))
+
 doyperiod_hpd_wide <- doyperiod_hpd %>%
     select(-doylength) %>%
     pivot_longer(cols=c("dbegin", "dend"), names_to = "side", values_to = "day") %>%
@@ -266,39 +272,284 @@ doyperiod_hpd_wide <- doyperiod_hpd %>%
 
 # periodlength_hpd <- full_join(doyperiod_hpd, hpd_long)
 
-doyperiod_hpd$Site <- factor(doyperiod_hpd$Site, ordered=TRUE, levels = c("KettleRiver", "Kalamalka", "PRT", "Sorrento", "PGTIS"))
-
-ggplot(filter(doyperiod_hpd_wide, Year < 2001), aes(xmin=hpd_low, xmax=hpd_high, y=0, color=Sex, size=1-intervalwidth)) +
-    geom_linerangeh(alpha=0.5) +
-    scale_color_viridis_d(end=0.8) +
-    facet_grid(siteyear ~ .)
 
 minmax <- filter(phendf, Phenophase_Derived==2) %>%
     summarise(minday=min(DoY), maxday=max(DoY))
 
+minmaxbyyrsite <- filter(phendf, Phenophase_Derived==2) %>%
+    group_by(Site, Year, Sex) %>%
+    summarise(minday=min(DoY), maxday=max(DoY)) %>%
+    filter(Site %in% c("KettleRiver", "Kalamalka", "PGTIS"))
+
 #50 and 90% HPDI for DoY 
-ggplot(doyperiod_hpd_wide, aes(ymin=hpd_low_dbegin, ymax=hpd_high_dend, 
-                                                    x=Sex, color=Sex, size=1-intervalwidth)) +
+ggplot(doyperiod_hpd_wide, aes(ymin = hpd_low_dbegin, ymax = hpd_high_dend, 
+                               x=Sex, color=Sex, size=1-intervalwidth)) +
     geom_linerange(alpha=0.5) +
-    geom_linerange(aes(ymin=hpd_high_dbegin, ymax=hpd_low_dend, 
-                       x=Sex, color=Sex, size=1-intervalwidth), alpha=0.5) +
+    geom_linerange(data=doyperiod_hpd_wide, aes(ymin=hpd_high_dbegin, ymax=hpd_low_dend, 
+                                                x=Sex, color=Sex, size=1-intervalwidth), alpha=0.5) +
     scale_color_viridis_d(end=0.8) +
     facet_grid(Site ~ Year) +
-    geom_hline(yintercept=c(minmax$minday, minmax$maxday)) +
-    theme_bw(base_size=18) +
+    geom_hline(yintercept=c(minmax$minday, minmax$maxday), color="gray") +
+    theme_bw(base_size=16) +
     theme(axis.title.x=element_blank(),
           axis.text.x=element_blank(),
           axis.ticks.x=element_blank(),
           legend.position = "none",
-         strip.text.x = element_text(size=10, angle=0),
-         strip.text.y = element_text(size=8, angle=0),
-          panel.border = element_blank()) +
-    guides(size=FALSE) 
+          strip.text.x = element_text(size=10, angle=0),
+          strip.text.y = element_text(size=8, angle=0),
+          panel.border = element_blank(), 
+          panel.grid=element_blank()) +
+    guides(size=FALSE) +
+    ylab("Day of Year")+
+    geom_point(data=minmaxbyyrsite, aes(x=Sex, y = minday), inherit.aes = FALSE, pch="_", size=5, stroke=2) +
+    geom_point(data=minmaxbyyrsite, aes(x=Sex, y = maxday), inherit.aes = FALSE, pch="_", size=5, stroke=2)
+
+
+head(doyperiod_hpd_wide)
+
+
+# Overlap analysis ##############
+
+calc_intervals <- function(a, b) {
+    assertthat::are_equal(nrow(a), nrow(b))
+    ret <- data.frame(overlaps=rep(NA, nrow(a)))
+    for (i in 1:nrow(a)) {
+        a_begin <- a$dbegin[i]
+        b_begin <- b$dbegin[i]
+        a_end <- a$dend[i]
+        b_end <- b$dend[i]
+        if (a_begin > b_end || b_begin > a_end) {
+            ret$overlaps[i] <- 0
+        } else {
+            lo <- max(c(a_begin, b_begin))
+            hi <- min(c(a_end, b_end))
+            ret$overlaps[i] <- (hi-lo)+1
+        }
+    }
+    return(ret)
+}
+
+test_calc_intervals <- function() {
+    frame_a <- data.frame(dbegin=c(133, 100, 100, 100, 90, 90),
+                          dend=c(147, 110, 100, 105, 100, 100))
     
+    frame_b <- data.frame(dbegin=c(135, 100, 100, 105, 110, 101),
+                          dend=c(144, 110, 100, 110, 120, 120))
     
+    expected <- calc_intervals(frame_a, frame_b)
+    
+    assertthat::assert_that(
+        assertthat::are_equal(expected,
+                              data.frame(overlaps=c(10, 11, 1, 1, 0, 0))))
+}
+
+test_calc_intervals()
+
+fdoyperiod <- filter(doyperiod_hpd, Sex=="FEMALE")
+mdoyperiod <- filter(doyperiod_hpd, Sex=="MALE")
+
+overlap <- calc_intervals(fdoyperiod, mdoyperiod) #REAL slow
+overlap2 <- calc_intervals(mdoyperiod, fdoyperiod)
+
+fdoyperiod$overlaps <- overlap$overlaps
+mdoyperiod$overlaps <- overlap$overlaps
+
+doyperiod_overlap <- rbind(fdoyperiod, mdoyperiod) 
+
+overlap_hpd <- doyperiod_overlap %>% 
+    pivot_wider(names_from = hpd_end, values_from = c(dbegin, dend, doylength, overlaps)) %>%
+    mutate(meanlength = (doylength_hpd_low + doylength_hpd_high)/2, 
+           meanoverlap= (overlaps_hpd_low + overlaps_hpd_high)/2,
+           meanbegin = (dbegin_hpd_low + dbegin_hpd_high)/2,
+           meanend = (dend_hpd_low + dend_hpd_high)/2)
+
+hist(doyperiod_overlap$overlaps)
+
+ggplot(doyperiod_overlap, aes(x=doylength, y=overlaps, color=Site)) +
+    geom_jitter() +
+    facet_wrap(Sex ~ .)
+
+ggplot(doyperiod_overlap, aes(x=dbegin, y=overlaps, color=Site, alpha=1-intervalwidth)) +
+    geom_jitter() +
+    facet_wrap(Sex ~ .)
+
+ggplot(doyperiod_overlap, aes(x=dend, y=overlaps, color=Site)) +
+    geom_jitter() +
+    facet_wrap(Sex ~ .)
+
+ggplot(overlap_hpd, aes(xmin=doylength_hpd_low, xmax=doylength_hpd_high, y=meanoverlap, 
+                        color = Site, alpha=(1/intervalwidth)/4)) +
+    geom_linerangeh() +
+    geom_linerange(data=overlap_hpd, aes(ymin=overlaps_hpd_low, ymax=overlaps_hpd_high, x=meanlength, 
+                                         color=Site, alpha=(1-intervalwidth)/4), inherit.aes = FALSE) +
+    geom_point(aes(meanlength, meanoverlap, color=Site), inherit.aes = FALSE, pch=1) +
+    facet_wrap("Sex") +
+    scale_color_viridis_d(option="B", end=0.8) +
+    theme_bw(base_size=16) +
+    guides(alpha=FALSE) +
+    ylab("Days of overlap") +
+    xlab("Length of flowering period (days)")
+
+ggplot(overlap_hpd, aes(xmin=dbegin_hpd_low, xmax=dbegin_hpd_high, y=meanoverlap, 
+                        color = Site, alpha=(1/intervalwidth)/4)) +
+    geom_linerangeh() +
+    geom_linerange(data=overlap_hpd, aes(ymin=overlaps_hpd_low, ymax=overlaps_hpd_high, x=meanbegin, 
+                                         color=Site, alpha=(1/intervalwidth)/4), inherit.aes = FALSE) +
+    geom_point(aes(meanbegin, meanoverlap, color=Site), inherit.aes = FALSE, pch=1) +
+    facet_wrap("Sex") +
+    scale_color_viridis_d(option="B", end=0.8) +
+    theme_bw(base_size=16) +
+    guides(alpha=FALSE) +
+    ylab("days of overlap") +
+    xlab("Start of flowering")
+
+ggplot(overlap_hpd, aes(x=meanbegin, y=meanoverlap, color=Site)) +
+    geom_point(pch=1) +
+    facet_wrap("Sex") +
+    scale_color_viridis_d(option="B", end=0.8) +
+    theme_bw(base_size=16) +
+    theme(legend.position = "top") +
+    ylab("Days of overlap") +
+    xlab("Start of flowering")
+
+lm(meanoverlap ~ meanbegin, overlap_hpd)
+lm(meanoverlap ~ meanend, overlap_hpd)
+
+ggplot(overlap_hpd, aes(x=meanend, y=meanoverlap, color=Site)) +
+    geom_point(pch=1) +
+    facet_wrap("Sex") +
+    scale_color_viridis_d(option="B", end=0.8) +
+    theme_bw(base_size=16) +
+    ylab("Days of overlap") +
+    xlab("End of flowering")
+
+ggplot(overlap_hpd, aes(xmin=dend_hpd_low, xmax=dend_hpd_high, y=meanoverlap, 
+                        color = Site, alpha=(1/intervalwidth)/4)) +
+    geom_linerangeh() +
+    geom_linerange(data=overlap_hpd, aes(ymin=overlaps_hpd_low, ymax=overlaps_hpd_high, x=meanend, 
+                                         color=Site, alpha=(1/intervalwidth)/4), inherit.aes = FALSE) +
+    geom_point(aes(meanbegin, meanoverlap, color=Site), inherit.aes = FALSE, pch=1) +
+    facet_wrap("Sex") +
+    scale_color_viridis_d(option="B", end=0.8) +
+    theme_bw(base_size=16) +
+    guides(alpha=FALSE) +
+    ylab("days of overlap") +
+    xlab("End of flowering")
+
+#overlap between sites #########
+
+calc_intervals <- function(a, b) {
+    assertthat::are_equal(nrow(a), nrow(b))
+    ret <- data.frame(overlaps=rep(NA, nrow(a)))
+    for (i in 1:nrow(a)) {
+        a_begin <- a$dbegin[i]
+        b_begin <- b$dbegin[i]
+        a_end <- a$dend[i]
+        b_end <- b$dend[i]
+        if (a_begin > b_end || b_begin > a_end) {
+            ret$overlaps[i] <- 0
+        } else {
+            lo <- max(c(a_begin, b_begin))
+            hi <- min(c(a_end, b_end))
+            ret$overlaps[i] <- (hi-lo)+1
+        }
+    }
+    return(ret)
+}
+
+overlapframer <- function(df) {
+    doyperiod_meds <- df %>%
+        group_by(Sex, siteyear, Site, Year) %>%
+        summarise(dbegin = median(dbegin),
+                  dend = median(dend),
+                  doylength = median(doylength))
+    
+    kalamalkaf <- filter(doyperiod_meds, Site=="Kalamalka" & Sex =="FEMALE")
+    kalamalkam <- filter(doyperiod_meds, Site=="Kalamalka" & Sex == "FEMALE")
+    pgtisf <- filter(doyperiod_meds, Site=="PGTIS" & Sex =="FEMALE")
+    pgtism <- filter(doyperiod_meds, Site =="PGTIS" & Sex =="MALE")
+    krf <- filter(doyperiod_meds, Site=="KettleRiver" & Sex=="FEMALE")
+    krm <- filter(doyperiod_meds, Site=="KettleRiver" & Sex=="MALE")
+    
+    kalamalkaf$kal_males <- calc_intervals(kalamalkaf, kalamalkam)$overlaps
+    kalamalkaf$pg_males <- calc_intervals(kalamalkaf, pgtism)$overlaps
+    kalamalkaf$kr_males <- calc_intervals(kalamalkaf, krm)$overlaps
+    
+    pgtisf$pg_males <- calc_intervals(pgtisf, pgtism)$overlaps
+    pgtisf$kal_males <- calc_intervals(pgtisf, kalamalkam)$overlaps
+    pgtisf$kr_males <- calc_intervals(pgtisf, krm)$overlaps
+    
+    krf$kr_males <- calc_intervals(krf, krm)$overlaps
+    krf$pg_males <- calc_intervals(krf, pgtism)$overlaps
+    krf$kal_males <- calc_intervals(krf, kalamalkam)$overlaps
+    
+    receptiveoverlap <- rbind(kalamalkaf, pgtisf) 
+    receptiveoverlap <- rbind(receptiveoverlap, krf)
+    
+    roverlap <- receptiveoverlap %>% 
+        pivot_longer(cols=contains("males"), names_to = "pollensource", values_to = "overlapdays")
+    roverlap$Site <- factor(roverlap$Site, ordered=TRUE, 
+                            levels= rev(c("KettleRiver", "Vernon", "Kalamalka", "PRT", "Tolko", "PGTIS")))
+    roverlap$pollensource <- factor(roverlap$pollensource, ordered=TRUE, 
+                                    levels= rev(c("kr_males", "kal_males", "pg_males")))
+    return(roverlap)
+}
+
+roverlapreal <- overlapframer(doyperiod) %>%
+    mutate(temp="real")
+roverlapplus2 <- overlapframer(doyperiodcc) %>%
+    mutate(temp="plus2")
+roverlapplus5 <- overlapframer(doyperiodplus5) %>%
+    mutate(temp="plus5")
+
+roverlap <- rbind(roverlapreal, roverlapplus2)
+roverlap <- rbind(roverlap, roverlapplus5)
+
+roverlap_med <- roverlap %>%
+    group_by(Site, pollensource, temp) %>%
+    summarise(median(overlapdays))
+
+ggplot(roverlap, aes(x=Year, y=overlapdays, color=temp)) +
+    geom_point(pch=1) +
+    facet_grid(Site ~ pollensource) +
+    ggtitle("Pollen sources for 3 sites", subtitle = "") +
+    theme_bw(base_size=16) +
+    scale_color_viridis_d(option="C", end=0.8)
+
+ggplot(roverlap, aes(x=0, y=overlapdays, fill=temp)) +
+    geom_violin() +
+    facet_grid(Site ~ pollensource) +
+    scale_fill_viridis_d(option="C", end=0.8) +
+    theme_bw() +
+    ggtitle("Receptivity overlap with pollen shed at 3 sites") +
+    theme(axis.title.x=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank())
 
 
+ggplot(kalamalkaf, aes(x=doylength, y=pg_males, color="pg_males")) +
+    geom_point(pch=1) +
+    geom_point(aes(y=kr_males, color="kr_males"), pch=1) +
+    ylab("Days of overlap") +
+    xlab("Length of period") +
+    scale_color_viridis_d(option="B", end=0.8) +
+    ggtitle("Kalamalka female overlap with males at other sites")
 
+ggplot(kalamalkaf, aes(x=dbegin, y=pg_males, color="pg_males")) +
+    geom_point(pch=1) +
+    geom_point(aes(y=kr_males, color="kr_males"), pch=1) +
+    ylab("Days of overlap") +
+    xlab("Beginning of flowering period") +
+    scale_color_viridis_d(option="B", end=0.8) +
+    ggtitle("Kalamalka female overlap with males at other sites")
+
+ggplot(kalamalkaf, aes(x=dend, y=pg_males, color="pg_males")) +
+    geom_point(pch=1) +
+    geom_point(aes(y=kr_males, color="kr_males"), pch=1) +
+    ylab("Days of overlap") +
+    xlab("Beginning of flowering period") +
+    scale_color_viridis_d(option="B", end=0.8) +
+    ggtitle("Kalamalka female overlap with males at other sites")
 
 # mean and standard deviation of period length in days at each forcing length
 periodlengthsummary <- periodlength %>%
