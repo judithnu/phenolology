@@ -120,11 +120,11 @@ Specifically, I will answer 1) What is the relationship between temperature and 
 
 # Methods
 
-My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, I modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. 
+My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, I modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. I then compared the overlap in flowering periods between males and females across sites.
 
 ## Study species
 
-Lodgepole pine is a wind-pollinated monecious conifer with an extensive range and well documented local adaptation. While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Pollen and seed cone buds differentiate in late summer and early fall, then go dormant. As temperatures warm the following year, buds resume development and strobili "flower"; receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
+Lodgepole pine is a wind-pollinated monecious conifer with an extensive range and well documented local adaptation [CITE]. While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Pollen and seed cone buds differentiate in late summer and early fall, then go dormant. As temperatures warm the following year, buds resume development and strobili "flower"; receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
 
 ![Rangemap of lodgepole pine. After @Little1971 \label{range}.](../../phd/maps/SpeciesDistribution/distmap_pincon.png)
 
@@ -132,23 +132,23 @@ Lodgepole pine is a wind-pollinated monecious conifer with an extensive range an
 
 #### Phenology Data
 
-This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards. Seed orchards in British Columbia produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. To plan for future seed production and orchard establishment and management, seed orchard managers monitored pollination phenology and seed production. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@webberCollectionCropStatistics2007]. Collection continued intermittently through 2012.
+This project takes advantage of an existing lodgepole pine pollination phenology dataset collected over a decade and a half by government and industry workers in seed orchards in British Columbia. Seed orchards produce large amounts of tree seed for reforestation from parent trees sourced from provenances around the province. To plan for future seed production and orchard establishment and management, seed orchard managers monitored pollination phenology and seed production at many of the orchards. Pollination phenology data was collected at the Prince George Tree Improvement Station in British Columbia beginning in 1997 and collection at many other BC tree orchard sites began in 2006 under the Forest Genetics Council's Operational Tree Improvement Program 0722 [@webberCollectionCropStatistics2007]. Collection continued intermittently through 2012.
 
 
 ##### Sites
-Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 7 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station, and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another around Vernon, BC. Sites span about 5 $^\circ$ of latitude and are at elevations from 466 to 638 m.
+Trees selected from across the British Columbia portion of the lodgepole pine range are grown in seed orchards as part of tree breeding and seed production programs. Between 1997 and 2011, flowering phenology of lodgepole pine was recorded at 7 seed orchard sites in the interior of British Columbia. I contacted Seed Orchard Managers and other forestry professionals across British Columbia in 2012 and received pollination phenology data from C. Walsh, previously at Kalamalka Seed Orchards (now retired), R. Wagner at the Prince George Tree Improvement Station (ALSO RETIRED?), and J.E. Webber previously at the Glyn Road Research Station (now retired). 4 of the sites are clustered near to one another around Vernon, BC. Sites span about 5 $^\circ$ of latitude and are at elevations from 466 to 638 m.
 
 ![Map of seed orchard locations. Seed orchard locations are in red. Weather data gridpoints are in blue. Boxed area in map on left is shown in greater detail on the right. \label{Sites} ](../../phd/maps/SiteMaps/sitemapwithPCIC.png)
 
+[TABLE OF SITE ELEVATION AND LAT/LON - here or in suppl/data]
 
 ##### Provenances
-Trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
+<!--
+I obtained pollination phenology records from 17 of the 26 lodgepole pine seed orchards in British Columbia. Thirteen out of 17 orchards in my data set are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.-->
 
-I obtained pollination phenology records from 17 of the 26 lodgepole pine seed orchards in British Columbia. Orchards include the offspring of trees from 5 of the 13 BC seed planning zones (SPZs) [SPZ REFERENCE OR FIGURE?] grown at at 7 sites across BC. SPZs are biogeoclimatic and political units used for seed planting purposes by British Columbia. SPZs are divided into elevation bands called Seed Planning Units (SPUs), which form this project's 7 provenances \ref{SPU}. 
+Parents of trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs) \ref{SPU}. SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
-Thirteen out of 17 orchards in my data set are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.
-
-Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone, PGTIS typically observed 2-4 ramets per clone.
+Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone; PGTIS typically observed 2-4 ramets per clone.
 
 ![Contingency table of years of data for Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](../../phd/phd_proposal/figure/contingencytable.png)
 
@@ -159,22 +159,22 @@ Most provenances are represented at 2 to 3 sites and have at least three years o
  [table of number of trees/clones in a given year for a given site/spu combo]
 
 ##### Phenology scoring protocol
-Protocol C in [@Woods1996] was used as the basis for collecting pollen shed and cone receptivity data, though operational constraints led to some modifications. Workers monitored seed orchards for the beginning of pollen shed and cone receptivity. ~15 clones, usually represented by 2 trees each, were selected for specific observations. When the active period seemed to be starting, workers went into the orchard every few days to make observations on the selected trees.
+Protocol C in [@Woods1996] was used as the basis for collecting pollen shed and cone receptivity data, though operational constraints led to some modifications. Workers monitored seed orchards for the beginning of pollen shed and cone receptivity. Approximately, 15 clones, usually represented by 2 trees each, were selected for specific observations. When the active period seemed to be starting, workers went into the orchard every few days to make observations on the selected trees.
 
 Stages of pollen and seed cone development are described by @owens1984 and updated in @owensReproductiveBiologyLodgepole2006 and were used as a general guide for determining the phenological state of pollen and seed cones. Pollen cones are flowering when tapping causes pollen to be released and seed cones are flowering when there are gaps between the bract-scale complexes. Pollination drops are also produced during flowering, though they recede midday if pollen is not present [@owensReproductiveBiologyLodgepole2006]. 
 
-"Flowering" states were recorded for both pollen shed and cone receptivity at the level of each tree. Protocol C recommends marking the dates when 20% of the cones on a tree have begun flowering and when 80% of the cones on a tree have finished flowering. Operationally, there was some subjectivity and tree-level states for each cone type should be interpreted as "starting flowering" and "finished flowering." There is some subjectivity here. 
+"Flowering" states were recorded for both pollen shed and cone receptivity at the level of each tree. Protocol C recommends marking the dates when 20% of the cones on a tree have begun flowering and when 80% of the cones on a tree have finished flowering. Operationally, there was some subjectivity and tree-level states for each cone type should be interpreted as "starting flowering" and "finished flowering."  
 
 [DESCRIBE SURVEY PERIODS]
-```{r surveys}
+```{r surveys, fig.height=8}
 # Index by Site, Provenance, and Year
 dat$spyind <- group_indices(dat, Site, Year, Provenance)
 
 surveydf <- select(dat, spyind, Year, Site, Provenance, DoY) %>%
   distinct()
 
-ggplot(surveydf, aes(x=DoY, y=as.factor(spyind), color=Provenance, shape=Site)) +
-  geom_point() +
+ggplot(surveydf, aes(x=DoY, y=as.factor(spyind), color=Provenance)) +
+  geom_point(pch=3) +
   geom_line() +
  facet_grid(rows=vars(Site,Year), scales="free_y") +
   scale_color_viridis_d(option="C") +
@@ -184,29 +184,18 @@ ggplot(surveydf, aes(x=DoY, y=as.factor(spyind), color=Provenance, shape=Site)) 
   ggtitle("Observation Dates")
 ```
 
-Observations were not made every day and survey periods varied in length. At Prince George, not all trees have complete phenological records, *e.g* if a tree is not flowering on the first day of observation, the start date is unknown. 
+Observations were not made every day and survey periods varied in length. Not all trees have complete phenological records, start or end dates may be unknown.
 
 
 ##### Harmonization and cleaning
 
-[DESCRIBE DATA TRANSCRIPTION AND CLEANING].
+There were some differences in how data was recorded at the Prince George Tree Improvement Station versus the other sites. For most of the Prince George data, trees were marked as flowering or not flowering on each day of observation. At other sites, only the first day observed flowering and the first day observed finished flowering were recorded. At sites using that minimal recording schema, I was able to infer states for many clones for some observation dates at the orchard. *E.g*, if tree A and B are in the same orchard and A is observed to be receptive on Monday and tree B on Tuesday, then I assumed that tree B was not yet receptive on Monday. 
 
-There were some differences in how data was recorded at the Prince George Tree Improvement Station versus the other sites. At Prince George, trees were marked as flowering or not flowering on each day of observation. At other sites, only the first day observed flowering and the first day observed finished flowering were recorded. At sites using that minimal recording schema, I was able to infer states for many clones for some observation dates at the orchard. *E.g*, if tree A and B are in the same orchard and A is observed to be receptive on Monday and tree B on Tuesday, then I assumed that tree B was not yet receptive on Monday. 
+I cleaned and harmonized the data for analysis in a single model using R scripts [PROVIDE] so that, for pollen shed and receptivity, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 = finished flowering. 
 
-I cleaned and harmonized the data for analysis in a single model using R scripts [provided] so that, for pollen cones and seed cones, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 finished flowering. 
-
-There are three phenological stages of interest each for a tree's male and female cones
-
-- 1. The cones have not yet flowered
-- 2. The cones are flowering
-- 3. The cones have finished flowering
-
-Phenophases in the field were recorded using different symbol sets and resolutions. I assigned each symbol to one of the phenophases above. Trees that did not produce cones are assigned phenological stage 0.
+Phenophases in the field were recorded using different symbol sets and resolutions. I assigned each symbol to one of the three phenophases above. Trees that did not produce cones were assigned phenological stage 0.
 
 In total, there were `r nrow(phenology_data)` usable observations of phenological state.
-
-Some observations at the Prince George Tree Improvement Station Site were redundant and were dropped for modeling. For example, if a tree's pollen cones were recorded as "finished flowering" for 3 days, only the first observation was kept - phenological states are not reversible. This improved the speed of model fitting.
-
 
 ```{r phenophase_derivation, echo=FALSE}
 no_flowers <- '0'
@@ -231,27 +220,14 @@ kable(phenophase_legend, padding = 0)
 
 Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ (~ 6km) over northwest North America  [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each site \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures. 
 
-Gridpoint data was adjusted using monthly site data. As gridpoints did not align exactly with site locations and there were significant elevation differences between many of the sites and gridpoints, PNWNAmet data did not accurately represent the temperature at sites. Monthly site specific data was regressed on monthly PNWNAmet data to determine a correction factor for PNWNAmet data. Mean monthly temperatures for the sites were generated using the ClimateNA v5.10 software package [@wang2016]. For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package.
+Gridpoint data was adjusted using monthly site data. As gridpoints did not align exactly with site locations and there were significant elevation differences between many of the sites and gridpoints, PNWNAmet data did not accurately represent the temperature at sites, so a correction factor was applied. First, mean monthly temperatures for the sites were generated using the ClimateNA v6.20 software package [@wang2016]. Monthly site specific data then was regressed on monthly PNWNAmet data to determine the correction factor for daily PNWNAmet data. 
+
+For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package.
 
 $$T = \alpha + \beta t$$
 Table of intercepts $\alpha$ and slopes $\beta$ for each site.
+
 ```
-version 5.21
-          Site             term estimate std.error statistic p.value
-1    Kalamalka      (Intercept)    -0.23      0.06     -3.71 < 0.001
-2    Kalamalka meantempgridPCIC     0.99      0.01    187.18 < 0.001
-3  KettleRiver      (Intercept)     1.16      0.06     18.28 < 0.001
-4  KettleRiver meantempgridPCIC     1.03      0.01     159.8 < 0.001
-5        PGTIS      (Intercept)     0.26      0.04      6.43 < 0.001
-6        PGTIS meantempgridPCIC     0.98         0    232.72 < 0.001
-7          PRT      (Intercept)    -0.04      0.06     -0.72    0.47
-8          PRT meantempgridPCIC     0.99      0.01    189.28 < 0.001
-9     Sorrento      (Intercept)     1.46      0.06     25.43 < 0.001
-10    Sorrento meantempgridPCIC     1.02      0.01    172.05 < 0.001
-11       Tolko      (Intercept)    -0.45      0.06     -7.67 < 0.001
-12       Tolko meantempgridPCIC     0.99      0.01     192.7 < 0.001
-13      Vernon      (Intercept)    -0.23      0.06     -3.59 < 0.001
-14      Vernon meantempgridPCIC     0.99      0.01    186.15 < 0.001
 
 #version 6.20
           Site             term estimate std.error statistic p.value
@@ -280,13 +256,13 @@ where $t$ are the mean daily temperatures extracted from PNWNAmet.
 Flowering is a developmental process that speeds up and slows down according to the current temperature. Forcing units describe the relative effect of temperature on development. Observable phenological events occur only after a certain amount of forcing has accumulated. The mean daily temperature $t$ was mapped to forcing units with a function that describes the relationship between temperature and development rate.
 
 $$R(t) = \frac{1}{1+ e^{-0.185*t-18.4}}$$
-This equation for forcing units is based on experimental work in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990] and is verified to perform better than growing degree day models by Chuine [@Chuine1999].
+This equation for forcing units is based on experimental work in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990] and was verified to perform better than growing degree day for phenology estimation [@Chuine1999].
 
 Accumulated forcing units on day $d$ ($f(d)$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
 
 $$f(d) = \sum_{i=1}^d R_d(x)$$
 
-Cooler sites, like Prince George, accumulate forcing slower than warmer sites like Kalamalka.
+Cooler sites, like Prince George, accumulate forcing slower than warmer sites like Kalamalka. 
 
 [ACCUMULATED FORCING UNITS FIGURE]
 
@@ -324,12 +300,11 @@ The linear model $\eta$ includes a population mean slope $\beta$ with deviations
 The model was fit in the probabilistic programming language Stan (vers. 2.19.2 via RStan [@standevelopmentteam2019]), which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior. I ran 4 independent chains for 4500 iterations, discarding 1000 warm-up iterations for a total of 14,000 posterior samples for each parameter. Model convergence and performance were considered good; $\hat R$ was $< 1.01$ and bulk effective sample size was more than 100x the number of chains for all parameter values (Female model: Tail ESS 2,231-11,286, median 9,326; Bulk ESS 1,434-31,750, median 11,059. Male model: Tail ESS 2,843-11,332, median 9,371; Bulk ESS 1,617-30,793, median 11,633) [@vehtari2019]. There were no divergences. Visual inspection of energy plots and rank plots showed acceptable sampling behavior.
 
 #### Model Assumptions 
-I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only, not photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for damage and abnormal development from very cold and very warm temperatures.  [Cite Sarvas's weird hot stuff and some late spring phenology]
-
+I assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only and does not incorporate photoperiod or chilling. Transitions between each state occur at the same rate, *i.e* $\beta$ parameters cannot vary by phenological state. This model does not account for damage and abnormal development from very cold and very warm temperatures. [Cite Sarvas's weird hot stuff and some late spring phenology]
 
 #### Flowering period timing and length
 
-I defined the beginning of the flowering period as the point at which a tree was 20% likely to have passed out of stage 1 and the end of the flowering period as the probability at which a tree was 80% likely to have passed out of stage 2. This is equivalent to 20% of the trees in the population having reached stage 2 and 80% having reached stage 3.
+I defined the beginning of the flowering period as the point at which a tree was 20% likely to have passed out of stage 1 and the end of the flowering period as the probability at which a tree was 80% likely to have passed out of stage 2. This is equivalent to 20% of the trees in the population having reached at least stage 2 and 80% having reached stage 3.
 
 ##### Begin and end of flowering period
 The accumulated forcing units required to reach the beginning of the flowering period, $f_{begin}$, is 
@@ -355,56 +330,62 @@ $$ f_{range} = f_{end}-f_{begin}$$
 
 
 ##### Translating between accumulated forcing units and days
-While $fbegin$ and $fend$ are constant for a given combination of clone, site, provenance, (and year???), $dbegin$ and $dend$ differ from year to year and location to location. For years and locations of interest, accumulated forcing units were calculated from mean daily temperatures and used to translate between accumulated forcing units and day of year. The day of year that the accummulated forcing unit reached at least $f_{begin}$ or $f_{end}$ was $d_{begin}$ or $d_{end}$. The length of the phenological period was then calculated as
+While $fbegin$ and $fend$ are constant for a given combination of clone, site, provenance, and year, $dbegin$ and $dend$ differ from year to year and location to location. For years and locations of interest, accumulated forcing units were calculated from mean daily temperatures and used to translate between accumulated forcing units and day of year. The day of year that the accummulated forcing unit reached at least $f_{begin}$ or $f_{end}$ was $d_{begin}$ or $d_{end}$. The length of the phenological period was then calculated as
 
 $$length=d_{end}-d_{begin}$$
 
-???Because $\beta_{year}$ is included as an effect, $f_{start}$ and $f_{end}$ are specific to the year the data was collected.???
-
 #### Posterior predictive checks
 
-To check the realism of the model, the observations of phenological states were compared to model predictions. When the model was fit in Stan, I also simulated one phenological state from all model configurations for each phenological observation in the dataset.  
+To check the realism of the model, the observations of phenological states were compared to model predictions. When the model was fit in Stan, I also simulated one phenological state from all model configurations for each phenological observation in the dataset. The probability of having reaching a given phenological state at a given forcing accumulation predicted by the model matched the data well \ref{ppc_cum}. 
 
-![Cumulative distribution of accumulated forcing for observed phenophases and predicted states](../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png)
+![Cumulative distribution of accumulated forcing for observed phenophases and predicted states \label{ppc_cum}](../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png)
 
 ![Proportion of states correctly predicted by the model for each phenophase. \label{ppc_prop}](../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png)
 
-Flowering is predicted with greater accuracy than the other phases and males flowering is predicted better than female flowering. Phases 1 and 3 are less well predicted, but phase 1 is particularly poorly predicted, especially for males. Phases 1 and 3 are less well represented in the data than flowering.
+The proportion of state 2 observations (flowering) was predicted correctly by the model [X%] of the time for females and [Y%] for males. Flowering is predicted with greater accuracy than the other phases and male flowering is predicted better than female flowering. Phases 1 and 3 are likely predicted less well because the observation dates (and associated accumulated forcing) are likely to be very close to the transitions into or out of state 2, *i.e.*, the most difficult ranges of forcing units over to predict phenological state.
 
-Overall trends are largely driven by predictions at Prince George, for which there is the most data. When broken down by site you can see that phase1 and 3 are usually retrodicted better at Prince George than at other sites. Phase 1 for males is particularly poorly predicted. Phase 2 is less well predicted for Prince George than any other site, however. PRT is surprisingly well predicted. I have 3 years of data with 2 provenances for PRT, but Kalamalka has 5 years of data and 3 provenances. 
+[WHAT DOES THE SITE GRAPH ADD?]
+
+[IF I KEEP THIS GRAPH, ORDER BY N-S OR SOMETHING OTHER THAN ALPHA]
 
 ![Proportion of states correctly predicted by the model for each phenophase and site. \label{ppc_site}](../../phd/LabNotebook/images/2019-10-28ppcsite.png)
 
-When the model incorrectly retrodicts a phenophase, it usually predicts an adjacent phenophase.
+When the model incorrectly retrodicts a phenophase, it almost always predicts an adjacent phenophase. [UNNECESSARY, DROP?]
 
 ![Count of states predicted at each observed phenophase. \label{ppc_counts}](../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png)
 
-The model is very likely to correctly predict phase 1 and 3 at very high and low amounts of accumulated forcing.
+<!--
+The model is very likely to correctly predict phase 1 and 3 at higher and lower amounts of accumulated forcing and is less accurate near the transitions into and out of stage 2.
 
-![Proportion of observations correctly predicted as forcing accumulates \label{ppc_forcing}](../../phd/LabNotebook/images/2019-10-28ppcforcingphase.png)
+![Proportion of observations correctly predicted as forcing accumulates \label{ppc_forcing}](../../phd/LabNotebook/images/2019-10-28ppcforcingphase.png)-->
 
-While I don't expect a perfect retrodiction of the sample, it is a bit worrying that 1 and 3 are so hard to predict for the model. I think this is because the only 1 and 3 data I included were the most marginal 1 and 3s - right at transition points. This should improve predictions for flowering (phase 2), but makes 1 and 3 look worse. 
-
-Since phenology observations are not recorded until the flowering period begins, phase 1 and 3 should be harder to predict. Additionally, observations were trimmed so that only the last phase 1, first and last phase 2, and first phase 3 were left in the dataset. 
-
-I should perform this analysis on the unslimmed data.
 
 #### Average predictive comparisons
-Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007, @shirley2015). The APC for site, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
+Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007, @shirley2015). An APC for the site effect, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
 
-Average predictive comparisons for each effect $u$ were calculated by calculating the absolute value of the difference between the expected value at a given data point $n$ (where $n$ were all uniquely occuring combinations of site, provenance, clone, and year in the phenology dataset) for the input variable of interest $u^{(k)}$ and the other input variables $v$ and that datapoint for its actual value of $u$, mulitiplying that difference by a weight $\omega$ that represents the similarity in $v$ between a datapoint with $u_i$ versus $u^{(k)}$. The weighted average of these differences is taken over all data points, all values of u, and samples from the posterior distribution. 
+Average predictive comparisons for each effect $u$ were calculated by calculating the absolute value of the difference between the expected value at a given data point $n$ (where $n$ were all uniquely occuring combinations of site, provenance, clone, and year in the phenology dataset) for the input variable of interest $u^{(k)}$ and the other input variables $v$ and that datapoint for its actual value of $u$. That difference was multiplied by a weight $\omega$ representing the similarity in $v$ between a datapoint with $u_i$ versus $u^{(k)}$. The weighted average of these differences is taken over all data points, all values of $u$, and 1400 samples from the posterior distribution. 
 
 $$\hat \Delta_u = \frac{\sum_{i=1}^{n}\sum_{k=1}^{K}\sum_{s=1}^S[\sum_{j\in\{k\}}\omega_{ij}]|\mathrm{E}(y|u^{(k)},v_i, \theta^{(s)})-\mathrm{E}(y|u_i,v_i, \theta^{(s)})|}
 {\mathrm{S}\sum_{i=1}^{n}\sum_{k=1}^{K}[\sum_{j\in\{k\}}\omega_{ij}]}$$
 
+Comparison calculations are weighted ($\omega$) to reflect the distribution of data, but the weighting function is not specified in @gelman2007. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of the effects in this model are. I developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
 
-Comparison calculations are weighted ($\omega$) to reflect the distribution of data, but the weighting function is not specified in @gelman2007. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of my effects are. I developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
+APCs were calculated in terms of both forcing and days. 20 timeseries of weather data from the sites were chosen, spanning coolest to warmest, to calculate the APCs in days.
 
-7000 random samples from each model fit in Stan were used to calculate average predictive comparisons.
+#### Model predictions
+
+Specific predictions for the start and end of the phenological period can be made from the model for sites, years, clones, and provenances using the parameter of interest. General predictions can also be made using the mean parameter for site, year, clone, and provenance along with the estimated $\sigma$ for that parameter. I made general predictions from the model for $fstart$ and $fend$ by taking 7000 samples from the posterior then simulating 30 values for site, provenance, year, and clone $\beta$s from normal distributions with the mean parameter effect across each cluster and $\sigma$ for each cluster. I then used the equations above for $fstart$ and $fend$. To make predictions in terms of days, I translated $fbegin$ and $fend$ into day of year in 15 years at the 7 seed orchard sites.
 
 #### Validation
 
-I will validate the model by comparing predictions to phenological measurements from the National Phenology Network.
+The male model was validated using pollen slide data at several of the orchards.
+I also compared the general predictions to the actual data.
+
+#### Length
+
+#### Overlap
+
+#### Flowering period date
 
 # Results
 
