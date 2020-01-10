@@ -1,0 +1,97 @@
+# Compare ristos to heatsum
+
+Owens 2006 reports that heatsums of 500 (threshold 5C) are enough to trigger flowering in lodgepole:
+
+> In lodgepole pine near Vernon,BC, pollen release and seed-cone receptivity began when the DD reached about 500 at a threshold of 5°C, but because pollen release is also governed by humidity, this can vary considerably.
+
+Tongli Wang asks me 
+
+> DD5 of 100 is required for many plants to flush. I am curious how lodgepole pine flowering is related to this. 
+
+Reports by Joe Webber and Chris Walsh report temperature sums as well, but it's unclear how to interpret them. *E.g* this table from a 2008 TIP report:
+
+![](webberwalsh2008.png)
+When is the start date for the heatsum calculation? What's the threshold? Is it daily or hourly? Text makes me think it's just the heating that has accumulated in the month before the pollination period and then during the pollination period. Size makes me think it's hourly sums.
+
+```{r libraries}
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+```
+
+So, how do scaled ristos and ristos compare to growing degree days with a threshold of 5°C during the measured lodgepole pine flowering period at all orchards across all years of measurement? And how does it compare to Owens' estimate of 500 degree GDD5 threshold or the numbers Walsh and Webber have?
+
+```{r data}
+forcingraw <- read.csv("data/all_clim_PCIC.csv") %>%
+    select(-mean_temp, -forcing)
+phenology <- read.csv("data/phenology_heatsum_all.csv") %>%
+    filter(Phenophase_Derived==2)
+
+# df of flowering data with associated forcing
+floweringforcing <- select(phenology, DoY, Sex, Year, Site, Date) %>%
+    left_join(forcingraw) %>%
+    distinct()
+
+
+# wide format for some plots
+forcingrawwide <- forcingraw %>%
+    pivot_wider(names_from = forcing_type, values_from = sum_forcing)
+
+floweringforcingwide <- pivot_wider(floweringforcing, names_from = forcing_type, values_from = sum_forcing)
+
+#group indexes
+floweringforcing$grouping <- group_indices(floweringforcing, Sex, Year, Site, forcing_type)
+floweringforcingwide$grouping <- group_indices(floweringforcingwide, Sex, Year, Site)
+
+forcingraw$grouping <- group_indices(forcingraw, Site, Year, forcing_type)
+forcingrawwide$grouping <- group_indices(forcingrawwide, Site, Year)
+```
+
+First, how do ristos and gdd accumulate throughout the year?
+
+```{r ristos and gdd}
+
+ggplot(forcingraw, aes(x=DoY, y=sum_forcing, group=grouping, color=forcing_type)) +
+    geom_line(alpha=0.5) +
+    scale_color_viridis_d(option="A") +
+    ggtitle("Accumulation of forcing units throughout the year", subtitle = "All seed orchard sites, years 1997-2011")
+```
+
+Scaled ristos are just ristos/28.4.
+
+```{r conversion}
+ggplot(floweringforcingwide, aes(x=scaled_ristos, y=ristos)) +
+    geom_point() +
+    ggtitle("Convert between scaled ristos and ristos - x28.4")
+```
+
+## GDD5 and Ristos accumulated during flowering
+On days trees were flowering, the amount of heatsum accumulated in gdd5 is between `r round(min(floweringforcingwide$gdd))` and `r round(max(floweringforcingwide$gdd))`. Ristos? `r round(min(floweringforcingwide$ristos))` and `r round(max(floweringforcingwide$ristos))`. These intervals contain neither the 100 degree rule of thumb threshold Tongli referred to (though it may be more accurate for vegetative flush) nor the 500 degree threshold reported by Owens.
+
+They are in the right ballpark for Walsh and Webber's numbers (once divided by 24 for right units). However, W&W only start adding up heatsum in the month or so before pollination. I think the numbers are still roughly comparable because the 5 degree threshold in GDD5 calculations means that very little accumulates before then.
+
+```{r flowering heatsum}
+ggplot(floweringforcingwide, aes(x=ristos, y=gdd, color=Sex)) +
+    geom_point(alpha=0.5) +
+    ggtitle("GDD5 and Ristos during flowering") +
+    facet_wrap("Sex")
+```
+
+Importantly, the amount of GDD5 accumulated at a given amount of Risto accummulation within the flowering period is quite variable. 
+
+```{r variance}
+fit <- lm(gdd ~ ristos, data = floweringforcingwide)
+summary(fit)
+```
+
+Because ristos and GDD5 accumulate differently, in each year/location there will be a slightly different relationship between ristos and GDD5.
+
+```{r ristos vs gdd5}
+ggplot(filter(forcingrawwide, ristos < 500), aes(x=ristos, y=gdd, group=grouping, color=Site)) +
+    geom_line(alpha=0.5)  +
+    scale_color_viridis_d(option="B") +
+    ggtitle("ristos vs gdd from January 1 thru the flowering period")
+```
+
+## Model predictions
+My model predicts that flowering will start at around 284 ristos and stop around 426 ristos. In the years/sites I've considered here, 284 ristos is ~140-175 GDD5 and 426 ristos is ~275-320 GDD5.
