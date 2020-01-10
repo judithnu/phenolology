@@ -93,7 +93,7 @@ As the climate changes, spring phenological events like budburst and flowering w
 This effect is already obvious in many species [@Parmesan2006; @Franks2014]. 
 Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects [VAGUE] on dependent species [@Inouye2008; @Chuine2001b].
 
-[POLISH THIS INTRO SENTENCE]
+
 Conifers are a big part of the enormous northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @aitken2008). 
 
 Coniferous forest trees are wind pollinated wtih pollination possible over large distances. [EXAMPLES]
@@ -110,13 +110,15 @@ Local adaptation in lodgepole pine can be observed even at relatively small spat
 
 Pollen is an important vector for identifying gene flow in lodgepole pine because outcrossing is common, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. There is evidence for spatially varying levels of gene flow in the species as populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006]. Pollination phenology could control this. 
 
-Pollination phenology determines which populations can exchange genes, but predicting the timing of pollen shed and cone receptivity has not been done in lodgepole pine.  Pollination phenology examples are uncommon. [Talk about Sarvas investigations for mechanistic background, why using temperature, etc.]
-Simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts.
-@owensReproductiveBiologyLodgepole2006 reports that lodgepole pine pollen shed and cone receptivity occur when degree days reach about 500 at a threshold of 5 $^\circ\mathrm{C}$, but this is the only report of pollination phenology modeling for lodgepole pine and limited details are provided. 
-Models of lodgepole pine vegetative phenology, on the other hand, are better represented in the literature (*e.g.* @Chuine2001), and pollen shed and cone receptivity are not expected to have additional or more complex triggers or model forms than budburst [@Chuine2013a].
+Pollination phenology determines which populations can exchange genes, but work on predicting the timing of pollen shed and cone receptivity is scarce and coarse.
+Determining the amount of forcing required for a phenological event to occur is rarely done for species that lack economic importance because collecting the data is too much work. When it is done, estimates are often location and population specific. Pollination phenology examples are uncommon for conifers. Simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts. Risto Sarvas's work in Scots pine is a rare exception. [Talk about Sarvas investigations for mechanistic background, why using temperature, etc.] 
 
-Predicting pollination phenology will also have practical benefits. Seed orchard managers in British Columbia are particularly concerned about protandry, when all pollen in an area is shed before cones become receptive (*personal communication, Chris Walsh, Former Seed Orchard Manager, Kalamalka Seed Orchards, February 13, 2013*). 
-Protandry occurs in particularly hot and dry years [@Owens2005]. If this pattern holds, protandry could become more common in natural populations, leaving some populations pollen limited and likely hampering local adaption. [Outcrossing! Inbreeding!]
+@owensReproductiveBiologyLodgepole2006 reports that lodgepole pine pollen shed and cone receptivity occur when degree days reach about 500 at a threshold of 5 $^\circ\mathrm{C}$, but this is the only report of pollination phenology prediction I could find for lodgepole pine and limited details are provided. Models of lodgepole pine vegetative phenology, on the other hand, are better represented in the literature (*e.g.* @Chuine2001), and pollen shed and cone receptivity are not expected to have additional or more complex triggers or model forms than budburst [@Chuine2013a]. Plus I can rely on Sarvas's mechanistic work, which Chuine uses in her work.
+
+Predicting pollination phenology will also have practical benefits. Allergies, SMP
+
+<!--Seed orchard managers in British Columbia are particularly concerned about protandry, when all pollen in an area is shed before cones become receptive (*personal communication, Chris Walsh, Former Seed Orchard Manager, Kalamalka Seed Orchards, February 13, 2013*). 
+Protandry occurs in particularly hot and dry years [@Owens2005]. If this pattern holds, protandry could become more common in natural populations, leaving some populations pollen limited and likely hampering local adaption. [Outcrossing! Inbreeding!] But it looks like this really only happens at the *individual* level and not the *population* level and isn't something I need to be concerned about. -->
 
 This paper relies on 15 year pollination phenology data set collected in British Columbia lodgepole pine seed orchards. Seed orchards produce seed for reforestation. While not set up as common gardens, several provenances are typically represented at each  site allowing testing for provenance effects and genetic x environmental interaction. and genotypes usually appear multiple times within a site and sometimes at multiple sites.
 
@@ -174,7 +176,7 @@ Stages of pollen and seed cone development are described by @owens1984 and updat
 "Flowering" states were recorded for both pollen shed and cone receptivity at the level of each tree. Protocol C recommends marking the dates when 20% of the cones on a tree have begun flowering and when 80% of the cones on a tree have finished flowering. Operationally, there was some subjectivity and tree-level states for each cone type should be interpreted as "starting flowering" and "finished flowering."  
 
 [DESCRIBE SURVEY PERIODS]
-```{r surveys, fig.height=8, echo=FALSE}
+```{r surveys, fig.height=12, echo=FALSE}
 # Index by Site, Provenance, and Year
 dat$spyind <- group_indices(dat, Site, Year, Provenance)
 
@@ -201,7 +203,7 @@ There were some differences in how data was recorded at the Prince George Tree I
 
 I cleaned and harmonized the data for analysis in a single model using R scripts [PROVIDE] so that, for pollen shed and receptivity, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 = finished flowering. 
 
-Phenophases in the field were recorded using different symbol sets and resolutions. I assigned each symbol to one of the three phenophases above. Trees that did not produce cones were assigned phenological stage 0.
+Phenophases in the field were recorded using different symbol sets and resolutions. I assigned each symbol to one of the three phenophases above. The few trees that did not produce cones were assigned phenological stage 0 and were not included in the analysis.
 
 In total, there were `r nrow(phenology_data)` usable observations of phenological state.
 
@@ -226,10 +228,11 @@ kable(phenophase_legend, padding = 0)
 
 #### Weather data
 
-Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ (~ 6km) over northwest North America  [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each site \ref{Sites}. Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures. 
+Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gridded meteorological dataset at 1/16 $^\circ$ (~ 6km) over northwest North America  [@pacificclimateimpactsconsortiumPNWNAmet194520122014]. The closest point in the PNWNAmet grid was used for each site (Fig. \ref{Sites}). Mean daily temperature was calculated as the average of the minimum and maximum daily temperatures. 
 
 Gridpoint data was adjusted using monthly site data. As gridpoints did not align exactly with site locations and there were significant elevation differences between many of the sites and gridpoints, PNWNAmet data did not accurately represent the temperature at sites, so a correction factor was applied. First, mean monthly temperatures for the sites were generated using the ClimateNA v6.20 software package [@wang2016]. Monthly site specific data then was regressed on monthly PNWNAmet data to determine the correction factor for daily PNWNAmet data. 
-[SUPPLEMENTAL PROBABLY]
+
+[MOVE MOST OF THE REST OF THE SECTION TO SUPPLEMENTAL]
 For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package.
 
 $$T = \alpha + \beta t$$
@@ -410,7 +413,7 @@ Receptivity requires more forcing to begin and less to end than pollen shed. [Ad
 
 ## Interpreting Effects: Average Predictive Comparisons
 
-Differences in clone or year cause larger changes in $fstart$ than site or provenance \ref{apcforce}.
+Differences in clone or year cause larger changes in $fstart$ than site or provenance (Fig. \ref{apcforce}).
 
 [FIX FIGURE SO NON-OVERLAPPING]
 
@@ -600,6 +603,12 @@ This means that under climate change, assuming even heat up throughout the winte
 [MAKE SURE TO COVER]
 
 - Reflective analysis of scholarly work and conclusions in light of current knowledge in the field
+
+### Compare heatsum to risto predictions
+The limited reports of forcing required for lodgepole pine pollination use heatsum, typically with a threshold of 5 degrees C. They are difficult to directly compare because threshold not always reported nor is the start date for accumuluation.
+@owensReproductiveBiologyLodgepole2006 reported heatsum of 500 with considerable variation, Wagner and Walsh x to y (Inc.2008). They are in the right ballpark for Walsh and Webber’s numbers (once divided by 24 for right units). However, W&W only start adding up heatsum in the month or so before pollination. I think the numbers are still roughly comparable because the 5 degree threshold in GDD5 calculations means that very little accumulates before then.
+
+When converting observations/model 
 - Comments on significance and contribution
 - Comments on strengths and limitations
 
@@ -648,7 +657,8 @@ Previous models for lodgepole pine have fitted spring growth phenology models wi
 For lodgepole pine growing in natural environments, chilling is always met and should continue to be met under the next century of climate change; 
 in the AdapTree project, lodgepole pine seedlings grown for three to four weeks at 4 $^\circ\mathrm{C}$ met their chilling requirements.
 Thus, I expect to be able to disregard the state of chilling and fit only Equations \ref{forcing} and \ref{simp_force_amt}).
-Once the model is parameterized I will be able to calculate the timing of pollen shed and cone receptivity across the lodgepole pine species range using location specific climate data from seed orchards and ClimateWNA [@Wang2012]. 
+
+
 ## Naive climate change simulation
 
 Climate change isn't evenly distributed across time and space. Use real climate change simulations and more sites.
@@ -662,6 +672,6 @@ Use HPDI in this paper (easy). I'll publish the fstart and fend distributions in
 THE WHOLE RANGE
 
 # Acknowledgements
-Thanks to R. Johnstone for help with transcription. Workers with BC Seed Orchards for collecting such an extraordinary dataset and J. Woods, C. Walsh, R. Wagner, and J.Webber for assistance obtaining and interpreting the historical data. T. Kerr for comments.
+Thanks to R. Johnstone for help with transcription. Workers with BC Seed Orchards for collecting such an extraordinary dataset and J. Woods, C. Walsh, R. Wagner, and J.Webber for assistance obtaining and interpreting the historical data. G. Hoare for technical support. T. Kerr for troubleshooting.
 
 # References
