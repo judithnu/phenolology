@@ -95,3 +95,33 @@ ggplot(filter(forcingrawwide, ristos < 500), aes(x=ristos, y=gdd, group=grouping
 
 ## Model predictions
 My model predicts that flowering will start at around 284 ristos and stop around 426 ristos. In the years/sites I've considered here, 284 ristos is ~140-175 GDD5 and 426 ristos is ~275-320 GDD5.
+
+## Comparison to Walsh and Webber
+In the 2007/2008 Tree Improvement Program report, Webber and Walsh recorded the amount of heatsum accumulated in the prepollination period and then in the pollination period at Orchard 307 within an experimental irrigation block. (Beacon Hill Communications Group Inc, Thomas, K., Douglas, D., 2008. Tree Improvement Program Project Report 2007/2008. Forest Genetics Council of British Columbia, Victoria, B.C.)
+
+The prepollination period is recorded as "mid April to mid May" and the period of pollination as May 15-31. No threshold for the calculation or units are provided, nor is the source of the temperature data. I assume it is an hourly rather than daily calculation.
+
+```{r webberwalsh}
+ww <- read.csv("data/comparator/webberwalsh_heatsum.csv", stringsAsFactors = FALSE, header = TRUE)
+wwday <- ww %>%
+    dplyr::mutate(Heatsum_prepollination = Heatsum_prepollination/24) %>%
+    dplyr::mutate(Heatsum_pollination = Heatsum_pollination/24) %>%
+    dplyr::mutate(Heatsum_total = Heatsum_prepollination + Heatsum_pollination)
+
+
+```
+
+Are gdd5 in those years comparable to gdd calculated at that site and in those years?
+
+April 15 is day 105
+May 15 is day 135
+May 30 is day 150
+
+Give or take a day for leap years.
+
+```{r}
+
+kalforcing <- forcingraw %>%
+    dplyr::filter(Site=="Kalamalka", forcing_type=="gdd", DoY=="")
+```
+
