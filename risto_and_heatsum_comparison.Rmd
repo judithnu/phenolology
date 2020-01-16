@@ -22,19 +22,22 @@ library(dplyr)
 So, how do scaled ristos and ristos compare to growing degree days with a threshold of 5°C during the measured lodgepole pine flowering period at all orchards across all years of measurement? And how does it compare to Owens' estimate of 500 degree GDD5 threshold or the numbers Walsh and Webber have?
 
 ```{r data}
-forcingraw <- read.csv("data/all_clim_PCIC.csv") %>%
+forcingraw <- read.csv("data/all_clim_PCIC.csv")
+    
+sumforcingraw <- forcingraw %>%
     select(-mean_temp, -forcing)
+
 phenology <- read.csv("data/phenology_heatsum_all.csv") %>%
     filter(Phenophase_Derived==2)
 
 # df of flowering data with associated forcing
 floweringforcing <- select(phenology, DoY, Sex, Year, Site, Date) %>%
-    left_join(forcingraw) %>%
+    left_join(sumforcingraw) %>%
     distinct()
 
 
 # wide format for some plots
-forcingrawwide <- forcingraw %>%
+forcingrawwide <- sumforcingraw %>%
     pivot_wider(names_from = forcing_type, values_from = sum_forcing)
 
 floweringforcingwide <- pivot_wider(floweringforcing, names_from = forcing_type, values_from = sum_forcing)
@@ -43,7 +46,7 @@ floweringforcingwide <- pivot_wider(floweringforcing, names_from = forcing_type,
 floweringforcing$grouping <- group_indices(floweringforcing, Sex, Year, Site, forcing_type)
 floweringforcingwide$grouping <- group_indices(floweringforcingwide, Sex, Year, Site)
 
-forcingraw$grouping <- group_indices(forcingraw, Site, Year, forcing_type)
+sumforcingraw$grouping <- group_indices(sumforcingraw, Site, Year, forcing_type)
 forcingrawwide$grouping <- group_indices(forcingrawwide, Site, Year)
 ```
 
@@ -51,7 +54,7 @@ First, how do ristos and gdd accumulate throughout the year?
 
 ```{r ristos and gdd}
 
-ggplot(forcingraw, aes(x=DoY, y=sum_forcing, group=grouping, color=forcing_type)) +
+ggplot(sumforcingraw, aes(x=DoY, y=sum_forcing, group=grouping, color=forcing_type)) +
     geom_line(alpha=0.5) +
     scale_color_viridis_d(option="A") +
     ggtitle("Accumulation of forcing units throughout the year", subtitle = "All seed orchard sites, years 1997-2011")
@@ -108,9 +111,103 @@ wwday <- ww %>%
     dplyr::mutate(Heatsum_pollination = Heatsum_pollination/24) %>%
     dplyr::mutate(Heatsum_total = Heatsum_prepollination + Heatsum_pollination)
 
+kal <- forcingraw %>%
+    filter(Site=="Kalamalka" & Year %in% c(2000:2007) & forcing_type=="gdd" & DoY %in% c(106:151)) %>%
+    group_by(Year) %>%
+    mutate(sum_forcing = cumsum(forcing))
+
+presums <- kal %>%
+    group_by(Year) %>%
+    filter(DoY < 137) %>%
+    summarise(Heatsum_prepollination = sum(forcing))
+
+
+polsums <- kal %>%
+    group_by(Year) %>%
+    filter(DoY > 137) %>%
+    summarise(Heatsum_pollination = sum(forcing))
+
+may30 <- kal %>%
+    group_by(Year) %>%
+    summarise(Heatsum_total = sum(forcing))
+
+
+pcicsums <- data.frame(source = "PCIC", 
+                       Year=presums$Year, 
+                       Heatsum_prepollination=presums$Heatsum_prepollination, 
+                       Heatsum_pollination=polsums$Heatsum_pollination,
+                       Heatsum_total=may30$Heatsum_total)
+
+pcicsums <- pivot_longer(pcicsums, cols=starts_with("Heatsum"), names_to = "time", values_to="GDD5")
+
+wwday <- wwday %>%
+    mutate(source="ww") %>%
+    pivot_longer(cols=starts_with("Heatsum"), names_to = "time", values_to="GDD5")
+
+#Heatsums calculated for between 4/15 and 5/15, 5/15 and 5/30, and 4/14 and 5/30 using PCIC data and also the numbers reported by Walsh and Webber
+compframe <- full_join(pcicsums, wwday) %>%
+    pivot_wider(names_from = source, values_from = GDD5) 
+
+kalflowering <- floweringforcing %>%
+    filter(Year %in% 2000:2007 & Site=="Kalamalka" & forcing_type=="gdd") %>%
+    select(DoY, Sex, Year, Site) %>%
+    left_join(kal)
+    
+
+ggplot(compframe, aes(x=PCIC, y=ww, color=time)) +
+    geom_point() +
+    geom_abline() +
+    ggtitle("Differences between PCIC and Walsh GDD5 calcs")
+
+clong <- full_join(pcicsums, wwday) #same as compframe but long
+
+ggplot(clong, aes(x=Year, y=GDD5, color=source)) +
+    geom_point(pch=1) +
+    geom_line() +
+    geom_point(data=kalflowering, aes(x=Year, y=sum_forcing), inherit.aes = FALSE) +
+    facet_grid(time ~ Sex) +
+    ggtitle("GDD5 on certain dates and during active pollination period", subtitle = "PCIC and Walsh data, between 4/15 and 5/15, 5/15 and 5/30, and 4/14 and 5/30")
 
 ```
 
+```{r variance in ristos v gdd}
+floweringforcing$siteyear <- group_indices(floweringforcing, Site, Year)
+floweringforcing <- filter(floweringforcing, !forcing_type=="scaled_ristos")
+
+ggplot(floweringforcing, aes(x=as.factor(siteyear), y=sum_forcing, color=forcing_type)) +
+    geom_violin() +
+    facet_wrap("Sex")
+
+floweringvar <- floweringforcing %>%
+    group_by(siteyear, Sex, forcing_type) %>%
+    summarise(sd = sd(sum_forcing), mean=mean(sum_forcing))
+
+wfloweringvar <- pivot_wider(floweringvar, names_from = forcing_type, values_from = c(sd, mean))
+
+ggplot(wfloweringvar, aes(x=sd_ristos, y=sd_gdd) ) +
+    geom_point() +
+    geom_abline() +
+    facet_wrap("Sex")
+
+ggplot(wfloweringvar, aes(x=mean_ristos, mean_gdd)) +
+    geom_point() +
+    geom_abline() +
+    facet_wrap("Sex") +
+    ggtitle("mean forcing during flowering period")
+
+ggplot(floweringforcing, aes(x=DoY, y=sum_forcing, group=grouping, linetype=forcing_type, color=Site)) +
+    geom_line() +
+    facet_grid(Sex ~ Year)
+
+ggplot(floweringforcing, aes(x=sum_forcing, color=forcing_type)) +
+    geom_density() +
+    facet_wrap("Sex")
+
+ggplot(floweringforcingwide, aes(x=ristos, y=gdd)) +
+    geom_point()
+
+
+```
 Are gdd5 in those years comparable to gdd calculated at that site and in those years?
 
 April 15 is day 105
