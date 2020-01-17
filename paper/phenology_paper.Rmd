@@ -641,6 +641,6 @@ Once the model is parameterized I will be able to calculate the timing of pollen
 ## Future directions
 
 # Acknowledgements
-Thanks to R. Johnstone for help with transcription. Workers with BC Seed Orchards for collecting such an extraordinary dataset and J. Woods, C. Walsh, R. Wagner, and J.Webber for assistance obtaining and interpreting the historical data. GySgt T. Kerr, Ret. provided invaluable commentary on an earlier draft.
+Thanks to R. Johnstone for help with transcription. Workers with BC Seed Orchards for collecting such an extraordinary dataset and J. Woods, C. Walsh, R. Wagner, and J.Webber for assistance obtaining and interpreting the historical data. A. Elbakyan for background and resources. GySgt T. Kerr, Ret. provided invaluable commentary on an earlier draft.
 
 # References
