@@ -6,8 +6,8 @@ sex <- "FEMALE"
 #sex <- "MALE"
 
 forcingtype = "scaled_ristos"
-
 test = FALSE
+model = "phenology_dirichlet.stan"
 
 
 # Dependencies and options ##################
@@ -96,7 +96,7 @@ rdump <- read_rdump(paste("data/stan_input/", sex, ".rdump", sep=""))
 # Fit model  #############
 if (test==TRUE)
 {
-  test <- stan("phenology_deeper_noncentered.stan",
+  test <- stan(model,
                model_name = paste("test", Sys.Date(), sex, forcingtype, sep="_"),
                data = rdump,
                pars = c( "z_year", "phi"), include=FALSE,
@@ -104,14 +104,14 @@ if (test==TRUE)
                save_dso=FALSE
   ) # quick check for small problems
 } else {
-  fit <- stan("phenology_deeper_noncentered.stan",
+  fit <- stan(model,
               model_name = paste(Sys.Date(), sex, "phenology", forcingtype, sep="_"),
               data = rdump,
               pars = c( "phi"), include=FALSE,
-              chains = 4, cores = 4, warmup = 1000, iter = 4500#,
+              chains = 5, cores = 5 #, warmup = 1000, iter = 4500#,
               #control = list(max_treedepth = 14, adapt_delta = .9),
   )
 
-  saveRDS(fit, file = paste(Sys.Date(), "phenology", sex, ".rds", sep=''))
+  saveRDS(fit, file = paste(Sys.Date(), "phenology_dirichlet", sex, ".rds", sep=''))
 }
 
