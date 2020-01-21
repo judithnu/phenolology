@@ -677,6 +677,8 @@ Use HPDI in this paper (easy). I'll publish the fstart and fend distributions in
 THE WHOLE RANGE
 
 # Acknowledgements
-Thanks to R. Johnstone for help with transcription. Workers with BC Seed Orchards for collecting such an extraordinary dataset and J. Woods, C. Walsh, R. Wagner, and J.Webber for assistance obtaining and interpreting the historical data. G. Hoare for technical support. T. Kerr for troubleshooting.
+
+Thanks to R. Johnstone for help with transcription. Workers with BC Seed Orchards for collecting such an extraordinary dataset and J. Woods, C. Walsh, R. Wagner, and J.Webber for assistance obtaining and interpreting the historical data. A. Elbakyan for background and resources. G. Hoare for technical support. T. Kerr for troubleshooting.
+
 
 # References

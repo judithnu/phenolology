@@ -7,7 +7,8 @@ library(bayesplot)
 # MODEL DATA #####################
 
 
-ffit.stan <- readRDS("2019-10-28phenologyFEMALE.rds")
+#ffit.stan <- readRDS("2019-10-28phenologyFEMALE.rds")
+ffit.stan <- readRDS("2020-01-20phenology_dirichletFEMALE.rds")
 mfit.stan <- readRDS("2019-10-28phenologyMALE.rds")
 
 
