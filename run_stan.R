@@ -108,8 +108,8 @@ if (test==TRUE)
               model_name = paste(Sys.Date(), sex, "phenology", forcingtype, sep="_"),
               data = rdump,
               pars = c( "phi"), include=FALSE,
-              chains = 5, cores = 5 #, warmup = 1000, iter = 4500#,
-              #control = list(max_treedepth = 14, adapt_delta = .9),
+              chains = 5, cores = 5,
+              control = list(max_treedepth = 12),
   )
 
   saveRDS(fit, file = paste(Sys.Date(), "phenology_dirichlet", sex, ".rds", sep=''))

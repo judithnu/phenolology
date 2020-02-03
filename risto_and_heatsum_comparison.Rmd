@@ -13,7 +13,7 @@ Reports by Joe Webber and Chris Walsh report temperature sums as well, but it's 
 ![](webberwalsh2008.png)
 When is the start date for the heatsum calculation? What's the threshold? Is it daily or hourly? Text makes me think it's just the heating that has accumulated in the month before the pollination period and then during the pollination period. Size makes me think it's hourly sums.
 
-```{r libraries}
+```{r depends, include=FALSE}
 library(tidyr)
 library(ggplot2)
 library(dplyr)
@@ -22,15 +22,15 @@ library(dplyr)
 So, how do scaled ristos and ristos compare to growing degree days with a threshold of 5°C during the measured lodgepole pine flowering period at all orchards across all years of measurement? And how does it compare to Owens' estimate of 500 degree GDD5 threshold or the numbers Walsh and Webber have?
 
 ```{r data}
-forcingraw <- read.csv("data/all_clim_PCIC.csv")
+forcingraw <- read.csv("data/all_clim_PCIC.csv") # all mean temp and forcing data. all sites, years, days, and forcing types
     
 sumforcingraw <- forcingraw %>%
-    select(-mean_temp, -forcing)
+    select(-mean_temp, -forcing) # keep only accumulated forcing
 
 phenology <- read.csv("data/phenology_heatsum_all.csv") %>%
-    filter(Phenophase_Derived==2)
+    filter(Phenophase_Derived==2) # get phenology data with accumulated forcing for flowering only, but all forcing_types
 
-# df of flowering data with associated forcing
+# df of flowering data with associated forcing (I think this is unncessary - can't i just use phenology dataset here?)
 floweringforcing <- select(phenology, DoY, Sex, Year, Site, Date) %>%
     left_join(sumforcingraw) %>%
     distinct()
