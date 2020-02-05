@@ -32,6 +32,19 @@ library(bayesplot)
 library(tidyverse)
 ```
 
+```{r captions, echo=FALSE}
+# table_captions <- captioner::captioner(prefix="Tab.")
+# figure_captions <- captioner::captioner(prefix="Fig.")
+# 
+# t.ref <- function(label){
+#   stringr::str_extract(table_captions(label), "[^:]*")
+# }
+# 
+# f.ref <- function(label){
+#   stringr::str_extract(figure_captions(label), "[^:]*")
+# }
+```
+
 ```{r data, echo=FALSE, warning=FALSE}
 # combined phenology and weather data 
 phenology_data <- read.csv("../data/phenology_heatsum_all.csv", header=TRUE, stringsAsFactors = FALSE) %>%
@@ -163,7 +176,7 @@ I obtained pollination phenology records from 17 of the 26 lodgepole pine seed o
 
 Parents of trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs) (Fig. \ref{SPU}). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
-Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Figure \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone; PGTIS typically observed 2-4 ramets per clone.
+Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Tab. \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone; PGTIS typically observed 2-4 ramets per clone.
 
 ![Contingency table of years of data for Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](../../phd/phd_proposal/figure/contingencytable.png)
 

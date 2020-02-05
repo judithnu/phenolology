@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.6.8)  3 FEB 2020 09:22
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.6.8)  4 FEB 2020 07:28
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -899,357 +899,348 @@ File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 ) [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2]
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 247.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 242.
 
 (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 247.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 242.
 
 (/usr/share/texmf/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 247
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 242
 .
 (/usr/share/texmf/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 247
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 242
 .
 (/usr/share/texmf/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 247.
+(Font)              <10> on input line 242.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 247.
+(Font)              <7> on input line 242.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 247.
-LaTeX Font Info:    Try loading font information for U+msa on input line 247.
+(Font)              <5> on input line 242.
+LaTeX Font Info:    Try loading font information for U+msa on input line 242.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 ) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 247.
+LaTeX Font Info:    Try loading font information for U+msb on input line 242.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msb.cfg
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 ) [3] [4]
-<../../phd/maps/SpeciesDistribution/distmap_pincon.png, id=152, 949.3869pt x 50
+<../../phd/maps/SpeciesDistribution/distmap_pincon.png, id=153, 949.3869pt x 50
 8.7808pt>
 File: ../../phd/maps/SpeciesDistribution/distmap_pincon.png Graphic file (type 
 png)
 <use ../../phd/maps/SpeciesDistribution/distmap_pincon.png>
 Package pdftex.def Info: ../../phd/maps/SpeciesDistribution/distmap_pincon.png 
- used on input line 347.
+ used on input line 342.
 (pdftex.def)             Requested size: 344.99503pt x 184.88441pt.
 [5 <../../phd/maps/SpeciesDistribution/distmap_pincon.png (PNG copy)>]
-<../../phd/maps/SiteMaps/sitemapwithPCIC.png, id=162, 1003.75pt x 803.0pt>
+<../../phd/maps/SiteMaps/sitemapwithPCIC.png, id=163, 1003.75pt x 803.0pt>
 File: ../../phd/maps/SiteMaps/sitemapwithPCIC.png Graphic file (type png)
 <use ../../phd/maps/SiteMaps/sitemapwithPCIC.png>
 Package pdftex.def Info: ../../phd/maps/SiteMaps/sitemapwithPCIC.png  used on i
-nput line 389.
+nput line 384.
 (pdftex.def)             Requested size: 345.00758pt x 276.00607pt.
-
-LaTeX Warning: Reference `tab:contingency' on page 6 undefined on input line 40
-9.
-
-<../../phd/phd_proposal/figure/contingencytable.png, id=165, 803.0pt x 351.3125
+[6 <../../phd/maps/SiteMaps/sitemapwithPCIC.png>]
+<../../phd/phd_proposal/figure/contingencytable.png, id=175, 803.0pt x 351.3125
 pt>
 File: ../../phd/phd_proposal/figure/contingencytable.png Graphic file (type png
 )
 <use ../../phd/phd_proposal/figure/contingencytable.png>
 Package pdftex.def Info: ../../phd/phd_proposal/figure/contingencytable.png  us
-ed on input line 415.
+ed on input line 411.
 (pdftex.def)             Requested size: 345.00146pt x 150.93813pt.
-
-Overfull \hbox (60.30145pt too wide) in paragraph at lines 414--417
-[]\T1/lmr/m/n/10 (-20) \begin{table} []
- []
-
-[6] [7 <../../phd/maps/SiteMaps/sitemapwithPCIC.png>]
-<../../phd/maps/SPUmaps/SPUmap_subset.png, id=183, 803.0pt x 602.25pt>
+<../../phd/maps/SPUmaps/SPUmap_subset.png, id=176, 803.0pt x 602.25pt>
 File: ../../phd/maps/SPUmaps/SPUmap_subset.png Graphic file (type png)
 <use ../../phd/maps/SPUmaps/SPUmap_subset.png>
 Package pdftex.def Info: ../../phd/maps/SPUmaps/SPUmap_subset.png  used on inpu
-t line 420.
+t line 421.
 (pdftex.def)             Requested size: 345.00146pt x 258.75108pt.
-[8 <../../phd/maps/SPUmaps/SPUmap_subset.png (PNG copy)> <../../phd/phd_proposa
-l/figure/contingencytable.png>]
-<phenology_paper_files/figure-latex/surveys-1.pdf, id=190, 469.755pt x 867.24pt
+[7 <../../phd/phd_proposal/figure/contingencytable.png>] [8 <../../phd/maps/SPU
+maps/SPUmap_subset.png (PNG copy)>]
+<phenology_paper_files/figure-latex/surveys-1.pdf, id=192, 469.755pt x 867.24pt
 >
 File: phenology_paper_files/figure-latex/surveys-1.pdf Graphic file (type pdf)
 <use phenology_paper_files/figure-latex/surveys-1.pdf>
 Package pdftex.def Info: phenology_paper_files/figure-latex/surveys-1.pdf  used
- on input line 462.
+ on input line 463.
 (pdftex.def)             Requested size: 297.93272pt x 550.02965pt.
 
-Overfull \hbox (100.99207pt too wide) in paragraph at lines 461--463
+Overfull \hbox (100.99207pt too wide) in paragraph at lines 462--464
 []\T1/lmr/m/n/10 (-20) [DESCRIBE SUR-VEY PE-RI-ODS] [] 
  []
 
 [9] [10 <./phenology_paper_files/figure-latex/surveys-1.pdf>]
-Overfull \hbox (82.8335pt too wide) in alignment at lines 495--499
+Overfull \hbox (82.8335pt too wide) in alignment at lines 496--500
  [] [] [] [] 
  []
 
 
-Overfull \hbox (82.8335pt too wide) in alignment at lines 499--507
+Overfull \hbox (82.8335pt too wide) in alignment at lines 500--508
  [] [] [] [] 
  []
 
 [11]
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []          \T1/lmtt/m/n/10 Site             term estimate std.error statistic 
 p.value[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 1    Kalamalka      (Intercept)     0.21      0.04      5.34 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 2    Kalamalka meantempgridPCIC     0.98         0    304.64 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 3  KettleRiver      (Intercept)     1.04      0.06     18.64 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 4  KettleRiver meantempgridPCIC     1.04      0.01     183.7 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 5        PGTIS      (Intercept)     0.32      0.03      9.75 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 6        PGTIS meantempgridPCIC     0.99         0    285.54 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 7          PRT      (Intercept)     0.37      0.04     10.13 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 8          PRT meantempgridPCIC     0.98         0    307.25 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 9     Sorrento      (Intercept)     1.97      0.04      44.2 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 10    Sorrento meantempgridPCIC        1         0    217.47 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 11       Tolko      (Intercept)    -0.02      0.03     -0.47 
    0.64[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 12       Tolko meantempgridPCIC     0.97         0    319.76 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 13      Vernon      (Intercept)      0.2      0.04      5.22 
 < 0.001[] 
  []
 
 
-Overfull \hbox (11.99896pt too wide) in paragraph at lines 557--557
+Overfull \hbox (11.99896pt too wide) in paragraph at lines 558--558
 []\T1/lmtt/m/n/10 14      Vernon meantempgridPCIC     0.98         0    299.35 
 < 0.001[] 
  []
 
 [12]
-Overfull \hbox (36.67464pt too wide) detected at line 611
+Overfull \hbox (36.67464pt too wide) detected at line 612
 []\OT1/lmr/m/n/10 (\OML/lmm/m/it/10 S \OT1/lmr/m/n/10 = \OML/lmm/m/it/10 s\OT1/
 lmr/m/n/10 ) = [](\OML/lmm/m/it/10 s []\OMS/lmsy/m/n/10 j []\OML/lmm/m/it/10 ^^
 Q; ^^T\OT1/lmr/m/n/10 ) = []
  []
 
 [13] [14] [15]
-<../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png, id=252, 731.73375pt x 
+<../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png, id=253, 731.73375pt x 
 490.83376pt>
 File: ../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png Graphic file (type
  png)
 <use ../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png
-  used on input line 734.
+  used on input line 735.
 (pdftex.def)             Requested size: 344.99794pt x 231.41837pt.
-<../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png, id=253, 692.5875pt
+<../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png, id=254, 692.5875pt
  x 386.94562pt>
 File: ../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png Graphic file (
 type png)
 <use ../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-10-28ppcstatesexprop
-.png  used on input line 741.
+.png  used on input line 742.
 (pdftex.def)             Requested size: 345.0036pt x 192.752pt.
-<../../phd/LabNotebook/images/2019-10-28ppcsite.png, id=254, 692.5875pt x 386.9
+<../../phd/LabNotebook/images/2019-10-28ppcsite.png, id=255, 692.5875pt x 386.9
 4562pt>
 File: ../../phd/LabNotebook/images/2019-10-28ppcsite.png Graphic file (type png
 )
 <use ../../phd/LabNotebook/images/2019-10-28ppcsite.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-10-28ppcsite.png  us
-ed on input line 761.
+ed on input line 762.
 (pdftex.def)             Requested size: 345.0036pt x 192.752pt.
-<../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png, id=255, 692.5875p
+<../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png, id=256, 692.5875p
 t x 386.94562pt>
 File: ../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png Graphic file 
 (type png)
 <use ../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-10-28ppcstatesexcoun
-t.png  used on input line 771.
+t.png  used on input line 772.
 (pdftex.def)             Requested size: 345.0036pt x 192.752pt.
 [16 <../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png (PNG copy)>] [17 <.
 ./../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png (PNG copy)> <../../ph
 d/LabNotebook/images/2019-10-28ppcsite.png (PNG copy)>] [18 <../../phd/LabNoteb
 ook/images/2019-10-28ppcstatesexcount.png (PNG copy)>]
-<../../phd/LabNotebook/images/2019-11-25_forcingstartend.png, id=275, 721.19438
+<../../phd/LabNotebook/images/2019-11-25_forcingstartend.png, id=276, 721.19438
 pt x 602.25pt>
 File: ../../phd/LabNotebook/images/2019-11-25_forcingstartend.png Graphic file 
 (type png)
 <use ../../phd/LabNotebook/images/2019-11-25_forcingstartend.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-11-25_forcingstarten
-d.png  used on input line 878.
+d.png  used on input line 879.
 (pdftex.def)             Requested size: 344.99188pt x 288.09343pt.
 [19]
-<../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png, id=295, 6
+<../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png, id=296, 6
 18.81187pt x 435.12563pt>
 File: ../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png Graph
 ic file (type png)
 <use ../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-11-13_apc_forcing_sp
-acedyears.png  used on input line 893.
+acedyears.png  used on input line 894.
 (pdftex.def)             Requested size: 345.01207pt x 242.59973pt.
 [20 <../../phd/LabNotebook/images/2019-11-25_forcingstartend.png (PNG copy)>]
-<../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png, id=305, 715.
+<../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png, id=306, 715.
 17188pt x 526.96875pt>
 File: ../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png Graphic 
 file (type png)
 <use ../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-11-13_apc_days_space
-dyears.png  used on input line 906.
+dyears.png  used on input line 907.
 (pdftex.def)             Requested size: 345.00279pt x 254.21259pt.
-<../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png, id=306, 602.25pt x 45
+<../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png, id=307, 602.25pt x 45
 1.6875pt>
 File: ../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png Graphic file (typ
 e png)
 <use ../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.pn
-g  used on input line 938.
+g  used on input line 939.
 (pdftex.def)             Requested size: 345.0137pt x 258.76027pt.
 [21 <../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png (PNG c
 opy)>] [22 <../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png (P
 NG copy)>]
-<../../phd/LabNotebook/images/2019-11-28_lengthindays.png, id=320, 677.53125pt 
+<../../phd/LabNotebook/images/2019-11-28_lengthindays.png, id=321, 677.53125pt 
 x 451.6875pt>
 File: ../../phd/LabNotebook/images/2019-11-28_lengthindays.png Graphic file (ty
 pe png)
 <use ../../phd/LabNotebook/images/2019-11-28_lengthindays.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-11-28_lengthindays.p
-ng  used on input line 948.
+ng  used on input line 949.
 (pdftex.def)             Requested size: 345.00911pt x 230.00607pt.
 [23 <../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png (PNG copy)>]
-<../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png, id=327, 6
+<../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png, id=328, 6
 02.25pt x 451.6875pt>
 File: ../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png Graph
 ic file (type png)
 <use ../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png>
 Package pdftex.def Info: ../../phd/LabNotebook/images/2019-11-28_receptivityove
-rlap_warm.png  used on input line 967.
+rlap_warm.png  used on input line 968.
 (pdftex.def)             Requested size: 345.0137pt x 258.76027pt.
 [24 <../../phd/LabNotebook/images/2019-11-28_lengthindays.png (PNG copy)>] [25 
 <../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png (PNG copy)
 >]
-<../../phd/phd_proposal/figure/Liepe_phen_corr.png, id=343, 1175.39125pt x 373.
+<../../phd/phd_proposal/figure/Liepe_phen_corr.png, id=344, 1175.39125pt x 373.
 395pt>
 File: ../../phd/phd_proposal/figure/Liepe_phen_corr.png Graphic file (type png)
 
 <use ../../phd/phd_proposal/figure/Liepe_phen_corr.png>
 Package pdftex.def Info: ../../phd/phd_proposal/figure/Liepe_phen_corr.png  use
-d on input line 1020.
+d on input line 1021.
 (pdftex.def)             Requested size: 344.99773pt x 109.5979pt.
 [26 <../../phd/phd_proposal/figure/Liepe_phen_corr.png>] [27] [28]
-<../../phd/phd_proposal/figure/climate.png, id=366, 803.0pt x 412.54124pt>
+<../../phd/phd_proposal/figure/climate.png, id=367, 803.0pt x 412.54124pt>
 File: ../../phd/phd_proposal/figure/climate.png Graphic file (type png)
 <use ../../phd/phd_proposal/figure/climate.png>
 Package pdftex.def Info: ../../phd/phd_proposal/figure/climate.png  used on inp
-ut line 1180.
+ut line 1181.
 (pdftex.def)             Requested size: 345.00146pt x 177.24449pt.
 
-LaTeX Warning: Reference `forcing' on page 29 undefined on input line 1199.
+LaTeX Warning: Reference `forcing' on page 29 undefined on input line 1200.
 
 
-LaTeX Warning: Reference `simp_force_amt' on page 29 undefined on input line 11
-99.
+LaTeX Warning: Reference `simp_force_amt' on page 29 undefined on input line 12
+00.
 
 [29 <../../phd/phd_proposal/figure/climate.png>] [30]
-Underfull \hbox (badness 1924) in paragraph at lines 1316--1321
+Underfull \hbox (badness 1924) in paragraph at lines 1317--1322
 \T1/lmr/m/n/10 (+20) mate Change on Ecosys-tem and Tree Species Dis-tri-bu-tion
  in British
  []
 
 
-Underfull \hbox (badness 1377) in paragraph at lines 1316--1321
+Underfull \hbox (badness 1377) in paragraph at lines 1317--1322
 \T1/lmr/m/n/10 (+20) Columbia.'' \T1/lmr/m/it/10 (+20) Ecol-ogy \T1/lmr/m/n/10 
 (+20) 87 (11): 2773--86. []https://doi.org/10.1890/0012-
  []
 
 [31] [32]
-Underfull \hbox (badness 2150) in paragraph at lines 1419--1425
+Underfull \hbox (badness 2150) in paragraph at lines 1420--1426
 \T1/lmr/m/n/10 (+20) An Im-proved $\wide-hat{}R{}$ for As-sess-ing Con-ver-genc
 e of MCMC.''
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1450.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1451.
 [33]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1450.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1451.
 (./phenology_paper.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1450.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1450.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1451.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1451.
 
 Package rerunfilecheck Info: File `phenology_paper.out' has not changed.
 (rerunfilecheck)             Checksum: 8218050876FF2D73D04BB42EBDCA144A;5106.
 
 LaTeX Warning: There were undefined references.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1450.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1451.
  ) 
 Here is how much of TeX's memory you used:
  12448 strings out of 494923
- 182799 string characters out of 6180743
- 268123 words of memory out of 5000000
- 15285 multiletter control sequences out of 15000+600000
+ 182787 string characters out of 6180743
+ 268125 words of memory out of 5000000
+ 15284 multiletter control sequences out of 15000+600000
  58782 words of font info for 107 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  32i,9n,38p,767b,379s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -1267,10 +1258,10 @@ lmr7.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/f
 onts/type1/public/lm/lmri12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.
 pfb></usr/share/texmf/fonts/type1/public/lm/lmsy7.pfb></usr/share/texmf/fonts/t
 ype1/public/lm/lmtt10.pfb>
-Output written on phenology_paper.pdf (33 pages, 5181734 bytes).
+Output written on phenology_paper.pdf (33 pages, 5181845 bytes).
 PDF statistics:
- 560 PDF objects out of 1000 (max. 8388607)
- 484 compressed objects within 5 object streams
- 186 named destinations out of 1000 (max. 500000)
+ 562 PDF objects out of 1000 (max. 8388607)
+ 486 compressed objects within 5 object streams
+ 187 named destinations out of 1000 (max. 500000)
  10558 words of extra memory for PDF output out of 12000 (max. 10000000)
 
