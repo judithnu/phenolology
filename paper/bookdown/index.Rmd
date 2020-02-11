@@ -11,11 +11,16 @@ link-citations: yes
 fontsize: 12pt
 description: "This paper describes a model of pollination phenology"
 ---
-# Figure references
+# Figure captions
 
 (ref:rangemap) Rangemap of lodgepole pine. After @Little1971
 
 (ref:sitemap) Map of seed orchard locations. Seed orchard locations are in red. Weather data gridpoints are in blue. Boxed area in map on left is shown in greater detail on the right.
+
+(ref:spu) Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands.
+
+# Table captions
+(ref:phenophasederivation)
 
 ```{r include=FALSE}
 # automatically create a bib database for R packages
@@ -119,20 +124,24 @@ For example, populations from both northern interior British Columbia and northe
 Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@rehfeldt1983]. [Summarize/cite adaptree work]
 
 
-
-Pollen is an important vector for identifying gene flow in lodgepole pine because outcrossing is common, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. There is evidence for spatially varying levels of gene flow in the species as populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006]. Pollination phenology could control this. 
+Pollen is an important vector for identifying gene flow in lodgepole pine because outcrossing is common, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. 
+There is evidence for spatially varying levels of gene flow in the species as populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006]. 
+Pollination phenology could control this. 
 
 Pollination phenology determines which populations can exchange genes, but work on predicting the timing of pollen shed and cone receptivity is scarce and coarse.
-Determining the amount of forcing required for a phenological event to occur is rarely done for species that lack economic importance because collecting the data is too much work. When it is done, estimates are often location and population specific. Pollination phenology examples are uncommon for conifers. Simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts. Risto Sarvas's work in Scots pine is a rare exception. [Talk about Sarvas investigations for mechanistic background, why using temperature, etc.] 
+Determining the amount of forcing required for a phenological event to occur is rarely done for species that lack economic importance because collecting the data is too much work. 
+When it is done, estimates are often location and population specific. Pollination phenology examples are uncommon for conifers. Simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts. Risto Sarvas's work in Scots pine is a rare exception. [Talk about Sarvas investigations for mechanistic background, why using temperature, etc.] 
 
 @owensReproductiveBiologyLodgepole2006 reports that lodgepole pine pollen shed and cone receptivity occur when degree days reach about 500 at a threshold of 5 $^\circ\mathrm{C}$, but this is the only report of pollination phenology prediction we could find for lodgepole pine and limited details are provided. Models of lodgepole pine vegetative phenology, on the other hand, are better represented in the literature (*e.g.* @Chuine2001), and pollen shed and cone receptivity are not expected to have additional or more complex triggers or model forms than budburst [@Chuine2013a]. Plus we can rely on Sarvas's mechanistic work, which Chuine uses in her work.
 
-Predicting pollination phenology will also have practical benefits. Allergies, SMP
+Predicting pollination phenology will also have practical benefits. SMP
 
 <!--Seed orchard managers in British Columbia are particularly concerned about protandry, when all pollen in an area is shed before cones become receptive (*personal communication, Chris Walsh, Former Seed Orchard Manager, Kalamalka Seed Orchards, February 13, 2013*). 
 Protandry occurs in particularly hot and dry years [@Owens2005]. If this pattern holds, protandry could become more common in natural populations, leaving some populations pollen limited and likely hampering local adaption. [Outcrossing! Inbreeding!] But it looks like this really only happens at the *individual* level and not the *population* level and isn't something I need to be concerned about. -->
 
-This paper relies on 15 year pollination phenology data set collected in British Columbia lodgepole pine seed orchards. Seed orchards produce seed for reforestation. While not set up as common gardens, several provenances are typically represented at each  site allowing testing for provenance effects and genetic x environmental interaction. and genotypes usually appear multiple times within a site and sometimes at multiple sites.
+This paper relies on 15 year pollination phenology data set collected in British Columbia lodgepole pine seed orchards. 
+Seed orchards produce seed for reforestation. 
+While not set up as common gardens, several provenances are typically represented at each  site allowing testing for provenance effects and genetic x environmental interaction. and genotypes usually appear multiple times within a site and sometimes at multiple sites.
 
 We use pollination phenology and temperature data to fit a model predicting pollen shed and cone receptivity in *Pinus contorta* var. *latifolia*.
 
@@ -142,13 +151,13 @@ Specifically, we answer 1) What is the relationship between temperature and poll
 
 # Methods
 
-My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. To determine the timing of pollen shed and cone receptivity, we modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. We then compared the overlap in flowering periods between males and females across sites.
+My aim was to model pollination phenology in lodgepole pine and calculate synchrony across the distribution. 
+To determine the timing of pollen shed and cone receptivity, we modeled the forcing requirements for pollination phenology in lodgepole pine and investigated differences in forcing requirements between males and females and among provenances. 
+We then compared the overlap in flowering periods between males and females across sites.
 
 ## Study species
 
 Lodgepole pine is a wind-pollinated monecious conifer with an extensive range and well documented local adaptation [CITE]. While lodgepole pine has four subspecies, this work concerns only *Pinus contorta* subsp. *latifolia*. Pollen and seed cone buds differentiate in late summer and early fall, then go dormant. As temperatures warm the following year, buds resume development and strobili "flower"; receptive female strobili exude pollination drops between bracts that capture pollen shed from mature male strobili.
-
-
 
 ```{r rangemap, fig.cap='(ref:rangemap)', out.width='100%', echo=FALSE}
 knitr::include_graphics('../../../phd/maps/SpeciesDistribution/distmap_pincon.png')
@@ -174,14 +183,15 @@ knitr::include_graphics('../../../phd/maps/SiteMaps/sitemapwithPCIC.png')
 <!--
 I obtained pollination phenology records from 17 of the 26 lodgepole pine seed orchards in British Columbia. Thirteen out of 17 orchards in my data set are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.-->
 
-Parents of trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs) (Fig. \ref{SPU}). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
+Parents of trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs) (Fig. \@ref{spu}). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
 Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Tab. \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone; PGTIS typically observed 2-4 ramets per clone.
 
 ![Contingency table of years of data for Seed Planning Units (rows) and Seed Orchard Sites (columns). Seed Planning Zones, used as provenances in this project, are usually represented at multiple years and multiple sites. There is particularly good representation at PGTIS. \label{contingency}](../../../phd/phd_proposal/figure/contingencytable.png)
 
-
-![Map of Seed Planning Units (SPUs). Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands. \label{SPU}](../../../phd/maps/SPUmaps/SPUmap_subset.png)
+```{r spu, fig.cap='(ref:spu)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/maps/SPUmaps/SPUmap_subset.png')
+```
 
 [table with Site Columns and SPU rows with years of data as values]
  [table of number of trees/clones in a given year for a given site/spu combo]
@@ -219,13 +229,13 @@ Observations were not made every day and survey periods varied in length. Not al
 
 There were some differences in how data was recorded at the Prince George Tree Improvement Station versus the other sites. For most of the Prince George data, trees were marked as flowering or not flowering on each day of observation. At other sites, only the first day observed flowering and the first day observed finished flowering were recorded. At sites using that minimal recording schema, we inferred states for many clones for some observation dates at the orchard. *E.g*, if tree A and B are in the same orchard and A is observed to be receptive on Monday and tree B on Tuesday, then we assumed that tree B was not yet receptive on Monday. 
 
-We cleaned and harmonized the data for analysis in a single model using R scripts [PROVIDE] so that, for pollen shed and receptivity, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 = finished flowering. 
+We cleaned and harmonized the data for analysis in a single model using R scripts [PROVIDE] so that, for pollen shed and receptivity, stage 1 = not yet flowering, stage 2 = flowering, and stage 3 = finished flowering (Tab. \@ref(tab:phenophasederivation)). 
 
 Phenophases in the field were recorded using different symbol sets and resolutions. We assigned each symbol to one of the three phenophases above. The few trees that did not produce cones were assigned phenological stage 0 and were not included in the analysis.
 
 In total, there were `r nrow(phenology_data)` usable observations of phenological state.
 
-```{r phenophase_derivation, echo=FALSE}
+```{r phenophasederivation, echo=FALSE}
 no_flowers <- '0'
 #before_flowering <- c('1', '2.5', '-') #stage 1
 before_flowering <- c("1, 2.5, -")
@@ -239,7 +249,7 @@ female_desc <- c("none produced", "not yet receptive", "receptive", "no longer r
 recorded_as <- c(no_flowers, before_flowering, flowering, af=after_flowering)
 
 phenophase_legend <- data.frame(Phenophase = derived_phenophase, Symbols = recorded_as, Male.Cones = male_desc, Female.Cones = female_desc)
-knitr::kable(phenophase_legend)
+knitr::kable(phenophase_legend, caption = "Phenophases, symbols used to record them in the raw data, and phenophase definitions")
 ```
 
 [Figure showing phenology data somehow]
@@ -258,10 +268,10 @@ For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAme
   (\#eq:tempadjust)
 \end{equation} 
 
-Table of intercepts $\alpha$ and slopes $\beta$ for each site.
+<!--Table: (\#tab:label) Caption here-->
+Table: (\#tab:climatenacorrection-pars) Table of intercepts $\alpha$ and slopes $\beta$ for each site.
 
 ```
-
 #version 6.20
           Site             term estimate std.error statistic p.value
 1    Kalamalka      (Intercept)     0.21      0.04      5.34 < 0.001
