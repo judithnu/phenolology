@@ -1,25 +1,38 @@
 # From Betancourt's case study https://betanalpha.github.io/assets/case_studies/ordinal_regression.html
 
+logit <- function(x) {
+    y <- log(x/(1-x))
+    return(y)
+}
 
 
 library(rstan)
 rstan_options(auto_write=TRUE)
+options(mc.cores = parallel::detectCores())
 
 #Simulate from an ordered logistic model with induced dirichlet prior
-simu <- stan(file='dirichlet prior/simulate_ordered.stan', iter=1, chains=1,
+simu <- stan(file='dirichlet prior/simulate_ordered_gamma.stan', iter=1, chains=1,
              seed=4838282, algorithm="Fixed_param")
 
 simu_params <- extract(simu)
+round(unique(simu_params$c), 5)
 
 input_data <- list("N" = 50, "K" = 5, "y" = array(simu_params$y[1,]))
 
 table(input_data$y)
+
 
 #Fit the simulated data using the model with a dirichlet prior
 
 fit <- stan(file='dirichlet prior/ordered_logistic_induced.stan', data=input_data, seed=4938483)
 
 #Let's check the model
+
+params <- extract(fit)
+
+#get cutpoints and "beta"
+summary(params$c)
+summary(params$gamma)
 
 ## params
 c_light <- c("#DCBCBC")
@@ -29,7 +42,7 @@ c_mid_highlight <- c("#A25050")
 c_dark <- c("#8F2727")
 c_dark_highlight <- c("#7C0000")
 
-params <- extract(fit)
+
 
 par(mfrow=c(1, 1))
 

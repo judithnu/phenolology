@@ -20,16 +20,16 @@ transformed data {
 }
 
 generated quantities {
-  real beta = normal_rng(0,1); // covariate effect
+  real beta = exp(3); // covariate effect
   real x[N]; //simulate covariate
   vector[N] gamma; //simulated latent effect
 
-  ordered[K - 1] c = induced_dirichlet_rng(K, 0); // (Internal) cut points
+  positive_ordered[K - 1] c = induced_dirichlet_rng(K, 2); // (Internal) cut points
   int<lower=1, upper=K> y[N];                     // Simulated ordinals
 
 
   for (n in 1:N) {
-    x[n] = normal_rng(0,1); // covariate
+    x[n] = uniform_rng(0,13); // covariate
     gamma[n] = x[n] * beta; // Latent effect
   }
 

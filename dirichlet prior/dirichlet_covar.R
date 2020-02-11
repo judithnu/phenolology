@@ -1,7 +1,9 @@
 # Take dirichlet_learn.R's simple example and add a covariate
 
+
 library(rstan)
 rstan_options(auto_write=TRUE)
+options(mc.cores = parallel::detectCores())
 
 
 simu <- stan(file='dirichlet prior/simulate_ordered_covar.stan', iter=1, chains=1,
@@ -9,7 +11,8 @@ simu <- stan(file='dirichlet prior/simulate_ordered_covar.stan', iter=1, chains=
 
 simu_params <- extract(simu)
 
-input_data <- list("N" = 50, "K" = 5, "x"= array(simu_params$x[1,]), "y" = array(simu_params$y[1,]))
+input_data <- list("N" = 500, "K" = 5, "x"= array(simu_params$x[1,]), "y" = array(simu_params$y[1,]))
+round(unique(simu_params$c), 2)
 
 table(input_data$y)
 plot(input_data$x, input_data$y)
