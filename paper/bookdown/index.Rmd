@@ -19,8 +19,22 @@ description: "This paper describes a model of pollination phenology"
 
 (ref:spu) Seed planning units are biogeoclimatic and political units used for seed planting purposes by British Columbia. Seed planning units form this project's provenances. High, Low, and Mid refer to elevational bands.
 
-# Table captions
-(ref:phenophasederivation)
+(ref:ppccum) Cumulative distribution of accumulated forcing for observed phenophases and predicted states
+
+(ref:ppcprop) Proportion of states correctly predicted by the model for each phenophase.
+
+(ref:ppcsite) Proportion of states correctly predicted by the model for each phenophase and site.
+
+(ref:ppccounts) Count of states predicted at each observed phenophase.
+
+(ref:fstartfend) $fstart$ and $fend$ model estimates
+
+(ref:apcforce) Absolute value of the change in $fstart$ with standard error
+
+(ref:apcday) Absolute value of the change in start day for 30 years of accumulated forcing time series with standard error. Accumulated forcing time series are ordered from in terms of forcing accumulated at day 151, the mean day of year for phase 2 in the phenology data.
+
+(ref:surveys) Days orchards were surveyed for phenology in each year.
+
 
 ```{r include=FALSE}
 # automatically create a bib database for R packages
@@ -183,7 +197,7 @@ knitr::include_graphics('../../../phd/maps/SiteMaps/sitemapwithPCIC.png')
 <!--
 I obtained pollination phenology records from 17 of the 26 lodgepole pine seed orchards in British Columbia. Thirteen out of 17 orchards in my data set are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.-->
 
-Parents of trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs) (Fig. \@ref{spu}). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
+Parents of trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs) (Fig. \@ref(spu). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
 Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Tab. \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone; PGTIS typically observed 2-4 ramets per clone.
 
@@ -204,7 +218,7 @@ Stages of pollen and seed cone development are described by @owens1984 and updat
 "Flowering" states were recorded for both pollen shed and cone receptivity at the level of each tree. Protocol C recommends marking the dates when 20% of the cones on a tree have begun flowering and when 80% of the cones on a tree have finished flowering. Operationally, there was some subjectivity and tree-level states for each cone type should be interpreted as "starting flowering" and "finished flowering."  
 
 [DESCRIBE SURVEY PERIODS]
-```{r surveys, fig.height=12, echo=FALSE}
+```{r surveys, fig.height=12, echo=FALSE, fig.cap='(ref:surveys)'}
 # Index by Site, Provenance, and Year
 dat$spyind <- group_indices(dat, Site, Year, Provenance)
 
@@ -222,7 +236,7 @@ ggplot(surveydf, aes(x=DoY, y=as.factor(spyind), color=Provenance)) +
   ggtitle("Observation Dates")
 ```
 
-Observations were not made every day and survey periods varied in length. Not all trees have complete phenological records, start or end dates may be unknown.
+Observations were not made every day and survey periods varied in length (Fig. \@ref(fig:surveys)). Not all trees have complete phenological records, start or end dates may be unknown.
 
 
 ##### Harmonization and cleaning
@@ -261,7 +275,7 @@ Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gr
 Gridpoint data was adjusted using monthly site data. As gridpoints did not align exactly with site locations and there were significant elevation differences between many of the sites and gridpoints, PNWNAmet data did not accurately represent the temperature at sites, so a correction factor was applied. First, mean monthly temperatures for the sites were generated using the ClimateNA v6.20 software package [@wang2016]. Monthly site specific data then was regressed on monthly PNWNAmet data to determine the correction factor for daily PNWNAmet data. 
 
 [MOVE MOST OF THE REST OF THE SECTION TO SUPPLEMENTAL]
-For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package.
+For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package (Tab. \@ref(tab:climatecorrection-pars)).
 
 \begin{equation} 
   T = \alpha + \beta t 
@@ -271,39 +285,41 @@ For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAme
 <!--Table: (\#tab:label) Caption here-->
 Table: (\#tab:climatenacorrection-pars) Table of intercepts $\alpha$ and slopes $\beta$ for each site.
 
-```
-#version 6.20
-          Site             term estimate std.error statistic p.value
-1    Kalamalka      (Intercept)     0.21      0.04      5.34 < 0.001
-2    Kalamalka meantempgridPCIC     0.98         0    304.64 < 0.001
-3  KettleRiver      (Intercept)     1.04      0.06     18.64 < 0.001
-4  KettleRiver meantempgridPCIC     1.04      0.01     183.7 < 0.001
-5        PGTIS      (Intercept)     0.32      0.03      9.75 < 0.001
-6        PGTIS meantempgridPCIC     0.99         0    285.54 < 0.001
-7          PRT      (Intercept)     0.37      0.04     10.13 < 0.001
-8          PRT meantempgridPCIC     0.98         0    307.25 < 0.001
-9     Sorrento      (Intercept)     1.97      0.04      44.2 < 0.001
-10    Sorrento meantempgridPCIC        1         0    217.47 < 0.001
-11       Tolko      (Intercept)    -0.02      0.03     -0.47    0.64
-12       Tolko meantempgridPCIC     0.97         0    319.76 < 0.001
-13      Vernon      (Intercept)      0.2      0.04      5.22 < 0.001
-14      Vernon meantempgridPCIC     0.98         0    299.35 < 0.001
-```
+|            |  intercept|     slope|Site        |
+|:-----------|----------:|---------:|:-----------|
+|Kalamalka   |  0.2052868| 0.9820646|Kalamalka   |
+|KettleRiver |  1.0375494| 1.0353338|KettleRiver |
+|PGTIS       |  0.3196696| 0.9888230|PGTIS       |
+|PRT         |  0.3726752| 0.9805055|PRT         |
+|Sorrento    |  1.9729000| 0.9950774|Sorrento    |
+|Tolko       | -0.0164089| 0.9698295|Tolko       |
+|Vernon      |  0.2035381| 0.9839158|Vernon      |
 
 For each site, daily mean temperature  was estimated by 
-$$T_{site, date} = \alpha_{site} + \beta_{site} t_{site, date}$$
+
+\begin{equation} 
+T_{site, date} = \alpha_{site} + \beta_{site} t_{site, date}
+(\#eq:tempcorrect)
+\end{equation}
 where $t$ are the mean daily temperatures extracted from PNWNAmet.
 
 #### Forcing units
 
 Flowering is a developmental process that speeds up and slows down according to the current temperature. Forcing units describe the relative effect of temperature on development. Observable phenological events occur only after a certain amount of forcing has accumulated. The mean daily temperature $t$ was mapped to forcing units with a function that describes the relationship between temperature and development rate.
 
-$$R(t) = \frac{1}{1+ e^{-0.185*t-18.4}}$$
-This equation for forcing units is based on experimental work in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990] and was verified to perform better than growing degree day for phenology estimation [@Chuine1999].
+\begin{equation}
+R(t) = \frac{1}{1+ e^{-0.185*t-18.4}}
+(\#eq:ristocalc)
+\end{equation}
+
+This equation for forcing units (Eqn. \@ref(eq:ristocalc)) is based on experimental work in temperate forest tree species [@Sarvas1972, @hanninenModellingBudDormancy1990] and was verified to perform better than growing degree day for phenology estimation [@Chuine1999].
 
 Accumulated forcing units on day $d$ ($f(d)$) are the sum of the relative temperature effect from January 1 (ordinal date $1$) to day $d$.
 
-$$f(d) = \sum_{i=1}^d R_d(x)$$
+\begin{equation}
+f(d) = \sum_{i=1}^d R_d(x)
+(\#eq:accumulatedforcingcalc)
+\end{equation}
 
 Cooler sites, like Prince George, accumulate forcing slower than warmer sites like Kalamalka. 
 
@@ -315,15 +331,18 @@ We modeled phenological states as a function of accumulated forcing units with s
 
 The likelihood of being in state $s \in \{1,2,3\}$ is
 
-$$\mathrm{Pr}(S=s)=\text{OrderedLogistic}(s~|~\eta,\kappa) = \left\{ \begin{array}{ll} 1 -
+\begin{equation}
+\mathrm{Pr}(S=s)=\text{OrderedLogistic}(s~|~\eta,\kappa) = \left\{ \begin{array}{ll} 1 -
 \text{logistic}(\eta - \kappa_1)  &  \text{if } s = 1 \\[4pt]
 \text{logistic}(\eta - \kappa_1) - \text{logistic}(\eta - \kappa_2)  &
 \text{if } s=2  \\[4pt] \text{logistic}(\eta -
-\kappa_2) - 0  &  \text{if } s = 3 \end{array} \right.$$
+\kappa_2) - 0  &  \text{if } s = 3 \end{array} \right.
+(\#eq:likelihood)
+\end{equation}
 
 where the cutpoints $\kappa_s < \kappa_{s+1}$ and $\eta$ is a linear model.
-
-$$\begin{array}{rlr}
+\begin{equation}
+\begin{array}{rlr}
 S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \eta_i & = (\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}) f_i  & \text{linear model}\\
 \kappa_k & \sim \mathrm{gamma}(20,1) & \text{fixed priors}\\
@@ -336,7 +355,9 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 \sigma_{prov} & \sim \mathrm{exponential}(5) \\
 \sigma_{year} & \sim \mathrm{exponential}(5) \\
 \sigma_{clone} & \sim \mathrm{exponential}(5) \\
-\end{array}$$
+\end{array}
+(\#eq:modelequations)
+\end{equation}
 
 The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors were designed to force the correct sign (positive) and order of magnitude [@lemoineMovingNoninformativePriors2019]. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
@@ -351,51 +372,71 @@ We defined the beginning of the flowering period as the point at which a tree wa
 
 ##### Begin and end of flowering period
 The accumulated forcing units required to reach the beginning of the flowering period, $f_{begin}$, is 
-$$ \begin{array}{rl}
+\begin{equation} 
+\begin{array}{rl}
 \mathrm{Pr}(s > 1) = 0.2 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f - \kappa_1) \\
 f_{begin} & = \frac{\mathrm{logit}(0.2) + \kappa_1}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
 \end{array}
-$$
+(\#eq:fbegin)
+\end{equation}
 
 
-The accumulated forcing units required to reach the end of the flowering period, $f_{end}$, is 
+The accumulated forcing units required to reach the end of the flowering period, $f_{end}$, is, simularly 
 
-$$ \begin{array}{rl}
+\begin{equation} 
+\begin{array}{rl}
 \mathrm{Pr}(s > 2) = 0.8 & = \mathrm{logistic}((\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year})f - \kappa_2) \\
 f_{end} & = \frac{\mathrm{logit}(0.8) + \kappa_2}{\beta + \beta_{site} +\beta_{prov} + \beta_{clone} + \beta_{year}}
 \end{array}
-$$
+(\#eq:fend)
+\end{equation}
+
 [SHOW toy FIGURE FOR THIS?]
 
 We calculated $f_{start}$ and $f_{end}$ for all combinations of clone, site, provenance, and year that occur in the dataset for all samples from the posterior. The range of forcing units that stage 2 occurs over, *i.e.* the flowering period, is 
 
-$$ f_{range} = f_{end}-f_{begin}$$
+\begin{equation}
+f_{range} = f_{end}-f_{begin}
+(\#eq:frange)
+\end{equation}
 [THIS EQUATION IS OVERKILL]
 
 ##### Translating between accumulated forcing units and days
 While $fbegin$ and $fend$ are constant for a given combination of clone, site, provenance, and year, $dbegin$ and $dend$ differ from year to year and location to location. For years and locations of interest, accumulated forcing units were calculated from mean daily temperatures and used to translate between accumulated forcing units and day of year. The day of year that the accummulated forcing unit reached at least $f_{begin}$ or $f_{end}$ was $d_{begin}$ or $d_{end}$. The length of the phenological period was then calculated as
 
-$$length=d_{end}-d_{begin}$$
+\begin{equation}
+length=d_{end}-d_{begin}
+(\#eq:drange)
+\end{equation}
 
 #### Posterior predictive checks [PROB SUPPLEMENTAL, JUST ADD LINE THAT THEY'RE OK]
 
-To check the realism of the model, the observations of phenological states were compared to model predictions. When the model was fit in Stan, we also simulated one phenological state from all model configurations for each phenological observation in the dataset. The probability of having reaching a given phenological state at a given forcing accumulation predicted by the model matched the data well \ref{ppc_cum}. 
+To check the realism of the model, the observations of phenological states were compared to model predictions. When the model was fit in Stan, we also simulated one phenological state from all model configurations for each phenological observation in the dataset. The probability of having reaching a given phenological state at a given forcing accumulation predicted by the model matched the data well (Fig. \@ref(fig:ppccum)). 
 
-![Cumulative distribution of accumulated forcing for observed phenophases and predicted states \label{ppc_cum}](../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png)
+```{r ppccum, fig.cap='(ref:ppccum)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png')
+```
 
-![Proportion of states correctly predicted by the model for each phenophase. \label{ppc_prop}](../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png)
+```{r ppcprop, fig.cap='(ref:ppcprop)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png')
+```
 
-The proportion of state 2 observations (flowering) was predicted correctly by the model [X%] of the time for females and [Y%] for males. Flowering is predicted with greater accuracy than the other phases and male flowering is predicted better than female flowering. Phases 1 and 3 are likely predicted less well because the observation dates (and associated accumulated forcing) are likely to be very close to the transitions into or out of state 2, *i.e.*, the most difficult ranges of forcing units over to predict phenological state.
+The proportion of state 2 observations (flowering) was predicted correctly by the model [X%] of the time for females and [Y%] for males (Fig. \@ref(ppcprop)). Flowering is predicted with greater accuracy than the other phases and male flowering is predicted better than female flowering. Phases 1 and 3 are likely predicted less well because the observation dates (and associated accumulated forcing) are likely to be very close to the transitions into or out of state 2, *i.e.*, the most difficult ranges of forcing units over to predict phenological state.
 
 [WHAT DOES THE SITE GRAPH ADD?]
 
 [IF I KEEP THIS GRAPH, ORDER BY N-S OR SOMETHING OTHER THAN ALPHA]
 
-![Proportion of states correctly predicted by the model for each phenophase and site. \label{ppc_site}](../../../phd/LabNotebook/images/2019-10-28ppcsite.png)
+```{r ppcsite, fig.cap='(ref:ppcsite)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-10-28ppcsite.png')
+```
 
 When the model incorrectly retrodicts a phenophase, it almost always predicts an adjacent phenophase. [UNNECESSARY, DROP?]
 
-![Count of states predicted at each observed phenophase. \label{ppc_counts}](../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png)
+```{r ppccounts, fig.cap='(ref:ppccounts)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png')
+```
+
 
 <!--
 The model is very likely to correctly predict phase 1 and 3 at higher and lower amounts of accumulated forcing and is less accurate near the transitions into and out of stage 2.
@@ -406,10 +447,13 @@ The model is very likely to correctly predict phase 1 and 3 at higher and lower 
 #### Average predictive comparisons 
 Average predictive comparisons allow parameters in non-linear models to be compared like regression coefficients in linear models (@gelman2007, @shirley2015). An APC for the site effect, for example, describes how much the accumulated forcing required to begin flowering would change if trees were grown at sites other than the one they were actually grown at. If site isn't important, then changing the site shouldn't make a difference and the APC will be small. The average predictive comparisons for site, provenance, clone, and year were calculated to determine their relative influence on $f_start$.
 
-Average predictive comparisons for each effect $u$ were calculated by calculating the absolute value of the difference between the expected value at a given data point $n$ (where $n$ were all uniquely occuring combinations of site, provenance, clone, and year in the phenology dataset) for the input variable of interest $u^{(k)}$ and the other input variables $v$ and that datapoint for its actual value of $u$. That difference was multiplied by a weight $\omega$ representing the similarity in $v$ between a datapoint with $u_i$ versus $u^{(k)}$. The weighted average of these differences is taken over all data points, all values of $u$, and 1400 samples from the posterior distribution. 
+Average predictive comparisons for each effect $u$ were calculated by calculating the absolute value of the difference between the expected value at a given data point $n$ (where $n$ were all uniquely occuring combinations of site, provenance, clone, and year in the phenology dataset) for the input variable of interest $u^{(k)}$ and the other input variables $v$ and that datapoint for its actual value of $u$ (Eqn. \@ref(eq:apc)). That difference was multiplied by a weight $\omega$ representing the similarity in $v$ between a datapoint with $u_i$ versus $u^{(k)}$. The weighted average of these differences is taken over all data points, all values of $u$, and 1400 samples from the posterior distribution. 
 
-$$\hat \Delta_u = \frac{\sum_{i=1}^{n}\sum_{k=1}^{K}\sum_{s=1}^S[\sum_{j\in\{k\}}\omega_{ij}]|\mathrm{E}(y|u^{(k)},v_i, \theta^{(s)})-\mathrm{E}(y|u_i,v_i, \theta^{(s)})|}
-{\mathrm{S}\sum_{i=1}^{n}\sum_{k=1}^{K}[\sum_{j\in\{k\}}\omega_{ij}]}$$
+\begin{equation}
+\hat \Delta_u = \frac{\sum_{i=1}^{n}\sum_{k=1}^{K}\sum_{s=1}^S[\sum_{j\in\{k\}}\omega_{ij}]|\mathrm{E}(y|u^{(k)},v_i, \theta^{(s)})-\mathrm{E}(y|u_i,v_i, \theta^{(s)})|}
+{\mathrm{S}\sum_{i=1}^{n}\sum_{k=1}^{K}[\sum_{j\in\{k\}}\omega_{ij}]}
+(\#eq:apc)
+\end{equation}
 
 Comparison calculations are weighted ($\omega$) to reflect the distribution of data, but the weighting function is not specified in @gelman2007. In the predcomps package, @chudzicki2018 implements a weighting function for ordered categorical and numerical variables based on Mahalanobis distance, but it is inappropriate for unordered categorical data, which all of the effects in this model are. We developed a weighting function that compares the elements of the other input variables $V_i$ in pairs of rows. Matches are assigned 1 and non-matches 0. Each $V_i$'s matches are summed and then divided by 4, creating a weight for each row x row comparison, which makes an $n_i$ x $n_i$ matrix of weights. The overall weight $w$ for a given $V_i$ is the normalized sum of the weights from comparing it to all other rows (@chudzicki2018). 
 
@@ -439,21 +483,29 @@ Simulated climate change/warming by adding 2 degrees to the mean temp every day 
 
 ### fstart and fend  overall - estimates
 
-Receptivity requires more forcing to begin and less to end than pollen shed. [Add 50% HPDI numbers]
+Receptivity requires more forcing to begin and less to end than pollen shed (Fig. \@ref(fig:fstartfend)). [Add 50% HPDI numbers]
 
-![$fstart$ and $fend$ model estimates](../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png)
+```{r fstartfend, fig.cap='(ref:fstartfend)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png')
+```
+
 
 ## Interpreting Effects: Average Predictive Comparisons
 
-Differences in clone or year cause larger changes in $fstart$ than site or provenance (Fig. \ref{apcforce}).
+Differences in clone or year cause larger changes in $fstart$ than site or provenance (Fig. \@ref(fig:apcforce)).
 
 [FIX FIGURE SO NON-OVERLAPPING]
 
-![Absolute value of the change in $fstart$ with standard error \label{apcforce}](../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png)
+```{r apcforce, fig.cap='(ref:apcforce)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png')
+```
 
-$fstart$ was translated into day of year for 30 years. Differences within effects almost never cause more than a difference of 3 days. Site and provenance rarely change a prediction by even a day. Year and clone have the largest effects and the effect of clone is especially large for cone receptivity (1-3 days vs 1-2 for males). 
 
-![Absolute value of the change in start day for 30 years of accumulated forcing time series with standard error. Accumulated forcing time series are ordered from in terms of forcing accumulated at day 151, the mean day of year for phase 2 in the phenology data. \label{apcday}](../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png)
+$fstart$ was translated into day of year for 30 years (\@ref(fig:apcday)). Differences within effects almost never cause more than a difference of 3 days. Site and provenance rarely change a prediction by even a day. Year and clone have the largest effects and the effect of clone is especially large for cone receptivity (1-3 days vs 1-2 for males). 
+
+```{r apcday, fig.cap='(ref:apcday)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png')
+```
 
 We examined the variability of the start date across the range ($t_1$) to see if it shrinks in warmer years and as the climate changes. We calculated overlap between within population cone receptivity and pollen shed under current conditions and with climate warming and see if the heat sum requirements for cone receptivity and pollen shed are different.
 
@@ -495,15 +547,17 @@ post <- full_join(mpost, fpost)
 <!--Clones not included-->
 
 *Female*
-```{r param female table, eval=FALSE, echo=FALSE}
+```{r paramfemaletable, eval=FALSE, echo=FALSE}
 knitr::kable(
-fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3)
+fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3, 
+caption = "Female model parameters")
 ```
 
 *Male*
-```{r param male table, eval=FALSE, echo=FALSE}
+```{r parammaletable, eval=FALSE, echo=FALSE}
 knitr::kable(
-msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3)
+msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3,
+caption = "Male model parameters")
 ```
 
 ```{r compare plot function, echo=FALSE, eval=FALSE}

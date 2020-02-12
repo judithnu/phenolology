@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2020.2.4)  10 FEB 2020 07:19
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2020.2.4)  12 FEB 2020 06:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -737,68 +737,42 @@ Now handling font encoding PU ...
 ... no UTF-8 mapping file for font encoding PU
 )
 Package hyperref Info: Option `breaklinks' set `true' on input line 29.
-(/usr/share/texlive/texmf-dist/tex/latex/graphics/color.sty
-Package: color 2016/07/10 v1.1e Standard LaTeX Color (DPC)
-(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/color.cfg
-File: color.cfg 2016/01/02 v1.6 sample color configuration
-)
-Package color Info: Driver file: pdftex.def on input line 147.
-(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def
-File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
-)) (/usr/share/texlive/texmf-dist/tex/latex/fancyvrb/fancyvrb.sty
-Package: fancyvrb 2008/02/07
-
-Style option: `fancyvrb' v2.7a, with DG/SPQR fixes, and firstline=lastline fix 
-<2008/02/07> (tvz)
-\FV@CodeLineNo=\count111
-\FV@InFile=\read1
-\FV@TabBox=\box28
-\c@FancyVerbLine=\count112
-\FV@StepNumber=\count113
-\FV@OutFile=\write3
-) (/usr/share/texlive/texmf-dist/tex/latex/framed/framed.sty
-Package: framed 2011/10/22 v 0.96: framed or shaded text with page breaks
-\OuterFrameSep=\skip48
-\fb@frw=\dimen117
-\fb@frh=\dimen118
-\FrameRule=\dimen119
-\FrameSep=\dimen120
-) (/usr/share/texlive/texmf-dist/tex/latex/tools/longtable.sty
+(/usr/share/texlive/texmf-dist/tex/latex/tools/longtable.sty
 Package: longtable 2014/10/28 v4.11 Multi-page Table package (DPC)
-\LTleft=\skip49
-\LTright=\skip50
-\LTpre=\skip51
-\LTpost=\skip52
-\LTchunksize=\count114
-\LTcapwidth=\dimen121
-\LT@head=\box29
-\LT@firsthead=\box30
-\LT@foot=\box31
-\LT@lastfoot=\box32
-\LT@cols=\count115
-\LT@rows=\count116
-\c@LT@tables=\count117
-\c@LT@chunks=\count118
+\LTleft=\skip48
+\LTright=\skip49
+\LTpre=\skip50
+\LTpost=\skip51
+\LTchunksize=\count111
+\LTcapwidth=\dimen117
+\LT@head=\box28
+\LT@firsthead=\box29
+\LT@foot=\box30
+\LT@lastfoot=\box31
+\LT@cols=\count112
+\LT@rows=\count113
+\c@LT@tables=\count114
+\c@LT@chunks=\count115
 \LT@p@ftn=\toks24
 ) (/usr/share/texlive/texmf-dist/tex/latex/booktabs/booktabs.sty
 Package: booktabs 2016/04/27 v1.618033 publication quality tables
-\heavyrulewidth=\dimen122
-\lightrulewidth=\dimen123
-\cmidrulewidth=\dimen124
-\belowrulesep=\dimen125
-\belowbottomsep=\dimen126
-\aboverulesep=\dimen127
-\abovetopsep=\dimen128
-\cmidrulesep=\dimen129
-\cmidrulekern=\dimen130
-\defaultaddspace=\dimen131
-\@cmidla=\count119
-\@cmidlb=\count120
-\@aboverulesep=\dimen132
-\@belowrulesep=\dimen133
-\@thisruleclass=\count121
-\@lastruleclass=\count122
-\@thisrulewidth=\dimen134
+\heavyrulewidth=\dimen118
+\lightrulewidth=\dimen119
+\cmidrulewidth=\dimen120
+\belowrulesep=\dimen121
+\belowbottomsep=\dimen122
+\aboverulesep=\dimen123
+\abovetopsep=\dimen124
+\cmidrulesep=\dimen125
+\cmidrulekern=\dimen126
+\defaultaddspace=\dimen127
+\@cmidla=\count116
+\@cmidlb=\count117
+\@aboverulesep=\dimen128
+\@belowrulesep=\dimen129
+\@thisruleclass=\count118
+\@lastruleclass=\count119
+\@thisrulewidth=\dimen130
 ) (/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
 Package: graphicx 2017/06/01 v1.1a Enhanced LaTeX Graphics (DPC,SPQR)
 (/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
@@ -809,9 +783,11 @@ Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
 File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
 )
 Package graphics Info: Driver file: pdftex.def on input line 99.
-)
-\Gin@req@height=\dimen135
-\Gin@req@width=\dimen136
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen131
+\Gin@req@width=\dimen132
 ) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/grffile.sty
 Package: grffile 2017/06/30 v1.18 Extended file name support for graphics (HO)
 Package grffile Info: Option `multidot' is set to `true'.
@@ -822,40 +798,39 @@ Package grffile Info: \Gin@ii of package `graphicx' fixed on input line 494.
 Package: parskip 2001/04/09 non-zero parskip adjustments
 ) (/usr/share/texlive/texmf-dist/tex/latex/titling/titling.sty
 Package: titling 2009/09/04 v2.1d maketitle typesetting
-\thanksmarkwidth=\skip53
-\thanksmargin=\skip54
-\droptitle=\skip55
+\thanksmarkwidth=\skip52
+\thanksmargin=\skip53
+\droptitle=\skip54
 ) (./_main.aux)
 \openout1 = `_main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 132.
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 132.
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 132.
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 132.
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 132.
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 132.
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 132.
-LaTeX Font Info:    Try loading font information for TS1+cmr on input line 132.
-
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 92.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 92.
 (/usr/share/texlive/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 132.
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 132.
-LaTeX Font Info:    ... okay on input line 132.
-LaTeX Font Info:    Try loading font information for T1+lmr on input line 132.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Try loading font information for T1+lmr on input line 92.
 (/usr/share/texmf/tex/latex/lm/t1lmr.fd
 File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Info: Redefining \microtypecontext on input line 132.
+LaTeX Info: Redefining \microtypecontext on input line 92.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using protrusion set `basicmath'.
@@ -869,34 +844,34 @@ Package microtype Info: No adjustment of character kerning.
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-\AtBeginShipoutBox=\box33
-Package hyperref Info: Link coloring OFF on input line 132.
+\AtBeginShipoutBox=\box32
+Package hyperref Info: Link coloring OFF on input line 92.
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2016/05/21 v2.44 Cross-referencing by name of section
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
 Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
 )
-\c@section@level=\count123
+\c@section@level=\count120
 )
-LaTeX Info: Redefining \ref on input line 132.
-LaTeX Info: Redefining \pageref on input line 132.
-LaTeX Info: Redefining \nameref on input line 132.
+LaTeX Info: Redefining \ref on input line 92.
+LaTeX Info: Redefining \pageref on input line 92.
+LaTeX Info: Redefining \nameref on input line 92.
 (./_main.out) (./_main.out)
-\@outlinefile=\write4
-\openout4 = `_main.out'.
+\@outlinefile=\write3
+\openout3 = `_main.out'.
 
 (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count124
-\scratchdimen=\dimen137
-\scratchbox=\box34
-\nofMPsegments=\count125
-\nofMParguments=\count126
+\scratchcounter=\count121
+\scratchdimen=\dimen133
+\scratchbox=\box33
+\nofMPsegments=\count122
+\nofMParguments=\count123
 \everyMPshowfont=\toks25
-\MPscratchCnt=\count127
-\MPscratchDim=\dimen138
-\MPnumerator=\count128
-\makeMPintoPDFobject=\count129
+\MPscratchCnt=\count124
+\MPscratchDim=\dimen134
+\MPnumerator=\count125
+\makeMPintoPDFobject=\count126
 \everyMPtoPDFconversion=\toks26
 ) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
@@ -913,35 +888,35 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 )) (./_main.toc
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 7.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 6.
 (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 7.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 6.
 (/usr/share/texmf/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 7.
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 6.
 (/usr/share/texmf/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 7.
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 6.
 (/usr/share/texmf/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <12> on input line 7.
+(Font)              <12> on input line 6.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 7.
+(Font)              <8> on input line 6.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 7.
-LaTeX Font Info:    Try loading font information for U+msa on input line 7.
+(Font)              <6> on input line 6.
+LaTeX Font Info:    Try loading font information for U+msa on input line 6.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 ) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 7.
+LaTeX Font Info:    Try loading font information for U+msb on input line 6.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msb.cfg
@@ -949,213 +924,229 @@ File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 ) [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}])
-\tf@toc=\write5
-\openout5 = `_main.toc'.
+\tf@toc=\write4
+\openout4 = `_main.toc'.
 
-LaTeX Font Info:    Try loading font information for T1+lmtt on input line 158.
+LaTeX Font Info:    Try loading font information for T1+lmtt on input line 129.
 
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [2]
-LaTeX Font Info:    Try loading font information for TS1+lmr on input line 170.
+)
+LaTeX Font Info:    Try loading font information for TS1+lmr on input line 141.
 
 (/usr/share/texmf/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [3] [4] [5] [6]
-<../../../phd/maps/SpeciesDistribution/distmap_pincon.png, id=201, 949.3869pt x
+) [2] [3] [4] [5] [6]
+<../../../phd/maps/SpeciesDistribution/distmap_pincon.png, id=196, 949.3869pt x
  508.7808pt>
 File: ../../../phd/maps/SpeciesDistribution/distmap_pincon.png Graphic file (ty
 pe png)
 <use ../../../phd/maps/SpeciesDistribution/distmap_pincon.png>
 Package pdftex.def Info: ../../../phd/maps/SpeciesDistribution/distmap_pincon.p
-ng  used on input line 281.
+ng  used on input line 252.
 (pdftex.def)             Requested size: 389.98996pt x 208.9974pt.
 [7 <../../../phd/maps/SpeciesDistribution/distmap_pincon.png (PNG copy)>]
-<../../../phd/maps/SiteMaps/sitemapwithPCIC.png, id=212, 1003.75pt x 803.0pt>
+<../../../phd/maps/SiteMaps/sitemapwithPCIC.png, id=209, 1003.75pt x 803.0pt>
 File: ../../../phd/maps/SiteMaps/sitemapwithPCIC.png Graphic file (type png)
 <use ../../../phd/maps/SiteMaps/sitemapwithPCIC.png>
 Package pdftex.def Info: ../../../phd/maps/SiteMaps/sitemapwithPCIC.png  used o
-n input line 298.
+n input line 269.
 (pdftex.def)             Requested size: 390.0059pt x 312.00473pt.
-[8] [9 <../../../phd/maps/SiteMaps/sitemapwithPCIC.png>]
-<../../../phd/phd_proposal/figure/contingencytable.png, id=233, 803.0pt x 351.3
+
+LaTeX Warning: Reference `spu' on page 8 undefined on input line 277.
+
+<../../../phd/phd_proposal/figure/contingencytable.png, id=212, 803.0pt x 351.3
 125pt>
 File: ../../../phd/phd_proposal/figure/contingencytable.png Graphic file (type 
 png)
 <use ../../../phd/phd_proposal/figure/contingencytable.png>
 Package pdftex.def Info: ../../../phd/phd_proposal/figure/contingencytable.png 
- used on input line 312.
+ used on input line 283.
 (pdftex.def)             Requested size: 390.0059pt x 170.62758pt.
-<../../../phd/maps/SPUmaps/SPUmap_subset.png, id=234, 803.0pt x 602.25pt>
+<../../../phd/maps/SPUmaps/SPUmap_subset.png, id=213, 803.0pt x 602.25pt>
 File: ../../../phd/maps/SPUmaps/SPUmap_subset.png Graphic file (type png)
 <use ../../../phd/maps/SPUmaps/SPUmap_subset.png>
 Package pdftex.def Info: ../../../phd/maps/SPUmaps/SPUmap_subset.png  used on i
-nput line 317.
+nput line 288.
 (pdftex.def)             Requested size: 390.0059pt x 292.50443pt.
-[10 <../../../phd/phd_proposal/figure/contingencytable.png>] [11 <../../../phd/
-maps/SPUmaps/SPUmap_subset.png (PNG copy)>]
-<_main_files/figure-latex/surveys-1.pdf, id=253, 469.755pt x 867.24pt>
+[8] [9 <../../../phd/maps/SiteMaps/sitemapwithPCIC.png>] [10 <../../../phd/phd_
+proposal/figure/contingencytable.png>] [11 <../../../phd/maps/SPUmaps/SPUmap_su
+bset.png (PNG copy)>]
+<_main_files/figure-latex/surveys-1.pdf, id=248, 469.755pt x 867.24pt>
 File: _main_files/figure-latex/surveys-1.pdf Graphic file (type pdf)
 <use _main_files/figure-latex/surveys-1.pdf>
 Package pdftex.def Info: _main_files/figure-latex/surveys-1.pdf  used on input 
-line 333.
+line 304.
 (pdftex.def)             Requested size: 297.11559pt x 548.52109pt.
 
-Overfull \hbox (81.04428pt too wide) in paragraph at lines 332--334
+Overfull \hbox (81.04428pt too wide) in paragraph at lines 303--305
 []\T1/lmr/m/n/12 (-20) [DESCRIBE SUR-VEY PE-RI-ODS] [] 
  []
 
 [12] [13 <./_main_files/figure-latex/surveys-1.pdf>]
-Overfull \hbox (118.30511pt too wide) in paragraph at lines 352--365
+
+LaTeX Warning: Reference `fig:surveys' on page 14 undefined on input line 306.
+
+
+Overfull \hbox (118.30511pt too wide) in paragraph at lines 323--336
  [][] 
  []
 
-[14] [15] [16]
-Overfull \hbox (53.65726pt too wide) detected at line 440
-[]\OT1/lmr/m/n/12 (\OML/lmm/m/it/12 S \OT1/lmr/m/n/12 = \OML/lmm/m/it/12 s\OT1/
-lmr/m/n/12 ) = [](\OML/lmm/m/it/12 s []\OMS/lmsy/m/n/12 j []\OML/lmm/m/it/12 ^^
-Q; ^^T\OT1/lmr/m/n/12 ) = []
+[14]
+
+LaTeX Warning: Reference `tab:climatecorrection-pars' on page 15 undefined on i
+nput line 348.
+
+[15] [16]
+Overfull \hbox (53.65726pt too wide) detected at line 420
+[][]\OT1/lmr/m/n/12 (\OML/lmm/m/it/12 S \OT1/lmr/m/n/12 = \OML/lmm/m/it/12 s\OT
+1/lmr/m/n/12 ) = [](\OML/lmm/m/it/12 s []\OMS/lmsy/m/n/12 j []\OML/lmm/m/it/12 
+^^Q; ^^T\OT1/lmr/m/n/12 ) = []
  []
 
-[17] [18] [19]
-<../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png, id=339, 731.73375pt
+[17] [18]
+<../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png, id=333, 731.73375pt
  x 490.83376pt>
 File: ../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png Graphic file (t
 ype png)
 <use ../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.
-png  used on input line 511.
+png  used on input line 503.
 (pdftex.def)             Requested size: 390.00545pt x 261.60858pt.
-<../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png, id=340, 692.587
+<../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png, id=334, 692.587
 5pt x 386.94562pt>
 File: ../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png Graphic fil
 e (type png)
 <use ../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-10-28ppcstatesexp
-rop.png  used on input line 517.
+rop.png  used on input line 507.
 (pdftex.def)             Requested size: 390.01279pt x 217.89845pt.
-[20 <../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png (PNG copy)>]
-<../../../phd/LabNotebook/images/2019-10-28ppcsite.png, id=347, 692.5875pt x 38
+
+LaTeX Warning: Reference `ppcprop' on page 19 undefined on input line 510.
+
+[19] [20 <../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png (PNG copy)>
+]
+<../../../phd/LabNotebook/images/2019-10-28ppcsite.png, id=352, 692.5875pt x 38
 6.94562pt>
 File: ../../../phd/LabNotebook/images/2019-10-28ppcsite.png Graphic file (type 
 png)
 <use ../../../phd/LabNotebook/images/2019-10-28ppcsite.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-10-28ppcsite.png 
- used on input line 529.
+ used on input line 517.
 (pdftex.def)             Requested size: 390.01279pt x 217.89845pt.
-<../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png, id=348, 692.58
+<../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png, id=353, 692.58
 75pt x 386.94562pt>
 File: ../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png Graphic fi
 le (type png)
 <use ../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-10-28ppcstatesexc
-ount.png  used on input line 537.
+ount.png  used on input line 523.
 (pdftex.def)             Requested size: 390.01279pt x 217.89845pt.
 [21 <../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png (PNG copy)>]
 [22 <../../../phd/LabNotebook/images/2019-10-28ppcsite.png (PNG copy)> <../../.
 ./phd/LabNotebook/images/2019-10-28ppcstatesexcount.png (PNG copy)>] [23]
-<../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png, id=376, 721.19
+<../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png, id=383, 721.19
 438pt x 602.25pt>
 File: ../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png Graphic fi
 le (type png)
 <use ../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-25_forcingstar
-tend.png  used on input line 593.
+tend.png  used on input line 580.
 (pdftex.def)             Requested size: 390.0004pt x 325.67882pt.
 [24] [25 <../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png (PNG c
 opy)>]
-<../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png, id=403
+<../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png, id=411
 , 618.81187pt x 435.12563pt>
 File: ../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png Gr
 aphic file (type png)
 <use ../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-13_apc_forcing
-_spacedyears.png  used on input line 606.
+_spacedyears.png  used on input line 591.
 (pdftex.def)             Requested size: 390.01407pt x 274.24345pt.
-<../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png, id=404, 7
+<../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png, id=413, 7
 15.17188pt x 526.96875pt>
 File: ../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png Graph
 ic file (type png)
 <use ../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-13_apc_days_sp
-acedyears.png  used on input line 614.
+acedyears.png  used on input line 597.
 (pdftex.def)             Requested size: 390.00647pt x 287.37318pt.
 [26 <../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png (PN
 G copy)>] [27 <../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.
 png (PNG copy)>]
-<../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png, id=415, 602.25pt x
+<../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png, id=424, 602.25pt x
  451.6875pt>
 File: ../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png Graphic file (
 type png)
 <use ../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi
-.png  used on input line 631.
+.png  used on input line 613.
 (pdftex.def)             Requested size: 390.01509pt x 292.5113pt.
 [28]
-<../../../phd/LabNotebook/images/2019-11-28_lengthindays.png, id=423, 677.53125
+<../../../phd/LabNotebook/images/2019-11-28_lengthindays.png, id=432, 677.53125
 pt x 451.6875pt>
 File: ../../../phd/LabNotebook/images/2019-11-28_lengthindays.png Graphic file 
 (type png)
 <use ../../../phd/LabNotebook/images/2019-11-28_lengthindays.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-28_lengthinday
-s.png  used on input line 638.
+s.png  used on input line 620.
 (pdftex.def)             Requested size: 390.01164pt x 260.00775pt.
 [29 <../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png (PNG copy)>]
-<../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png, id=430
+<../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png, id=440
 , 602.25pt x 451.6875pt>
 File: ../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png Gr
 aphic file (type png)
 <use ../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-28_receptivity
-overlap_warm.png  used on input line 647.
+overlap_warm.png  used on input line 629.
 (pdftex.def)             Requested size: 390.01509pt x 292.5113pt.
 [30 <../../../phd/LabNotebook/images/2019-11-28_lengthindays.png (PNG copy)>] [
 31 <../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png (PNG
  copy)>]
-<../../../phd/phd_proposal/figure/Liepe_phen_corr.png, id=446, 1175.39125pt x 3
+<../../../phd/phd_proposal/figure/Liepe_phen_corr.png, id=455, 1175.39125pt x 3
 73.395pt>
 File: ../../../phd/phd_proposal/figure/Liepe_phen_corr.png Graphic file (type p
 ng)
 <use ../../../phd/phd_proposal/figure/Liepe_phen_corr.png>
 Package pdftex.def Info: ../../../phd/phd_proposal/figure/Liepe_phen_corr.png  
-used on input line 679.
+used on input line 661.
 (pdftex.def)             Requested size: 389.99664pt x 123.89304pt.
 [32] [33 <../../../phd/phd_proposal/figure/Liepe_phen_corr.png>] [34] [35]
-<../../../phd/phd_proposal/figure/climate.png, id=486, 803.0pt x 412.54124pt>
+<../../../phd/phd_proposal/figure/climate.png, id=495, 803.0pt x 412.54124pt>
 File: ../../../phd/phd_proposal/figure/climate.png Graphic file (type png)
 <use ../../../phd/phd_proposal/figure/climate.png>
 Package pdftex.def Info: ../../../phd/phd_proposal/figure/climate.png  used on 
-input line 792.
+input line 774.
 (pdftex.def)             Requested size: 390.0059pt x 200.36552pt.
 
-LaTeX Warning: Reference `forcing' on page 36 undefined on input line 802.
+LaTeX Warning: Reference `forcing' on page 36 undefined on input line 784.
 
 
-LaTeX Warning: Reference `simp_force_amt' on page 36 undefined on input line 80
-2.
+LaTeX Warning: Reference `simp_force_amt' on page 36 undefined on input line 78
+4.
 
 [36 <../../../phd/phd_proposal/figure/climate.png>] [37] [38] [39] [40]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 946.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 928.
 [41]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 946.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 928.
 (./_main.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 946.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 946.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 928.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 928.
 Package rerunfilecheck Info: File `_main.out' has not changed.
-(rerunfilecheck)             Checksum: B57F24FB3ABEE89CC082BA3219639077;3822.
+(rerunfilecheck)             Checksum: 8FA43689637405F6AB11A3A57660F1DB;3704.
 
 LaTeX Warning: There were undefined references.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 946.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 928.
  ) 
 Here is how much of TeX's memory you used:
- 12954 strings out of 494923
- 190760 string characters out of 6180743
- 279901 words of memory out of 5000000
- 15770 multiletter control sequences out of 15000+600000
+ 12479 strings out of 494923
+ 183536 string characters out of 6180743
+ 270116 words of memory out of 5000000
+ 15298 multiletter control sequences out of 15000+600000
  59202 words of font info for 106 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 32i,9n,38p,1250b,418s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 32i,9n,38p,1250b,417s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/en
 c/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/s
 hare/texmf/fonts/enc/dvips/lm/lm-mathex.enc}{/usr/share/texmf/fonts/enc/dvips/l
@@ -1169,10 +1160,10 @@ texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lm
 ri12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/f
 onts/type1/public/lm/lmsy8.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.p
 fb>
-Output written on _main.pdf (41 pages, 5142035 bytes).
+Output written on _main.pdf (41 pages, 5136547 bytes).
 PDF statistics:
- 653 PDF objects out of 1000 (max. 8388607)
- 569 compressed objects within 6 object streams
- 200 named destinations out of 1000 (max. 500000)
- 10510 words of extra memory for PDF output out of 12000 (max. 10000000)
+ 663 PDF objects out of 1000 (max. 8388607)
+ 579 compressed objects within 6 object streams
+ 209 named destinations out of 1000 (max. 500000)
+ 10502 words of extra memory for PDF output out of 12000 (max. 10000000)
 
