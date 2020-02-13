@@ -35,6 +35,14 @@ description: "This paper describes a model of pollination phenology"
 
 (ref:surveys) Days orchards were surveyed for phenology in each year.
 
+(ref:floweringperiod) Flowering period date predictions from the model in 15 years at 3 sites. Receptivity in purple, pollen shed in green. Gray bars show max and min extent of flowering period in data and black bars show max and min flowering for years and sites with data.
+
+(ref:floweringlength) Length of flowering period at 3 sites.
+
+(ref:overlap) Receptivity overlap with pollen shed at 3 sites under conditions in 1997-2011, and with 2 and 5 degrees of warming.
+
+(ref:siteprovclimate) Provenance (SPU) climates of data included in this proposal, provenances not included in this proposal, and sites where provenances were grown. MAT is mean annual temperature and MAP is mean annual precipitation.
+
 
 ```{r include=FALSE}
 # automatically create a bib database for R packages
@@ -197,7 +205,7 @@ knitr::include_graphics('../../../phd/maps/SiteMaps/sitemapwithPCIC.png')
 <!--
 I obtained pollination phenology records from 17 of the 26 lodgepole pine seed orchards in British Columbia. Thirteen out of 17 orchards in my data set are first generation orchards and should faithfully represent their provenances. These first generation orchards represent 6 provenances at 5 sites. Second generation orchards have been selectively crossed and this may skew the mean or variance of phenology for a provenance if pollination phenology varies by provenance.-->
 
-Parents of trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs) (Fig. \@ref(spu). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
+Parents of trees grown at the seed orchard sites were sourced from 7 Seed Planning Units (SPUs) (Fig. \@ref(fig:spu). SPUs are organizational units in BC forestry that are based on biogeoclimate regions. Trees with the same SPU provenance are grown together in an orchard at a given site. Genotypes (labelled with a Clone number in the data) in the orchards are represented by multiple ramets. 
 
 Most provenances are represented at 2 to 3 sites and have at least three years of data at a given site spanning 1997-2012 (Tab. \ref{contingency}). The Prince George Tree Improvement Station (PGTIS) provides a continuous 15-year record of its three orchards' phenology. Most sites only observe one ramet per clone; PGTIS typically observed 2-4 ramets per clone.
 
@@ -218,7 +226,8 @@ Stages of pollen and seed cone development are described by @owens1984 and updat
 "Flowering" states were recorded for both pollen shed and cone receptivity at the level of each tree. Protocol C recommends marking the dates when 20% of the cones on a tree have begun flowering and when 80% of the cones on a tree have finished flowering. Operationally, there was some subjectivity and tree-level states for each cone type should be interpreted as "starting flowering" and "finished flowering."  
 
 [DESCRIBE SURVEY PERIODS]
-```{r surveys, fig.height=12, echo=FALSE, fig.cap='(ref:surveys)'}
+<!--```{r spu, fig.cap='(ref:spu)', out.width='100%', echo=FALSE}-->
+```{r surveys, fig.cap='(ref:surveys)', fig.height=12, out.width='100%', echo=FALSE,}
 # Index by Site, Provenance, and Year
 dat$spyind <- group_indices(dat, Site, Year, Provenance)
 
@@ -275,7 +284,7 @@ Daily weather data at seed orchard sites was extracted from PNWNAmet, a daily gr
 Gridpoint data was adjusted using monthly site data. As gridpoints did not align exactly with site locations and there were significant elevation differences between many of the sites and gridpoints, PNWNAmet data did not accurately represent the temperature at sites, so a correction factor was applied. First, mean monthly temperatures for the sites were generated using the ClimateNA v6.20 software package [@wang2016]. Monthly site specific data then was regressed on monthly PNWNAmet data to determine the correction factor for daily PNWNAmet data. 
 
 [MOVE MOST OF THE REST OF THE SECTION TO SUPPLEMENTAL]
-For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package (Tab. \@ref(tab:climatecorrection-pars)).
+For each site, climateNA temperatures $T$ were regressed on mean monthly PNWNAmet temperatures $t$ with `lm` in R's `stats` package (Tab. \@ref(tab:climatenacorrection-pars)).
 
 \begin{equation} 
   T = \alpha + \beta t 
@@ -421,7 +430,7 @@ knitr::include_graphics('../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.p
 knitr::include_graphics('../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png')
 ```
 
-The proportion of state 2 observations (flowering) was predicted correctly by the model [X%] of the time for females and [Y%] for males (Fig. \@ref(ppcprop)). Flowering is predicted with greater accuracy than the other phases and male flowering is predicted better than female flowering. Phases 1 and 3 are likely predicted less well because the observation dates (and associated accumulated forcing) are likely to be very close to the transitions into or out of state 2, *i.e.*, the most difficult ranges of forcing units over to predict phenological state.
+The proportion of state 2 observations (flowering) was predicted correctly by the model [X%] of the time for females and [Y%] for males (Fig. \@ref(fig:ppcprop)). Flowering is predicted with greater accuracy than the other phases and male flowering is predicted better than female flowering. Phases 1 and 3 are likely predicted less well because the observation dates (and associated accumulated forcing) are likely to be very close to the transitions into or out of state 2, *i.e.*, the most difficult ranges of forcing units over to predict phenological state.
 
 [WHAT DOES THE SITE GRAPH ADD?]
 
@@ -639,21 +648,30 @@ compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
 ```
 ## Flowering period
 
-Receptivity and pollen shed overlap for most of the flowering period within a year and site. Pollen shed typically encompasses the entire receptivity period. Prince George, the most northern site, generally flowers later in the year than Kalamalka and has shorter flowering periods. Kettle River, the most southern site, but rather cool compared to Kalamalka, is in between.
-![Flowering period date predictions from the model in 15 years at 3 sites. Receptivity in purple, pollen shed in green. Gray bars show max and min extent of flowering period in data and black bars show max and min flowering for years and sites with data. \label{floweringperiod}](../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png)
+Receptivity and pollen shed overlap for most of the flowering period within a year and site (Fig. \@ref(fig:floweringperiod). Pollen shed typically encompasses the entire receptivity period. Prince George, the most northern site, generally flowers later in the year than Kalamalka and has shorter flowering periods. Kettle River, the most southern site, but rather cool compared to Kalamalka, is in between.
+
+```{r floweringperiod, fig.cap='(ref:floweringperiod)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png')
+```
 
 ## Length of phenology period
 
-Flowering normally lasts between 10 and 20 days and receptivity is about 3 days shorter than pollen shed (\ref{floweringlength}) [GET REAL #S, DON'T JUST LOOK AT GRAPH]
+Flowering normally lasts between 10 and 20 days and receptivity is about 3 days shorter than pollen shed (\@ref(fig:floweringlength)) [GET REAL #S, DON'T JUST LOOK AT GRAPH]
 
-![Length of flowering period at 3 sites \label{floweringlength}](../../../phd/LabNotebook/images/2019-11-28_lengthindays.png)
+```{r floweringlength, fig.cap='(ref:floweringlength)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-11-28_lengthindays.png')
+```
+
 ## Overlap now and in the future
 
-Overlap between receptivity and pollen shed between sites depends on the timing and length of the flowering period at each site. Currently, PGTIS receptivity doesn't overlap with Kalamalka pollen shed and Kalamalka receptivty doesn't overlap with PGTIS pollen shed. PGTIS receptivity overlaps with Kettle River pollen shed longer than it does its own.
+Overlap between receptivity and pollen shed between sites depends on the timing and length of the flowering period at each site. Currently, PGTIS receptivity doesn't overlap with Kalamalka pollen shed and Kalamalka receptivity doesn't overlap with PGTIS pollen shed. PGTIS receptivity overlaps with Kettle River pollen shed longer than it does its own.
 
-Increasing temperatures by 2 and 5 degrees does not cause large changes in flowering overlap between sites. It may slightly shorten the length of overlap between pollen shed and receptivity within a site. It does lead to small amounts of overlap between Kalamalka's receptive cones and pollen shed at PGTIS, though PGTIS cones still aren't receptive when Kalamalka is shedding pollen. [RUN ALL THE SITES AND BE MORE QUANTITATIVE].
+Increasing temperatures by 2 and 5 degrees does not cause large changes in flowering overlap between sites (Fig. \@ref(fig:overlap)). It may slightly shorten the length of overlap between pollen shed and receptivity within a site. It does lead to small amounts of overlap between Kalamalka's receptive cones and pollen shed at PGTIS, though PGTIS cones still aren't receptive when Kalamalka is shedding pollen. [RUN ALL THE SITES AND BE MORE QUANTITATIVE].
 
-![Receptivity overlap with pollen shed at 3 sites under conditions in 1997-2011, and with 2 and 5 degrees of warming. \label{floweringlength}](../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png)
+```{r overlap, fig.cap='(ref:overlap)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png')
+```
+
 
 # Discussion
 
@@ -674,7 +692,7 @@ in lodgepole pine, the threshold for shoot elongation was 5.1 $^\circ\mathrm{C}$
 
 [TALK ABOUT LIEPE?]
 
-![Variance in budbreak and budset for lodgepole pine explained by provenance climate. Seedlings from 281 locations across lodgepole's BC range were grown in growth chambers under four treatments: approximated seasonal and daily variation in temperature for geographic locations with a MAT of 1, 6, and 11 $^\circ\mathrm{C}$, with the warmest treatment having a dry and wet version. Pearson's correlation coefficient between phenotypic traits in lodgepole pine and provenance climates are presented. The vertical line represents the critical $r^2$ value after an adjustment for multiple inferences. From @Liepe2014 (submitted). \label{Liepe_Pheno_Corr}](../../../phd/phd_proposal/figure/Liepe_phen_corr.png)
+<!--![Variance in budbreak and budset for lodgepole pine explained by provenance climate. Seedlings from 281 locations across lodgepole's BC range were grown in growth chambers under four treatments: approximated seasonal and daily variation in temperature for geographic locations with a MAT of 1, 6, and 11 $^\circ\mathrm{C}$, with the warmest treatment having a dry and wet version. Pearson's correlation coefficient between phenotypic traits in lodgepole pine and provenance climates are presented. The vertical line represents the critical $r^2$ value after an adjustment for multiple inferences. From @Liepe2014 (submitted). \label{Liepe_Pheno_Corr}](../../../phd/phd_proposal/figure/Liepe_phen_corr.png)-->
 
 2) How does faster spring warm-up like we expect under climate change affect within population mating success and frequency of outcrossing? 
 
@@ -705,7 +723,7 @@ Benefits of this dataset include the large number of trees, long time series, mu
 ### Grafting bias?
 
 ### Problems from breeding
-There are two types of orchards: first generation and advanced. 
+Some orchards have been subject to selection that may have affected phenology. (TALK ABOUT IAN'S RESULTS?) There are two types of orchards: first generation and advanced. 
 Each orchard contains trees that are the descendants of seeds and scions collected from mother trees in one particular provenance.
 First generation orchards have not undergone selective breeding but may be subject to selection through the process of choosing mother trees (called "plus" trees by tree breeders), testing and selection of mother tree offspring, or culling of unfavorable trees in the orchard.
 First generation orchard trees are clones of mother trees and their offspring grafted onto rootstock.
@@ -716,7 +734,9 @@ This selection may be strong; more than 50% of offspring can be rejected in this
 In 1.75 generation orchards, data from 10 year tests of mother tree offspring are used to select 40 of the best genotypes for a given provenance.
 Offspring from controlled crosses between trees in first generation orchards are tested in field trials and the best trees are then cloned and grafted onto root stock in advanced generation orchards. 
 
-```{r calculate orchard generations, echo=FALSE}
+[ADD SITE AND SPU INFO]
+
+```{r calculateorchardgenerations, echo=FALSE}
 orchards_in_data <- read.csv("../../../phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/derived_phenophase.csv", header=TRUE, stringsAsFactors = FALSE) %>% 
     select(Orchard, Year, ) %>%
     group_by(Orchard) %>%
@@ -726,17 +746,18 @@ orchard_gen <- read.csv("../../../phd/data/OrchardInfo/OrchardGen.csv", header=T
 orchard_meta <- dplyr::left_join(orchards_in_data, orchard_gen) %>%
     unique()
 
-knitr::kable(orchard_meta)
-
+knitr::kable(orchard_meta, caption="Orchard generations reflecting the level of selection trees were subject to")
 
 ```
 
 ### selection only from a portion of the range
-Provenances and sites included in my data exclude the coldest and wettest parts of the range. Figure \ref{siteprovclimate} shows the 1961-1990 climate normal mean annual temperature (MAT) and mean annual precipitation (MAP) for data from all lodgepole pine provenances in BC, provenances included in my data set, and sites where provenances were grown. Orchard sites are generally much warmer and drier than many locations where lodgepole pine grow. We may have difficulty extrapolating into the coolest and wettest parts of the lodgepole pine range, depending on actual yearly conditions at sites for which we have data. However, this may be advantageous when it comes to predicting phenology under climate change.
+Provenances and sites included in my data exclude the coldest and wettest parts of the range. Figure \@ref(fig:siteprovclimate) shows the 1961-1990 climate normal mean annual temperature (MAT) and mean annual precipitation (MAP) for data from all lodgepole pine provenances in BC, provenances included in my data set, and sites where provenances were grown. Orchard sites are generally much warmer and drier than many locations where lodgepole pine grow. We may have difficulty extrapolating into the coolest and wettest parts of the lodgepole pine range, depending on actual yearly conditions at sites for which we have data. However, this may be advantageous when it comes to predicting phenology under climate change.
 
 [SITE SELECTION AND CLIMATE CHANGE]
 
-![Provenance (SPU) climates of data included in this proposal, provenances not included in this proposal, and sites where provenances were grown. MAT is mean annual temperature and MAP is mean annual precipitation. \label{siteprovclimate}](../../../phd/phd_proposal/figure/climate.png)
+```{r siteprovclimate, fig.cap='(ref:siteprovclimate)', out.width='100%', echo=FALSE}
+knitr::include_graphics('../../../phd/phd_proposal/figure/climate.png')
+```
 
 ## no chilling
 Previous models for lodgepole pine have fitted spring growth phenology models without considering chilling [@Chuine2001] and, in general, budburst models for boreal tree species have not required chilling to give accurate predictions [@Linkosalo2000].
