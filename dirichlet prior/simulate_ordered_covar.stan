@@ -15,25 +15,24 @@ functions {
 
 
 transformed data {
-  int<lower=1> N = 50; // Number of observations
-  int<lower=1> K = 5;  // Number of ordinal categories
+  int<lower=1> N = 500; // Number of observations
+  int<lower=1> K = 3;  // Number of ordinal categories
+  real beta = 0.5;
 }
 
 generated quantities {
-  real beta = exp(3); // covariate effect
+  //real beta = exp(3); // covariate effect
   real x[N]; //simulate covariate
   vector[N] gamma; //simulated latent effect
 
-  positive_ordered[K - 1] c = induced_dirichlet_rng(K, 2); // (Internal) cut points
+  ordered[K - 1] c = induced_dirichlet_rng(K, 7); // (Internal) cut points
   int<lower=1, upper=K> y[N];                     // Simulated ordinals
 
 
   for (n in 1:N) {
-    x[n] = uniform_rng(0,13); // covariate
+    x[n] = uniform_rng(0,20); // covariate
     gamma[n] = x[n] * beta; // Latent effect
-  }
-
-  for (n in 1:N) {
-    y[n] = ordered_logistic_rng(gamma[n], c);
+    y[n] = ordered_logistic_rng(gamma[n], c); // ordinals
   }
 }
+
