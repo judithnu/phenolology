@@ -716,6 +716,9 @@ When converting observations/model
 - Comments on significance and contribution
 - Comments on strengths and limitations
 
+@Owens2001 on Western White Pine
+> Degree-days are a useful way to predict seed cone receptivity and to a lesser extent pollen shed at one site in successive years but not between sites
+
 ### Limitations of the dataset
 
 Benefits of this dataset include the large number of trees, long time series, multiple provenances grown at multiple sites giving a semi-common garden design, and the inclusion of clones. Limitations include interval and end censoring, especially at Prince George, irregular scoring systems, subjective scoring, non-random clone selection, and selective breeding.
