@@ -5,6 +5,7 @@ library(rstan)
 rstan_options(auto_write=TRUE)
 options(mc.cores = parallel::detectCores())
 
+# simulate group level effects
 
 simu <- stan(file='dirichlet prior/simulate_ordered_covar.stan', iter=1, chains=1,
              algorithm="Fixed_param")
