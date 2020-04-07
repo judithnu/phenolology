@@ -9,25 +9,456 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r packages}
+library(ggplot2)
+library(dplyr)
+library(bayesplot)
+library(rstan)
+library(ggpubr)
+```
+
+```{r options}
+rstan_options(auto_write=TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+```{r functions}
+
+# function to plot modeled parameters with label being a string to label the graph (usually prior and whether groups were included and pardf is the modeled parameter dataframe)
+parplotter <- function(label, pardf) {
+  cutpoints <- mcmc_areas(pardf, regex_pars="c") +
+    geom_vline(xintercept=c)
+  beta <- mcmc_areas(pardf, pars="beta") +
+    geom_vline(xintercept=beta)
+  h <- mcmc_areas(pardf, regex_pars = "h") +
+    geom_vline(xintercept=h)
+  ggpubr::ggarrange(cutpoints, beta, h, nrow=1, ncol=3, labels=label)
+}
+
+
+# function to calculate the difference between modeled parameters (in the model_params dataframe) and true parameters (globally declared)
+posterior_differencer <- function(model_params) {
+  c1_diff <- model_params$c.1 - c[1] 
+  c2_diff <- model_params$c.2 - c[2]
+  h1_diff <- model_params$h1 - h[1]
+  h2_diff <- model_params$h2 - h[2] 
+  beta_diff <- model_params$beta - beta
+  diffframe <- data.frame(c1_diff, c2_diff, h1_diff, h2_diff, beta_diff)
+  return(diffframe)
+}
+
+# function to plot histograms of differences between true params and modeled params (model_params dataframe). priorgroups is a string that makes a subtitle for the plot
+diffplotter <- function(model_params, priorgroups) {
+  diffs <- posterior_differencer(model_params)
+  mcmc_intervals(diffs) +
+    ggtitle("differences between true param and model param", subtitle =priorgroups)
+}
+
+# generate samples from a truncated normal distribution. n = how many samples, mean and sd are mean and sd, and min and max are the limits of the distribution/truncation points. possibly my first ever use of while loops. Don't @ me.
+rtnorm <- function(n, mean, sd, min, max) {
+  x <- rnorm(n, mean=mean, sd=sd)
+  x <- x[x >= min & x <= max]
+  while(length(x) < n) {
+    newx <- rnorm(1, mean=mean, sd=sd)
+    while(newx <= min | newx >= max) {
+      newx <- rnorm(1, mean=mean, sd=sd)
+    }
+    x <- c(x, newx)
+  }
+  length(x)==n
+  return(x)
+}
+```
+
 ## Prior choice
 
-In my original phenology model, I use a gamma distribution for the prior on the cutpoints and a beta distribution for the slope and group effects on the slope.
+In my original phenology model, I use 
 
-Michael Betancourt thinks that an induced dirichlet prior may be a better choice for
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+* a gamma distribution for the prior on the cutpoints 
+* a beta distribution for the slope
+* normal distributions for group effects on the slope
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Michael Betancourt thinks that an induced dirichlet prior may be a [good choice](https://betanalpha.github.io/assets/case_studies/ordinal_regression.html) for ordinal logistic models.
 
-```{r cars}
-summary(cars)
+Normally, priors are bottom up - you choose a distribution for each prior. This is tricky for the cutpoints in an ordinal logistic model because they're defined on an abstract latent space so you can't easily use your domain expertise, but a good prior is incredibly important in these models, because ordered logistic models with covariates are inherently non-identifiable. (Because $beta$s and cutpoints depend on one another.)
+
+> To avoid the non-identifiability of the interior cut points from propagating to the posterior distribution we need a principled prior model that can exploit domain expertise to consistently regularize all of the internal cut points at the same time. Regularization of the cut points, however, is subtle given their ordering constraint. Moreover domain expertise is awkward to apply on the abstract latent space where the internal cut points are defined.
+
+# Simulate data
+Let's simulate some data that's kind of like mine and see which prior does best.
+
+First, let's simulate some data. We have three categories and a latent effect (covariate). Data is most likely to be collected around stage 2.
+
+## Simulate $\beta = 0.5$
+
+```{r data simulation}
+N = 500
+G = 7
+K = 3
+
+c <- c(3,7) # cutpoints
+beta = 0.5
+h <- c/beta
+x <- rtnorm(n=N, mean=mean(h), sd=mean(h)/4, min=0, max=20) #covariate
+hist(x)
 ```
 
-## Including Plots
+```{r simulate covar}
+input_data_for_simulation <- list("N" = N, "K"=3, "x" = x, "c" = c, "beta" = beta)
 
-You can also embed plots, for example:
+simu <- stan(file='dirichlet prior/covar_sim.stan', iter=1, chains=1,
+             algorithm="Fixed_param", data=input_data_for_simulation)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+simu_params <- rstan::extract(simu)
+
+input_data_for_model <- list("N" = N, "K" = K, "x" = x, "y" = array(simu_params$y[1,]))
+
+inputdf <- data.frame(input_data_for_model)
+
+ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
+    stat_ecdf() +
+    geom_vline(xintercept=h)
+
+plot(input_data_for_model$x, input_data_for_model$y)
+title("Simulated data with cutpoints")
+abline(v=h)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r prior predictive}
+```
+
+
+### Gamma prior with covariate
+```{r gamma recapture}
+fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=input_data_for_model, chains=4)
+
+paramsgam <- data.frame(rstan::extract(fitgam)) 
+
+summary(paramsgam)
+
+pgam <- parplotter("gamma", paramsgam)
+pgam
+
+diffplotter(model_params=paramsgam, priorgroups="gamma prior, no groups")
+```
+
+Gamma prior recaptures parameters relatively well here and there are no obvious model fitting problems.
+
+
+### Dirichlet prior with covariate
+What about a dirichlet prior?
+
+```{r dirichlet recapture}
+fitdir <- stan(file='dirichlet prior/dirichlet/dirichlet_covar.stan', data=input_data_for_model, chains=4)
+
+paramsdir <- data.frame(rstan::extract(fitdir))
+summary(paramsdir)
+
+pdir <- parplotter("dirichlet", paramsdir)
+pdir
+
+```
+
+The model with an induced dirichlet prior anchored at 0 had divergences, treedepth issues, and other warnings. It didn't fit well. I think it's because it was estimating some negative cutpoints and going off into weird territory with beta.
+
+Anchoring the dirichlet at 3 didn't seem to improve things.
+
+
+```{r compare gamma and dirichlet}
+
+
+ddir <- diffplotter(paramsdir, priorgroups="dirichlet prior, no groups")
+dgam <- diffplotter(paramsgam, priorgroups = "gamma prior, no groups")
+ggarrange(dgam, ddir, ncol=1)
+
+ggarrange(pgam, pdir, ncol=1)
+
+```
+
+
+## Simulate more data - uniform covariate?
+What if your data is, unlike mine, collected more uniformly across the covariate range?
+
+```{r data simulation}
+N = 500
+G = 7
+K = 3
+
+c <- c(3,7) # cutpoints
+beta = 0.5
+h <- c/beta
+x <- runif(N, min=0, max=20) #covariate
+hist(x)
+```
+
+```{r simulate covar}
+input_data_for_simulation <- list("N" = N, "K"=3, "x" = x, "c" = c, "beta" = beta)
+
+simu <- stan(file='dirichlet prior/covar_sim.stan', iter=1, chains=1,
+             algorithm="Fixed_param", data=input_data_for_simulation)
+
+simu_params <- rstan::extract(simu)
+
+input_data_for_model <- list("N" = N, "K" = K, "x" = x, "y" = array(simu_params$y[1,]))
+
+inputdf <- data.frame(input_data_for_model)
+
+ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
+    stat_ecdf() +
+    geom_vline(xintercept=h)
+
+plot(input_data_for_model$x, input_data_for_model$y)
+title("Simulated data with cutpoints")
+abline(v=h)
+
+```
+
+### Induced dirichlet prior with uniformly distributed covariate
+```{r dirichlet recapture}
+fitdir <- stan(file='dirichlet prior/dirichlet/dirichlet_covar.stan', data=input_data_for_model, chains=4)
+
+paramsdir <- data.frame(rstan::extract(fitdir))
+summary(paramsdir)
+
+pdir <- parplotter("dirichlet", paramsdir)
+pdir
+
+diffplotter(model_params=paramsdir, priorgroups="induced dirichlet prior, no groups")
+
+```
+
+When the covariate is more evenly distributed, the dirichlet does a great job! 
+
+## Simulate more data - $\beta=2$
+
+Does the induced dirichlet do better with sharper transitions - if beta gets increased to 2?
+
+
+```{r data simulation}
+N = 500
+G = 7
+K = 3
+
+c <- c(3,7) # cutpoints
+beta = 2
+h <- c/beta
+x <- rtnorm(n=N, mean=mean(h), sd=1.5*mean(h), min=0, max=20) #covariate
+hist(x)
+```
+
+```{r simulate covar}
+input_data_for_simulation <- list("N" = N, "K"=3, "x" = x, "c" = c, "beta" = beta)
+
+simu <- stan(file='dirichlet prior/covar_sim.stan', iter=1, chains=1,
+             algorithm="Fixed_param", data=input_data_for_simulation)
+
+simu_params <- rstan::extract(simu)
+
+input_data_for_model <- list("N" = N, "K" = K, "x" = x, "y" = array(simu_params$y[1,]))
+
+inputdf <- data.frame(input_data_for_model)
+
+ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
+    stat_ecdf() +
+    geom_vline(xintercept=h)
+
+plot(input_data_for_model$x, input_data_for_model$y)
+title("Simulated data with cutpoints")
+abline(v=h)
+
+```
+
+
+### Dirichlet prior with covariate
+
+With a more rapid transition between states, the induced dirichlet is pretty good!
+
+```{r dirichlet recapture}
+fitdir <- stan(file='dirichlet prior/dirichlet/dirichlet_covar.stan', data=input_data_for_model, chains=4)
+
+paramsdir <- data.frame(rstan::extract(fitdir))
+summary(paramsdir)
+
+pdir <- parplotter("dirichlet", paramsdir)
+pdir
+
+diffplotter(model_params=paramsdir, priorgroups="induced dirichlet prior, no groups")
+
+```
+
+Will the gamma still work well under these conditions?
+### Gamma prior with covariate
+```{r gamma recapture}
+fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=input_data_for_model, chains=4)
+
+paramsgam <- data.frame(rstan::extract(fitgam)) 
+
+summary(paramsgam)
+
+pgam <- parplotter("gamma", paramsgam)
+pgam
+
+diffplotter(model_params=paramsgam, priorgroups="gamma prior, no groups")
+```
+
+Yep! Gamma outperforms dirichlet.
+
+```{r compare gamma and dirichlet}
+
+
+ddir <- diffplotter(paramsdir, priorgroups="dirichlet prior, no groups")
+dgam <- diffplotter(paramsgam, priorgroups = "gamma prior, no groups")
+ggarrange(dgam, ddir, ncol=1)
+
+ggarrange(pgam, pdir, ncol=1)
+
+```
+
+
+*tl;dr* Gamma outperforms dirichlet when observations are bunched up around a particular state. 
+
+
+# Covariate and a group
+
+What if our data has groups that have different effects? What if the effects are relatively small and beta is also low (0.5)? 
+
+Let's simulate 7 groups with `N=500` observations for each group.
+
+```{r}
+
+N = 500*7
+G = 7
+K = 3
+
+c <- c(3,7) # cutpoints
+beta = 0.5
+h <- c/beta
+x <- rtnorm(n=N, mean=mean(h), sd=mean(h)/4, min=0, max=20) #covariate
+hist(x)
+     
+# simulate individual group effects
+gbeta_mu <- 0
+gbeta_sd <- 0.25
+gbeta_vec <- rnorm(7, mean=gbeta_mu, sd=gbeta_sd) # group effects
+gbeta <- sample(gbeta_vec, size=N, replace=TRUE) # assign a group effect to every observation
+gid <- as.numeric(as.factor(gbeta)) # label the groups
+
+input_data_for_simulation <- list("N" = N, "K"=K, "G"=G, "x" = x, "c" = c, "beta"=beta, "gbeta"= gbeta)
+
+simu <- stan(file='dirichlet prior/covar_group_sim.stan', iter=1, chains=1,
+             algorithm="Fixed_param", data=input_data_for_simulation)
+
+simu_params <- rstan::extract(simu)
+
+input_data_for_model <- list("N" = N, "K" = K, "G"=G, "x" = x, "GID"= gid, "y" = array(simu_params$y[1,]))
+
+table(input_data_for_model$y)
+plot(input_data_for_model$x, input_data_for_model$y)
+
+groupdata <- data.frame(x=x, y=input_data_for_model$y, GID=gid)
+ggplot(groupdata, aes(x=x, color=as.factor(y))) +
+    stat_ecdf() +
+    facet_wrap("GID")
+```
+
+### Gamma recapture 
+Can a model with the gamma prior recapture the parameters used to simulate the data?
+
+```{r gamma recapture group}
+fitgam <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=input_data_for_model, chains=4)
+
+paramsgamg <- data.frame(rstan::extract(fitgam)) 
+
+summary(paramsgam)
+
+parplotter <- function(label, pardf) {
+  cutpoints <- mcmc_areas(pardf, regex_pars="c") +
+    geom_vline(xintercept=c)
+  beta <- mcmc_areas(pardf, pars="beta") +
+    geom_vline(xintercept=beta)
+  h <- mcmc_areas(pardf, regex_pars = "h") +
+    geom_vline(xintercept=h)
+  ggpubr::ggarrange(cutpoints, beta, h, nrow=1, ncol=3, labels=label)
+}
+
+pgam <- parplotter("gamma", paramsgam)
+pgam
+
+diffplotter(model_params=paramsgam, priorgroups="gamma prior, no groups")
+```
+
+
+
+```{r gamma recapture group}
+fit <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=input_data_for_model, chains=4)
+
+params <- data.frame(rstan::extract(fit))
+summary(params)
+
+mcmc_areas(params, regex_pars="c")+
+    geom_vline(xintercept=c)
+mcmc_areas(params, pars="beta") +
+    geom_vline(xintercept=beta)
+
+mcmc_areas(params, regex_pars="betag") +
+    geom_vline(xintercept=gbeta)
+```
+
+With `N=5000` and simulating from a normal with `sd=0.25` and using an `exponential(4)` group_sigma prior, there are fit problems:
+
+```
+Warning messages:
+1: There were 104 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See
+http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup 
+2: Examine the pairs() plot to diagnose sampling problems
+ 
+3: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+Running the chains for more iterations may help. See
+http://mc-stan.org/misc/warnings.html#bulk-ess 
+4: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+Running the chains for more iterations may help. See
+http://mc-stan.org/misc/warnings.html#tail-ess
+```
+
+Cutpoints are estimated ok, beta isn't good, but it isn't terrible. group betas are generally awful - way overestimated. Time: 1120.86 seconds
+
+Constraining the group sigma prior might help?
+
+Can a model with the dirichlet prior recapture the parameters used to simulate the data?
+
+```{r dirichlet recapture group}
+fit <- stan(file='dirichlet prior/dirichlet/dirichlet_covar_group.stan', data=input_data_for_model, chains=4)
+
+params <- data.frame(rstan::extract(fit))
+summary(params)
+
+mcmc_areas(params, regex_pars="c")+
+    geom_vline(xintercept=c)
+mcmc_areas(params, pars="beta") +
+    geom_vline(xintercept=beta)
+
+mcmc_areas(params, regex_pars="betag") +
+    geom_vline(xintercept=gbeta)
+```
+
+Dirichlet prior struggles here too 
+```
+Warning messages:
+1: There were 2021 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See
+http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup 
+2: There were 3 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
+http://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded 
+3: Examine the pairs() plot to diagnose sampling problems
+ 
+4: The largest R-hat is 2.89, indicating chains have not mixed.
+Running the chains for more iterations may help. See
+http://mc-stan.org/misc/warnings.html#r-hat 
+5: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+Running the chains for more iterations may help. See
+http://mc-stan.org/misc/warnings.html#bulk-ess 
+6: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+Running the chains for more iterations may help. See
+http://mc-stan.org/misc/warnings.html#tail-ess 
+```
+Doesn't return any parameters. Time 1110.49 seconds 

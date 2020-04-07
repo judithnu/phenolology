@@ -44,8 +44,8 @@ model {
     vector[N] gamma;
 
     // Prior model
-    beta ~ exponential(5);
-    c ~ induced_dirichlet(rep_vector(1, K), 7);
+    beta ~ exponential(3);
+    c ~ induced_dirichlet(rep_vector(1, K), 0);
 
     // Observational model
 
@@ -55,12 +55,17 @@ model {
     }
 }
 
-// generated quantities {
-//     vector[N] gamma_ppc;
-//     int<lower=1, upper=K> y_ppc[N];
-//
-//     for (n in 1:N) {
-//         gamma_ppc[n] = beta*x[n];
-//         y_ppc[n] = ordered_logistic_rng(gamma_ppc[n], c);
-//     }
-// }
+generated quantities {
+    //vector[N] gamma_ppc;
+    real h1;
+    real h2;
+    //int<lower=1, upper=K> y_ppc[N];
+
+    h1 = c[1]/beta;
+    h2 = c[2]/beta;
+
+    // for (n in 1:N) {
+    //     gamma_ppc[n] = beta*x[n];
+    //     y_ppc[n] = ordered_logistic_rng(gamma_ppc[n], c);
+    // }
+}
