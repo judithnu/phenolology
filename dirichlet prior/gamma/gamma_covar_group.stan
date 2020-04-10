@@ -18,6 +18,7 @@ parameters {
     real<lower=0> sigma_group;
 }
 
+
 model {
     vector[N] phi;
 
@@ -25,7 +26,7 @@ model {
     beta ~ exponential(3);
     c ~ gamma(10,1);
     //betag ~ normal(0,0.25);
-    sigma_group ~ exponential(4);
+    sigma_group ~ exponential(3);
     betag ~ normal(0, sigma_group);
 
 
@@ -38,13 +39,10 @@ model {
 
 }
 
-// generated quantities {
-    //add fstart and fend here
-//     vector[N] gamma_ppc;
-//     int<lower=1, upper=K> y_ppc[N];
-//
-//     for (n in 1:N) {
-//         gamma_ppc[n] = beta*x[n];
-//         y_ppc[n] = ordered_logistic_rng(gamma_ppc[n], c);
-//     }
-// }
+generated quantities {
+  row_vector[G] fstart;
+
+  for (g in 1:G) {
+    fstart[g] = c[1]/(beta + betag[g]);
+  }
+}

@@ -321,28 +321,37 @@ ggarrange(pgam, pdir, ncol=1)
 
 # Covariate and a group
 
-What if our data has groups that have different effects? What if the effects are relatively small and beta is also low (0.5)? 
+What if our data has groups that have different effects? 
 
-Let's simulate 7 groups with `N=500` observations for each group.
+## Group effects just a little smaller than $\beta$ 
+What if the effects are around the same size as beta and beta is relatively small (which makes the model harder to fit)?
 
-```{r}
+Let's simulate 7 groups with `N=500` observations for each group. Effects for the groups are simulated from a normal distribution with `mean=0` and `sd=0.25`. They're deviations from the population mean.
+
+```{r group simulation}
 
 N = 500*7
 G = 7
 K = 3
 
+# parameters
 c <- c(3,7) # cutpoints
 beta = 0.5
-h <- c/beta
-x <- rtnorm(n=N, mean=mean(h), sd=mean(h)/4, min=0, max=20) #covariate
-hist(x)
-     
+
 # simulate individual group effects
 gbeta_mu <- 0
 gbeta_sd <- 0.25
-gbeta_vec <- rnorm(7, mean=gbeta_mu, sd=gbeta_sd) # group effects
-gbeta <- sample(gbeta_vec, size=N, replace=TRUE) # assign a group effect to every observation
+
+gbeta_vec <- rnorm(G, mean=gbeta_mu, sd=gbeta_sd) # group effects
+gbeta <- sort(sample(gbeta_vec, size=N, replace=TRUE)) # assign a group effect to every observation
 gid <- as.numeric(as.factor(gbeta)) # label the groups
+groupeffects <- data.frame(gbeta, gid) %>%
+  unique()
+
+h1 <- c[1]/(beta+groupeffects$gbeta)
+h2 <- c[2]/(beta+groupeffects$gbeta)
+x <- rtnorm(n=N, mean=mean(c(h1,h2)), sd=mean(h)/4, min=0, max=20) #covariate centered around transitions
+hist(x)
 
 input_data_for_simulation <- list("N" = N, "K"=K, "G"=G, "x" = x, "c" = c, "beta"=beta, "gbeta"= gbeta)
 
@@ -365,100 +374,127 @@ ggplot(groupdata, aes(x=x, color=as.factor(y))) +
 ### Gamma recapture 
 Can a model with the gamma prior recapture the parameters used to simulate the data?
 
+The group effect prior ~ $\mathrm{normal}(0,sigma_{group})$ with $sigma_{group} ~ \mathrm{exponential}(4)$
+
 ```{r gamma recapture group}
-fitgam <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=input_data_for_model, chains=4)
+fitgam <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=input_data_for_model, chains=4, control = list(adapt_delta=0.95, max_treedepth=11), iter=5000)
 
 paramsgamg <- data.frame(rstan::extract(fitgam)) 
 
-summary(paramsgam)
+summary(paramsgamg)
 
-parplotter <- function(label, pardf) {
-  cutpoints <- mcmc_areas(pardf, regex_pars="c") +
+# function to make a graph for a group of parameter values comparing them to the "true" value
+
+
+parplot <- function(label, pardf) {
+  cutpointsp <- mcmc_areas(pardf, regex_pars="c") +
     geom_vline(xintercept=c)
-  beta <- mcmc_areas(pardf, pars="beta") +
+  betap <- mcmc_areas(pardf, pars="beta") +
     geom_vline(xintercept=beta)
-  h <- mcmc_areas(pardf, regex_pars = "h") +
-    geom_vline(xintercept=h)
-  ggpubr::ggarrange(cutpoints, beta, h, nrow=1, ncol=3, labels=label)
+  betagp <- mcmc_areas(pardf, regex_pars="betag") +
+    geom_vline(xintercept = groupeffects$gbeta)
+  hp <- mcmc_areas(pardf, regex_pars = "fstart") +
+    geom_vline(xintercept=h1)
+  ggpubr::ggarrange(cutpointsp, betap, betagp, hp, labels=label)
 }
 
-pgam <- parplotter("gamma", paramsgam)
+pgam <- parplot("gamma, beta=0.5", paramsgamg)
 pgam
 
 diffplotter(model_params=paramsgam, priorgroups="gamma prior, no groups")
 ```
 
+### These notes are for data simulated around base population h (with group effects subtracted out), not individual group h's.
+There was a divergent transition, treedepth warning, and ESS warnings with the default adapt delta, so I increased it to 0.9. Still problems. 
+
+Trying 0.95. No more divergences, but 1 transition after warmup exceeded max treedept and still some bulk ESS problems. $\beta$ parameters are all overestimated.
+
+Keeping adapt_delta at 0.95 and increasing max treedepth to 11 leaves only ESS problems. Estimates are not great - all beta parameters are overestimated and there's no differentiation between them. Not ideal.
+
+Attempting an increase in iterations - that kills all the Stan errors! Unfortunately, $\beta$, $\beta_g$s, and $sigma_group$ are still really overestimated and broad (just bad!). And none of the $\beta_g$s are negative.
+
+On the one hand, this is not great from a model perspective. OTOH, these are pretty unrealistic group effects - ones that shift fstart quite a lot.
+
+### These notes are for data simulated around an h based on the entire population, including groups
+
+Tail ESS errors with iter at 4000, increased to 5000. No more warnings. But how does estimation go? Still badly. Fails to distinguish between groups, overestimates beta, underestimates cutpoints.
 
 
-```{r gamma recapture group}
-fit <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=input_data_for_model, chains=4)
+## Group effects about 1/4 the size of beta.
+Is it the relative size of $beta$ and $betag$s that's the problem or the absolute size of $betag$? Let's bump up $beta$ to the easier to fit 2 (more rapid state transitions) and see how our model does.
 
-params <- data.frame(rstan::extract(fit))
-summary(params)
+```{r group simulation big beta}
 
-mcmc_areas(params, regex_pars="c")+
-    geom_vline(xintercept=c)
-mcmc_areas(params, pars="beta") +
-    geom_vline(xintercept=beta)
+N = 5000*7
+G = 7
+K = 3
 
-mcmc_areas(params, regex_pars="betag") +
-    geom_vline(xintercept=gbeta)
+# parameters
+c <- c(7,14) # cutpoints
+beta = 2
+
+# simulate individual group effects
+gbeta_mu <- 0
+gbeta_sd <- 0.25
+
+gbeta_vec <- rnorm(G, mean=gbeta_mu, sd=gbeta_sd) # group effects
+gbeta <- sort(sample(gbeta_vec, size=N, replace=TRUE)) # assign a group effect to every observation
+gid <- as.numeric(as.factor(gbeta)) # label the groups
+groupeffects <- data.frame(gbeta, gid) %>%
+  unique()
+
+h1 <- c[1]/(beta+groupeffects$gbeta)
+h2 <- c[2]/(beta+groupeffects$gbeta)
+x <- rtnorm(n=N, mean=mean(c(h1,h2)), sd=mean(h), min=0, max=20) #covariate
+hist(x, breaks=30)
+     
+
+input_data_for_simulation <- list("N" = N, "K"=K, "G"=G, "x" = x, "c" = c, "beta"=beta, "gbeta"= gbeta)
+
+simu <- stan(file='dirichlet prior/covar_group_sim.stan', iter=1, chains=1,
+             algorithm="Fixed_param", data=input_data_for_simulation)
+
+simu_params <- rstan::extract(simu)
+
+input_data_for_model <- list("N" = N, "K" = K, "G"=G, "x" = x, "GID"= gid, "y" = array(simu_params$y[1,]))
+
+table(input_data_for_model$y)
+plot(input_data_for_model$x, input_data_for_model$y)
+
+groupdata <- data.frame(x=x, y=input_data_for_model$y, GID=gid)
+ggplot(groupdata, aes(x=x, color=as.factor(y))) +
+    stat_ecdf() +
+    facet_wrap("GID")
 ```
 
-With `N=5000` and simulating from a normal with `sd=0.25` and using an `exponential(4)` group_sigma prior, there are fit problems:
+
+```{r gamma recapture group big beta}
+fitgam <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=input_data_for_model, chains=4, control = list(adapt_delta=0.95, max_treedepth=11), iter=4000)
+
+paramsgamg <- data.frame(rstan::extract(fitgam)) 
+
+summary(paramsgamg)
+
+# function to make a graph for a group of parameter values comparing them to the "true" value
+
+
+pgam <- parplot("gamma, beta=2", paramsgamg)
+pgam
 
 ```
-Warning messages:
-1: There were 104 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See
-http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup 
-2: Examine the pairs() plot to diagnose sampling problems
- 
-3: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
-Running the chains for more iterations may help. See
-http://mc-stan.org/misc/warnings.html#bulk-ess 
-4: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
-Running the chains for more iterations may help. See
-http://mc-stan.org/misc/warnings.html#tail-ess
-```
 
-Cutpoints are estimated ok, beta isn't good, but it isn't terrible. group betas are generally awful - way overestimated. Time: 1120.86 seconds
+Model doesn't give any obvious warnings, but  it overestimates cutpoints, underestimates beta, and dramatically overestimates betags.
 
-Constraining the group sigma prior might help?
+If I change the priors from `cutpoints ~ gamma(10,1)` to `gamma(5,1)` and reduce the sigma_group prior to `exp(5)` from `exp(4)`, it does the same.
 
-Can a model with the dirichlet prior recapture the parameters used to simulate the data?
+If I bump up cutpoints so that the covariate distribution isn't bumping up against 0, beta is underestimated and group betas really overestimated.
 
-```{r dirichlet recapture group}
-fit <- stan(file='dirichlet prior/dirichlet/dirichlet_covar_group.stan', data=input_data_for_model, chains=4)
+If I strongly constrain the sigma_group prior to `exp(10)`, it doesn't change anything.
 
-params <- data.frame(rstan::extract(fit))
-summary(params)
+If I use a uniform distribution for the covariate, beta is underestimated, group betas are still really overestimated (maybe even worse!) and not differentiated.
 
-mcmc_areas(params, regex_pars="c")+
-    geom_vline(xintercept=c)
-mcmc_areas(params, pars="beta") +
-    geom_vline(xintercept=beta)
+Why are all the group effect betas positive and undifferentiated? Does the model need more data?
 
-mcmc_areas(params, regex_pars="betag") +
-    geom_vline(xintercept=gbeta)
-```
+I think I might be simulating my data kind of poorly - or maybe this model isn't good about simulating this data? Or maybe beta should be bigger? I think the transitions between states occurs faster in my data.
 
-Dirichlet prior struggles here too 
-```
-Warning messages:
-1: There were 2021 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See
-http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup 
-2: There were 3 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
-http://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded 
-3: Examine the pairs() plot to diagnose sampling problems
- 
-4: The largest R-hat is 2.89, indicating chains have not mixed.
-Running the chains for more iterations may help. See
-http://mc-stan.org/misc/warnings.html#r-hat 
-5: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
-Running the chains for more iterations may help. See
-http://mc-stan.org/misc/warnings.html#bulk-ess 
-6: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
-Running the chains for more iterations may help. See
-http://mc-stan.org/misc/warnings.html#tail-ess 
-```
-Doesn't return any parameters. Time 1110.49 seconds 
+I could also try a really big beta - like 10.
