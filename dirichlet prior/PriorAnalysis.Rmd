@@ -425,13 +425,13 @@ Is it the relative size of $beta$ and $betag$s that's the problem or the absolut
 
 ```{r group simulation big beta}
 
-N = 5000*7
+N = 500*7
 G = 7
 K = 3
 
 # parameters
-c <- c(7,14) # cutpoints
-beta = 2
+c <- c(5,10) # cutpoints
+beta = 1
 
 # simulate individual group effects
 gbeta_mu <- 0
@@ -471,6 +471,8 @@ ggplot(groupdata, aes(x=x, color=as.factor(y))) +
 ```{r gamma recapture group big beta}
 fitgam <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=input_data_for_model, chains=4, control = list(adapt_delta=0.95, max_treedepth=11), iter=4000)
 
+fitgam <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=input_data_for_model, chains=4)
+
 paramsgamg <- data.frame(rstan::extract(fitgam)) 
 
 summary(paramsgamg)
@@ -493,7 +495,20 @@ If I strongly constrain the sigma_group prior to `exp(10)`, it doesn't change an
 
 If I use a uniform distribution for the covariate, beta is underestimated, group betas are still really overestimated (maybe even worse!) and not differentiated.
 
-Why are all the group effect betas positive and undifferentiated? Does the model need more data?
+Why are all the group effect betas positive and undifferentiated? Does the model need more data? This run took... a really long time. 44109.6 seconds. And it had warnings... And the fit was even worse.
+
+```
+Warning messages:
+1: There were 393 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 11. See
+http://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded 
+2: Examine the pairs() plot to diagnose sampling problems
+```
+
+Can the group effects be recovered if I explicity specify the sd as 0.25 in the model? No it cannot. That's depressing.
+
+What if beta is bigger compared to group effects - like 5? Even more disastrous. Beta is SO overestimated.
+
+What if I drop beta to 1? Still garbage with betas all so overestimated.
 
 I think I might be simulating my data kind of poorly - or maybe this model isn't good about simulating this data? Or maybe beta should be bigger? I think the transitions between states occurs faster in my data.
 

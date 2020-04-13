@@ -15,7 +15,7 @@ parameters {
     real<lower=0> beta; // population level effect
 
     vector[G] betag;
-    real<lower=0> sigma_group;
+    //real<lower=0> sigma_group;
 }
 
 
@@ -26,8 +26,8 @@ model {
     beta ~ exponential(3);
     c ~ gamma(10,1);
     //betag ~ normal(0,0.25);
-    sigma_group ~ exponential(3);
-    betag ~ normal(0, sigma_group);
+    //sigma_group ~ exponential(3);
+    betag ~ normal(0, 0.25);
 
 
     // Observational model
