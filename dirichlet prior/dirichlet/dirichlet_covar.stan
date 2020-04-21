@@ -44,8 +44,8 @@ model {
     vector[N] gamma;
 
     // Prior model
-    beta ~ exponential(3);
-    c ~ induced_dirichlet(rep_vector(1, K), 0);
+    beta ~ exponential(2);
+    c ~ induced_dirichlet(rep_vector(1, K), 20);
 
     // Observational model
 
