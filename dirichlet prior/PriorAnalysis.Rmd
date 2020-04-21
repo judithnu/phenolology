@@ -15,6 +15,7 @@ library(dplyr)
 library(bayesplot)
 library(rstan)
 library(ggpubr)
+library(testthat)
 ```
 
 ```{r options}
@@ -347,10 +348,10 @@ diffplotter(model_params=paramsdir, priorgroups="induced dirichlet prior, no gro
 ```
 
 When the covariate is more evenly distributed, the dirichlet does a great job! 
-
+-->
 ## Simulate more data - $\beta=2$
 
-Does the induced dirichlet do better with sharper transitions - if beta gets increased to 2?
+How do the different priors behave when the transitions are sharper, **i.e.** $\beta$ is larger
 
 
 ```{r data simulation}
@@ -358,10 +359,10 @@ N = 500
 G = 7
 K = 3
 
-c <- c(3,7) # cutpoints
+c <- c(12,28) # cutpoints
 beta = 2
 h <- c/beta
-x <- rtnorm(n=N, mean=mean(h), sd=1.5*mean(h), min=0, max=20) #covariate
+x <- rtnorm(n=N, mean=mean(h), sd=mean(h)/4, min=0, max=20) #covariate
 hist(x)
 ```
 
@@ -388,22 +389,6 @@ abline(v=h)
 ```
 
 
-### Dirichlet prior with covariate
-
-With a more rapid transition between states, the induced dirichlet is pretty good!
-
-```{r dirichlet recapture}
-fitdir <- stan(file='dirichlet prior/dirichlet/dirichlet_covar.stan', data=input_data_for_model, chains=4)
-
-paramsdir <- data.frame(rstan::extract(fitdir))
-summary(paramsdir)
-
-pdir <- parplotter("dirichlet", paramsdir)
-pdir
-
-diffplotter(model_params=paramsdir, priorgroups="induced dirichlet prior, no groups")
-
-```
 
 Will the gamma still work well under these conditions?
 ### Gamma prior with covariate
@@ -420,7 +405,50 @@ pgam
 diffplotter(model_params=paramsgam, priorgroups="gamma prior, no groups")
 ```
 
-Yep! Gamma outperforms dirichlet.
+Gamma model is relatively sensitive to gamma prior on the cutpoints. When gamma "mean" is the center of the true cutpoints, cutpoints are slightly overestimated, as is beta. h1 is overestimated and h2 is underestimated. When it's 10 (half the "mean" cutpoint here), cutpoints are underestimated by ~2-4). However, the low prior mean with underestimated cutpoints actually estimates h1 and h2 better.
+
+Transitions are estimated better even as the parameters that calculate that transition are estimated worse. So. The "bad" priors are doing a better job at capturing the *relationship* between beta and the cutpoints, which is ultimately what I'm interested in.
+
+On the other hand, I really do need to do a good job estimating beta because otherwise I won't be able to estimate my group effects later on.
+
+### Dirichlet prior with covariate
+
+
+
+```{r dirichlet recapture}
+fitdir <- stan(file='dirichlet prior/dirichlet/dirichlet_covar.stan', data=input_data_for_model, chains=4)
+
+paramsdir <- data.frame(rstan::extract(fitdir))
+summary(paramsdir)
+
+pdir <- parplotter("dirichlet", paramsdir)
+pdir
+
+diffplotter(model_params=paramsdir, priorgroups="induced dirichlet prior, no groups")
+
+```
+
+
+
+When the transition between states is relatively rapid, the dirichlet struggles a bit. It's really underestimating both cutpoints and beta - but getting the inflection points quite right. This occurs with a $\beta$ of exp(2) and 1. If the $\beta$ prior is too loose (exp(0.5)) or too tight (exp(4)), the induced dirichlet fails.
+
+The anchor point in the dirichlet also really matters to cutpoint estimation. Anchors much lower than the first true cutpoint really push the cutpoint estimate down. Anchors closer to the midpoint of the true cutpoint do better at estimating cutpoints, but worse at estimating transitions.
+
+
+
+
+
+Cut point anchor medium
+
+```{r exponential}
+hist(rexp(1000,0.5), breaks=30)
+hist(rexp(1000,2), breaks=30)
+hist(rexp(1000,4), breaks=30)
+```
+
+With rapid transitions, the model with the induced dirichlet can do ok at estimating the inflection points, but if you aren't making good choices about $\beta$ it will fail hard.
+
+What if the anchor point is closer to the first transition? START HERE maybe already done too tired.
 
 ```{r compare gamma and dirichlet}
 
@@ -433,8 +461,12 @@ ggarrange(pgam, pdir, ncol=1)
 
 ```
 
+Gamma prior model does underestimate both cutpoints and beta, but not as much as the dirichlet does. However, the inflection points/half transition points (h1 and h2) are maybe estimated a bit better by the dirichlet?
 
-*tl;dr* Gamma outperforms dirichlet when observations are bunched up around a particular state. 
+## Conclusions on gamma vs induced dirichlet
+For my case - where cutpoints and beta are positive and most data is likely to be collected around state 2.
+
+
 
 
 # Covariate and a group
@@ -549,7 +581,7 @@ K = 3
 
 # parameters
 c <- c(5,10) # cutpoints
-beta = 1
+beta = 2
 
 # simulate individual group effects
 gbeta_mu <- 0
