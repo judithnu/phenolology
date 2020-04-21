@@ -276,10 +276,9 @@ pdir <- parplotter("dirichlet", paramsdir)
 pdir
 
 ```
+Induced dirichlet does well - maybe better than gamma? It underestimates cutpoints and beta. It's also *very* sensitive to the prior on $\beta$. It fits at exp(1), but the model is full of divergences at exp(2). Gamma is much more forgiving of the choice of $\beta$ prior.
 
-The model with an induced dirichlet prior anchored at 0 had divergences, treedepth issues, and other warnings. It didn't fit well. I think it's because it was estimating some negative cutpoints and going off into weird territory with beta.
-
-Anchoring the dirichlet at 3 didn't seem to improve things.
+I wonder if it's because of weird stuff happening when both $c$ and $\beta$ get too small? Increasing the anchor point in the induced dirichlet prior to 2 fixes the problem!
 
 
 ```{r compare gamma and dirichlet}
@@ -293,7 +292,9 @@ ggarrange(pgam, pdir, ncol=1)
 
 ```
 
+Dirichlet and gamma performing similarly. Dirichlet a little better maybe? Gamma tends to overestimate parameters and dirichlet to underestimate them.
 
+<!--
 ## Simulate more data - uniform covariate?
 What if your data is, unlike mine, collected more uniformly across the covariate range?
 
