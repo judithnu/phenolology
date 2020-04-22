@@ -244,7 +244,7 @@ cl <- makeCluster(no_cores)
 # export the stuff you need to run on the cluster
 clusterExport(cl, c("fit_gamma_model", "parlist", "beta_fast", "beta_slow", "datlist"))
 clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
-gammafits <- parLapply(cl, parlist[1:3], function(x) {fit_gamma_model(simdatlist <- datlist, pars=x)})
+gammafits <- parLapply(cl, parlist, function(x) {fit_gamma_model(simdatlist <- datlist, pars=x)})
 
 stopCluster(c1)
 
