@@ -5,6 +5,8 @@ data {
 
     int<lower=1, upper=K> y[N]; // Observed ordinals
     vector[N] x;                  // Covariate
+    real<lower=1> shape; // shape parameter for gamma prior on cutpoints
+    real<lower=0> rate; // rate parameter for exponential prior on beta
 }
 
 parameters {
@@ -16,8 +18,8 @@ model {
     vector[N] phi;
 
     // Prior model
-    beta ~ exponential(3);
-    c ~ gamma(5,1);
+    beta ~ exponential(rate);
+    c ~ gamma(shape,1);
 
 
     // Observational model
