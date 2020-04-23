@@ -21,7 +21,6 @@ library(parallel)
 
 ```{r options}
 rstan_options(auto_write=TRUE)
-#options(mc.cores = parallel::detectCores())
 ```
 
 ```{r functions}
@@ -182,7 +181,6 @@ testthat::test_that("half transition points identical", {
 inputs_for_sim_slow <- list("N" = N, "K" = K, "c" = cutpoints_slow, "beta"=beta_slow, "h" = h, "x" = x)
 inputs_for_sim_fast <- list("N" = N, "K" = K, "c" = cutpoints_fast, "beta"=beta_fast, "h" = h, "x" = x)
 
-
 # simulate data, graph it, and prepare data for model fitting
 
 simdat_slow <- simulate_data(input=inputs_for_sim_slow)
@@ -240,8 +238,8 @@ datlist <- list(simdat_slow=simdat_slow, simdat_fast=simdat_fast) # list of simu
 
 # run all models, parallelized
 
-# make a cluster, leaving 2 cores free so my computer doesn't fall over when I check emails
-no_cores <- parallel::detectCores() - 1
+# make a cluster, leaving 20 cores free for other folks
+no_cores <- parallel::detectCores() - 20
 cl <- parallel::makeCluster(no_cores)
 
 # export the stuff you need to run on the cluster
@@ -249,7 +247,7 @@ parallel::clusterExport(cl, c("fit_gamma_model", "parlist", "beta_fast", "beta_s
 parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
 
 # fit the models
-gammafits <- parallel::parLapply(cl, parlist[1:3], function(x) {fit_gamma_model(simdatlist <- datlist, pars=x)})
+gammafits <- parallel::parLapply(cl, parlist, function(x) {fit_gamma_model(simdatlist = datlist, pars=x)})
 
 parallel::stopCluster(cl) #close the cluster
 
