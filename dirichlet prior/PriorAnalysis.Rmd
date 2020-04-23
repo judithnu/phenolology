@@ -10,17 +10,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r packages}
-library(ggplot2)
 library(dplyr)
+library(ggplot2)
 library(bayesplot)
 library(rstan)
-library(ggpubr)
+library(cowplot)
 library(testthat)
+library(parallel)
 ```
 
 ```{r options}
 rstan_options(auto_write=TRUE)
-options(mc.cores = parallel::detectCores())
+#options(mc.cores = parallel::detectCores())
 ```
 
 ```{r functions}
@@ -51,19 +52,39 @@ simulate_data <- function(input) {
 }
 
 # plot simulated data for a sanity check.
-simplot <- function(datalist, label) {
+simplot <- function(datalist) {
   inputdf <- data.frame(datalist)
   p1 <- ggplot(inputdf, aes(x=x, y=y)) +
     geom_jitter(shape=1, height=0.2) +
     geom_vline(xintercept = h) +
     ggtitle("Simulated data with cutpoints")
+  print(p1)
   p2 <- ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
     stat_ecdf() +
     geom_vline(xintercept=h) +
     theme(legend.position = "none") +
     ggtitle("Cumulative x for 3 states")
-  p3 <- ggpubr::ggarrange(p1, p2, nrow=2, labels = label)
+  print(p2)
+  p3 <- cowplot::plot_grid(p1,p2)
   print(p3)
+}
+
+# append the correct shape (gamma prior on cutpoints) and rate (exponential prior on beta) parameters to the simulated data list and fit a model with a gamma prior. simdat is a list of datasets simulated from stan models and pars is a vector of additional parameters. Relies on global params beta_slow and beta_fast. 
+fit_gamma_model <- function(simdatlist, pars) {
+  #choose whether to use data simulated with a rapid or slow transition
+  if (pars$beta == beta_slow) {
+    simdat <- simdatlist$simdat_slow
+  }
+  if (pars$beta == beta_fast) {
+    simdat <- simdatlist$simdat_fast
+  }
+  #extract parameters for prior distribtuions
+  simdat$shape <- pars$shape
+  simdat$rate <- pars$beta_rate
+  
+  #fit the model
+  fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
+  return(fitgam)
 }
 
 # function to plot modeled parameters with label being a string to label the graph (usually prior and whether groups were included and pardf is the modeled parameter dataframe)
@@ -81,30 +102,30 @@ parplot <- function(label, pardf, cutpoints, beta, h) {
     geom_vline(xintercept=h[2])+
     xlim(c(h[2]-3,h[2]+3))
   plot_title <- paste(label, "|", "beta=", beta,"cutpoints=", cutpoints[1], ",", cutpoints[2])
-  ggpubr::ggarrange(cutplot, betaplot, h1plot, h2plot, nrow=1, ncol=4, labels=plot_title)
+  cowplot::plot_grid(cutplot, betaplot, h1plot, h2plot, nrow=1, ncol=4, labels=plot_title)
 }
 
 
-# function to calculate the difference between modeled parameters (in the model_params dataframe) and true parameters (globally declared)
-posterior_differencer <- function(model_params) {
-  c1_diff <- model_params$c.1 - c[1] 
-  c2_diff <- model_params$c.2 - c[2]
+# function to calculate the difference between modeled parameters (in the model_params dataframe) and true parameters (h is globally declared). Where true params is a dataframe
+posterior_differencer <- function(model_params, true_params) {
+  c1_diff <- model_params$c.1 - true_params$cut1 
+  c2_diff <- model_params$c.2 - true_params$cut1 
   h1_diff <- model_params$h1 - h[1]
   h2_diff <- model_params$h2 - h[2] 
-  beta_diff <- model_params$beta - beta
+  beta_diff <- model_params$beta - true_params$beta
   diffframe <- data.frame(c1_diff, c2_diff, h1_diff, h2_diff, beta_diff)
   return(diffframe)
 }
 
 # function to plot histograms of differences between true params and modeled params (model_params dataframe). priorgroups is a string that makes a subtitle for the plot
-diffplotter <- function(model_params, priorgroups) {
-  diffs <- posterior_differencer(model_params)
+diffplotter <- function(model_params, true_params, model) {
+  diffs <- posterior_differencer(model_params, true_params)
   cuts <- mcmc_areas(diffs, regex_pars = "c") +
     ggtitle("", subtitle = "differences between modeled and true params")+
   xlim(c(-10,10))
-  opars <- mcmc_areas(diffs, pars=c("h1_diff", "h2_diff", "beta_diff")) +
+  opars <- mcmc_intervals(diffs, pars=c("h1_diff", "h2_diff", "beta_diff")) +
     xlim(c(-1,1))
-  ggpubr::ggarrange(cuts, opars, labels=priorgroups)
+  cowplot::plot_grid(cuts, opars, labels=model)
 }
 
 
@@ -138,7 +159,7 @@ I'll simulate 2 datasets - one with a fast transition speed ($\beta = 2$) and on
 
 ## Simulate datasets
 
-```{r data simulation}
+```{r set simulation parameters}
 N <- 500
 K <- 3
 
@@ -148,8 +169,7 @@ beta_fast <- 2
 cutpoints_slow <- c(4,6)
 cutpoints_fast <- c(16,24)
 
-h_slow <- cutpoints_slow/beta_slow #half transitions
-h_fast <- cutpoints_fast/beta_fast
+h <- cutpoints_slow/beta_slow #half transition points, engineered to be identical for slow and fast transitions
 x <- rtnorm(n=N, mean=mean(h), sd=2, min=0, max=20) #covariate
 
 testthat::test_that("half transition points identical", {
@@ -157,7 +177,7 @@ testthat::test_that("half transition points identical", {
 })
 ```
 
-```{r slow transition simulation}
+```{r simulate data}
 
 inputs_for_sim_slow <- list("N" = N, "K" = K, "c" = cutpoints_slow, "beta"=beta_slow, "h" = h, "x" = x)
 inputs_for_sim_fast <- list("N" = N, "K" = K, "c" = cutpoints_fast, "beta"=beta_fast, "h" = h, "x" = x)
@@ -166,9 +186,12 @@ inputs_for_sim_fast <- list("N" = N, "K" = K, "c" = cutpoints_fast, "beta"=beta_
 # simulate data, graph it, and prepare data for model fitting
 
 simdat_slow <- simulate_data(input=inputs_for_sim_slow)
-simplot(simdat_slow, label="slow")
+slowsimplot <- simplot(simdat_slow)
 simdat_fast <- simulate_data(input=inputs_for_sim_fast)
-simplot(simdat_fast, label="fast")
+fastsimplot <- simplot(simdat_fast)
+
+cowplot::plot_grid(slowsimplot, fastsimplot, nrow=2, labels=c("slow", "fast"), vjust=2)
+
 ```
 
 ## Recapture parameters: Gamma
@@ -179,13 +202,13 @@ I need to know how good I have to be at choosing the shape parameter for the gam
 
 I also want to understand how the exponential prior on beta affects the ability to recapture parameters. I'll try rates of 1,2,3.
 
-So there are 2 simulated datasets (beta=0.5 or beta=2) and I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shapes for the cutpoints' gamma prior, a total of 18 model runs.
 
 ### Gamma prior with covariate
 ```{r params for gamma models}
 
-beta_rate <- c(1:3)
+beta_rate <- c(1:3) # rate parameters for exponential prior on beta
 
+# shape parameters for gamma prior on cutpoints, for slow and fast transitions
 shape_slow <- mean(cutpoints_slow)
 shape_slow_small <- shape_slow/2
 shape_slow_big <- shape_slow*2
@@ -198,64 +221,46 @@ shape_fast_big <- shape_fast*2
 
 fastshapes <- c(shape_fast, shape_fast_big, shape_fast_small)
 
-slowframe <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate)
-fastframe <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate)
+slowframe <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, cut1 = cutpoints_slow[1], cut2=cutpoints_slow[2])
+fastframe <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, cut1 = cutpoints_fast[1], cut2=cutpoints_fast[2])
 parframe <- rbind(slowframe, fastframe) %>%
-  tidyr::expand(tidyr::nesting(beta,shape), beta_rate)
+  tidyr::expand(tidyr::nesting(beta, cut1, cut2, shape), beta_rate) 
+parframe$model <- 1:nrow(parframe)
 
 knitr::kable(parframe, caption="beta parameters used to simulate data for a slow (0.5) and fast (2) transion. And shape and rate parameters to be used in the priors on beta and cutpoints to attempt to recover parameters")
 ```
 
-```{r recapture parameters using a gamma prior}
-# append the correct shape (gamma prior on cutpoints) and rate (exponential prior on beta) parameters to the simulated data list and fit a model with a gamma prior
-fit_gamma_model <- function(simdat, shape, rate) {
-  simdat$shape <- shape
-  simdat$rate <- rate
-  fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
-}
+So there are 2 simulated datasets (beta=0.5 or beta=2) and I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shapes for the cutpoints' gamma prior, a total of 18 model runs.
 
-# append the correct shape (gamma prior on cutpoints) and rate (exponential prior on beta) parameters to the simulated data list and fit a model with a gamma prior. simdat is a list of datasets simulated from stan models and pars is a vector of additional parameters. 
-fit_gamma_model <- function(simdatlist, pars) {
-  #choose whether to use data simulated with a rapid or slow transition
-  if (pars$beta == beta_slow) {
-    simdat <- simdatlist$simdat_slow
-  }
-  if (pars$beta == beta_fast) {
-    simdat <- simdatlist$simdat_fast
-  }
-  #extract parameters for prior distribtuions
-  simdat$shape <- pars$shape
-  simdat$rate <- pars$beta_rate
-  
-  #fit the model
-  fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
-  return(fitgam)
-}
+```{r gamma recapture attempts}
 
+parlist <- split(parframe, seq(nrow(parframe))) # format parframe so it works with parLapply better
+names(parlist) <- paste0("m", 1:nrow(parframe))
+datlist <- list(simdat_slow=simdat_slow, simdat_fast=simdat_fast) # list of simulated datasets
 
-library(parallel)
-parlist <- split(parframe, seq(nrow(parframe)))
-datlist <- list(simdat_slow=simdat_slow, simdat_fast=simdat_fast)
+# run all models, parallelized
 
-# make a cluster, leaving 1 free so your computer doesn't fall over when you check emails
-no_cores <- detectCores() - 1
-cl <- makeCluster(no_cores)
+# make a cluster, leaving 2 cores free so my computer doesn't fall over when I check emails
+no_cores <- parallel::detectCores() - 1
+cl <- parallel::makeCluster(no_cores)
 
 # export the stuff you need to run on the cluster
-clusterExport(cl, c("fit_gamma_model", "parlist", "beta_fast", "beta_slow", "datlist"))
-clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
-gammafits <- parLapply(cl, parlist, function(x) {fit_gamma_model(simdatlist <- datlist, pars=x)})
+parallel::clusterExport(cl, c("fit_gamma_model", "parlist", "beta_fast", "beta_slow", "datlist"))
+parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
 
-stopCluster(c1)
+# fit the models
+gammafits <- parallel::parLapply(cl, parlist[1:3], function(x) {fit_gamma_model(simdatlist <- datlist, pars=x)})
+
+parallel::stopCluster(cl) #close the cluster
 
 
 
 
-paramsgam1 <- data.frame(rstan::extract(fit1)) 
+paramsgam <- data.frame(rstan::extract(gammafits[[1]])) 
 
-sum1 <- summary(paramsgam)
+sum <- summary(paramsgam)
 
-pgam <- parplot("gamma", paramsgam, cutpoints=cutpoints_slow, beta=beta_slow, h=h_slow)
+pgam <- parplot("gamma", paramsgam, cutpoints=c(parlist[[1]]$cut1, parlist[[1]]$cut2), beta=parlist[[1]]$beta, h=h)
 pgam
 
 diffplotter(model_params=paramsgam, priorgroups="gamma prior, no groups")
