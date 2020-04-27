@@ -271,9 +271,6 @@ sum <- lapply(paramsgam, summary)
 #bind true and model pars even tho it will make a giant df
 
 
-
-
-
 paramsgam <- map(paramsgam, label_names, label="model")
 parlist <- map(parlist, label_names, label="true")
 
@@ -282,10 +279,55 @@ paramsgam <- map2(paramsgam, parlist, cbind)
 #plot params and diffs
 map(paramsgam, parplot)
 map(paramsgam, posterior_differencer) %>%
-  map(pars=paramsgam, diffplotter)
+  map2(.y=paramsgam, .f=diffplotter)
 
-# calculate whether true value is in 50% hpdi:NEXT UP!
-map(paramsgam, function(x) dplyr::select(x, ends_with("model"))))
+# calculate whether true value is in 50% hpdi
+
+# kludge HPDI
+HPDIlow <- function(x, prob) {
+  HPDI <- rethinking::HPDI(x, prob=prob)
+  return(HPDI[1])
+}
+
+HPDIhigh <- function(x, prob) {
+  HPDI <- rethinking::HPDI(x, prob=prob)
+  return(HPDI[2])
+}
+
+
+calc_HPDI <- function(params, prob) {
+  low <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIlow, prob=0.5) 
+  high <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIhigh, prob=0.5)
+  
+  # awkward formatting
+  hdpis <- dplyr::full_join(low, high) %>%
+    select(-contains("lp"))
+  colnames(hdpis) <- stringr::str_replace(colnames(hdpis), "_model", "")
+  
+  # true param
+  true <- params %>% dplyr::summarise_at(vars(ends_with("true")), unique) 
+  colnames(true) <- stringr::str_replace(colnames(true), "_true", "")
+  true <- select(true, colnames(hdpis))
+  
+  # more awkward formatting
+  compframe <- dplyr::full_join(hdpis, true) %>%
+    t(.) %>%
+    data.frame()
+  colnames(compframe) <- c("low", "high", "true")
+  compframe$params <- rownames(compframe)
+  
+  # true param in interval?
+  tf <- compframe %>% mutate(inint = true > low & true < high)
+  return(tf)
+  
+}
+
+in50 <- map(paramsgam, calc_HPDI, prob=0.5)
+print(in50)
+in75 <- map(paramsgam, calc_HPDI, prob=0.75)
+print(in75)
+in90 <- map(paramsgam, calc_HPDI, prob=0.90)
+print(in90)
 ```
 
 Gamma prior recaptures parameters relatively well here and there are no obvious model fitting problems. However, it pretty much always overestimates beta and cutpoints (while accurately identifying the inflection points). It's not especially sensitive to the prior on $\beta$ either. An $\mathrm{exponential}$ prior with rates of 1,2,3, and 6 on $\beta$ performed similarly.
