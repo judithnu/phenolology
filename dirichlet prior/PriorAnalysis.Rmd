@@ -17,6 +17,7 @@ library(rstan)
 library(cowplot)
 library(testthat)
 library(parallel)
+library(purrr)
 ```
 
 ```{r options}
@@ -86,6 +87,11 @@ fit_gamma_model <- function(simdatlist, pars) {
   return(fitgam)
 }
 
+## append a label (string) to all columnnames in a dataframe (x)
+label_names <- function(x, label) {
+  colnames(x) <- paste0(colnames(x), label)
+  return(x)
+}
 
 # function to plot modeled parameters with label being a string to label the graph (usually prior and whether groups were included and pardf is the modeled parameter dataframe) trueparams is a one row dataframe of true parameters. h is a global parameter have fun!
 parplot <- function(pars) {
@@ -267,13 +273,9 @@ sum <- lapply(paramsgam, summary)
 
 #bind true and model pars even tho it will make a giant df
 
-## append a label (string) to all columnnames in a dataframe (x)
-label_names <- function(x, label) {
-  colnames(x) <- paste0(colnames(x), label)
-  return(x)
-}
 
-library(purrr)
+
+
 
 paramsgam <- map(paramsgam, label_names, label="model")
 parlist <- map(parlist, label_names, label="true")
