@@ -1,0 +1,333 @@
+---
+title: "Prior Analysis"
+author: "Susannah Tysor"
+date: "20/03/2020"
+output: html_document
+---
+
+    ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(dplyr)
+library(ggplot2)
+library(bayesplot)
+library(rstan)
+library(cowplot)
+library(testthat)
+library(parallel)
+library(purrr)
+```
+
+```{r options}
+rstan_options(auto_write=TRUE)
+```
+
+```{r functions}
+
+# generate samples from a truncated normal distribution. n = how many samples, mean and sd are mean and sd, and min and max are the limits of the distribution/truncation points. possibly my first ever use of while loops. Don't @ me.
+rtnorm <- function(n, mean, sd, min, max) {
+    x <- rnorm(n, mean=mean, sd=sd)
+    x <- x[x >= min & x <= max]
+    while(length(x) < n) {
+        newx <- rnorm(1, mean=mean, sd=sd)
+        while(newx <= min | newx >= max) {
+            newx <- rnorm(1, mean=mean, sd=sd)
+        }
+        x <- c(x, newx)
+    }
+    length(x)==n
+    return(x)
+}
+
+# simulate data from an ordinal logistic model and format it as input for stan. input is a list for stan, as is output.
+simulate_data <- function(input) {
+    simu <- rstan::stan(file='dirichlet prior/covar_sim.stan', iter=1, chains=1, algorithm="Fixed_param", data=input)
+
+    simu_params <- rstan::extract(simu)
+
+    input_data_for_model <- list("N" = input$N, "K" = input$K, "x" = input$x, "y" = array(simu_params$y[1,]))
+    return(input_data_for_model)
+}
+
+# plot simulated data for a sanity check.
+simplot <- function(datalist) {
+    inputdf <- data.frame(datalist)
+    p1 <- ggplot(inputdf, aes(x=x, y=y)) +
+        geom_jitter(shape=1, height=0.2) +
+        geom_vline(xintercept = h) +
+        ggtitle("Simulated data with cutpoints")
+    print(p1)
+    p2 <- ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
+        stat_ecdf() +
+        geom_vline(xintercept=h) +
+        theme(legend.position = "none") +
+        ggtitle("Cumulative x for 3 states")
+    print(p2)
+    p3 <- cowplot::plot_grid(p1,p2)
+    print(p3)
+}
+
+# append the correct shape (gamma prior on cutpoints) and rate (exponential prior on beta) parameters to the simulated data list and fit a model with a gamma prior. simdat is a list of datasets simulated from stan models and pars is a vector of additional parameters. Relies on global params beta_slow and beta_fast.
+fit_gamma_model <- function(simdatlist, pars) {
+    #choose whether to use data simulated with a rapid or slow transition
+    if (pars$beta == beta_slow) {
+        simdat <- simdatlist$simdat_slow
+    }
+    if (pars$beta == beta_fast) {
+        simdat <- simdatlist$simdat_fast
+    }
+    #extract parameters for prior distribtuions
+    simdat$shape <- pars$shape
+    simdat$rate <- pars$beta_rate
+
+    #fit the model
+    fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
+    return(fitgam)
+}
+
+## append a label (string) to all columnnames in a dataframe (x)
+label_names <- function(x, label) {
+    colnames(x) <- paste0(colnames(x), "_", label)
+    return(x)
+}
+
+# function to plot modeled parameters with label being a string to label the graph (usually prior and whether groups were included and pardf is the modeled parameter dataframe) trueparams is a one row dataframe of true parameters. h is a global parameter have fun!
+parplot <- function(pars) {
+    cutplot <- mcmc_areas(pars, regex_pars="c.\\d_model") +
+        geom_vline(xintercept=c(pars$c.1_true, pars$c.2_true))
+
+    betaplot <- mcmc_areas(pars, pars="beta_model") +
+        geom_vline(xintercept=pars$beta_true)
+
+    h1plot <- mcmc_areas(pars, regex_pars = "h1") +
+        geom_vline(xintercept=h[1])
+    h2plot <- mcmc_areas(pars, regex_pars = "h2") +
+        geom_vline(xintercept=h[2])
+    allplot <- cowplot::plot_grid(cutplot, betaplot, h1plot, h2plot,
+                                  nrow=1, ncol=4,
+                                  labels=paste("model", unique(pars$modelid_true),
+                                               "rate=", unique(pars$beta_rate_true),
+                                               "shape=", unique(pars$shape_true)))
+    print(allplot)
+}
+
+# function to calculate the difference between modeled parameters (in the model_params dataframe) and true parameters (h is globally declared). Where true params is a dataframe
+posterior_differencer <- function(pars) {
+    c1_diff <- pars$c.1_model - pars$c.1_true
+    c2_diff <- pars$c.2_model - pars$c.1_true
+    h1_diff <- pars$h1_model - h[1]
+    h2_diff <- pars$h2_model - h[2]
+    beta_diff <- pars$beta_model - pars$beta_true
+    diffframe <- data.frame(c1_diff, c2_diff, h1_diff, h2_diff, beta_diff)
+    return(diffframe)
+}
+
+# function to plot histograms of differences between true params and modeled params (model_params dataframe).
+diffplotter <- function(diffs, pars) {
+    #diffs <- posterior_differencer(pars)
+    cuts <- mcmc_areas(diffs, regex_pars = "c") +
+        ggtitle("", subtitle = "differences between modeled and true params")+
+        xlim(c(-15,15))
+    opars <- mcmc_areas(diffs, pars=c("h1_diff", "h2_diff", "beta_diff")) +
+        xlim(c(-1,1))
+    cowplot::plot_grid(cuts, opars, labels=paste("model", unique(pars$modelid_true),
+                                                 "rate=", unique(pars$beta_rate_true),
+                                                 "shape=", unique(pars$shape_true)))
+}
+
+
+```
+
+## Prior choice
+
+In my original phenology model, I use
+
+* a gamma distribution for the prior on the cutpoints
+* an exponential distribution distribution for the transition speed/slope $\beta$
+    * normal distributions for group effects on the slope
+
+Michael Betancourt thinks that an induced dirichlet prior may be a [good choice](https://betanalpha.github.io/assets/case_studies/ordinal_regression.html) for ordinal logistic models.
+
+Normally, priors are bottom up - you choose a distribution for each prior. This is tricky for the cutpoints in an ordinal logistic model because they're defined on an abstract latent space so you can't easily use your domain expertise, but a good prior is incredibly important in these models, because ordered logistic models with covariates are inherently non-identifiable. (Because $beta$s and cutpoints depend on one another.)
+
+Betancourt says that
+> To avoid the non-identifiability of the interior cut points from propagating to the posterior distribution we need a principled prior model that can exploit domain expertise to consistently regularize all of the internal cut points at the same time. Regularization of the cut points, however, is subtle given their ordering constraint. Moreover domain expertise is awkward to apply on the abstract latent space where the internal cut points are defined.
+
+# Goals
+1) Understand the dynamics of the gamma and induced dirichlet priors and 2) compare them
+
+# Simulate data
+First let's simulate some data that's kind of like mine.
+
+We have three potential states `K` and a latent effect/covariate `x`. Data is most likely to be collected around state 2. `x` is always positive.
+
+I'll simulate 2 datasets - one with a fast transition speed ($\beta = 2$) and one with a slow transition speed ($\beta = 0.5$). I want the transitions to occur at the same `x` for both datasets. The halfway transition points `h` will be at `x= 8` and `x=12`. So the cutpoints `c` for the slow transition will be at 4 and 6 and for the fast transition at 16 and 24.
+
+
+## Simulate datasets
+
+```{r set simulation parameters}
+N <- 500
+K <- 3
+
+beta_slow <- 0.5
+beta_fast <- 2
+
+cutpoints_slow <- c(4,6)
+cutpoints_fast <- c(16,24)
+
+h <- cutpoints_slow/beta_slow #half transition points, engineered to be identical for slow and fast transitions
+x <- rtnorm(n=N, mean=mean(h), sd=2, min=0, max=20) #covariate
+
+testthat::test_that("half transition points identical", {
+  testthat::expect_equal(cutpoints_slow/beta_slow, cutpoints_fast/beta_fast)
+})
+```
+
+```{r simulate data}
+
+inputs_for_sim_slow <- list("N" = N, "K" = K, "c" = cutpoints_slow, "beta"=beta_slow, "h" = h, "x" = x)
+inputs_for_sim_fast <- list("N" = N, "K" = K, "c" = cutpoints_fast, "beta"=beta_fast, "h" = h, "x" = x)
+
+# simulate data, graph it, and prepare data for model fitting
+
+simdat_slow <- simulate_data(input=inputs_for_sim_slow)
+slowsimplot <- simplot(simdat_slow)
+simdat_fast <- simulate_data(input=inputs_for_sim_fast)
+fastsimplot <- simplot(simdat_fast)
+
+cowplot::plot_grid(slowsimplot, fastsimplot, nrow=2, labels=c("slow", "fast"), vjust=2)
+
+```
+
+## Recapture parameters: Gamma
+
+Now I want to try to recapture parameters.
+
+I need to know how good I have to be at choosing the shape parameter for the gamma prior on the cutpoints to recapture parameters as well. So I'll choose a prior for gamma that roughly centers it between the cutpoints, which I think is a "good" option (though given the long right tail, maybe a lower value would be better). Then halve and double it.
+
+I also want to understand how the exponential prior on beta affects the ability to recapture parameters. I'll try rates of 1,2,3.
+
+
+### Gamma prior with covariate
+```{r params for gamma models}
+
+beta_rate <- c(1:3) # rate parameters for exponential prior on beta
+
+# shape parameters for gamma prior on cutpoints, for slow and fast transitions
+shape_slow <- mean(cutpoints_slow)
+shape_slow_small <- shape_slow/2
+shape_slow_big <- shape_slow*2
+
+slowshapes <- c(shape_slow, shape_slow_small, shape_slow_big)
+
+shape_fast <- mean(cutpoints_fast)
+shape_fast_small <- shape_fast/2
+shape_fast_big <- shape_fast*2
+
+fastshapes <- c(shape_fast, shape_fast_big, shape_fast_small)
+
+slowframe <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2])
+fastframe <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
+parframe <- rbind(slowframe, fastframe) %>%
+  tidyr::expand(tidyr::nesting(beta, c.1, c.2, shape), h1, h2, beta_rate)
+parframe$modelid <- 1:nrow(parframe) #label the models
+parframe <- dplyr::select(parframe, modelid, beta, c.1, c.2, h1, h2, shape, beta_rate)
+
+knitr::kable(parframe, caption="beta parameters used to simulate data for a slow (0.5) and fast (2) transion. And shape and rate parameters to be used in the priors on beta and cutpoints to attempt to recover parameters")
+```
+
+So there are 2 simulated datasets (beta=0.5 or beta=2) and I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shapes for the cutpoints' gamma prior, a total of 18 model runs.
+
+```{r gamma recapture attempts}
+
+parlist <- split(parframe, seq(nrow(parframe))) # format parframe so it works with parLapply better
+names(parlist) <- paste0("m", 1:nrow(parframe))
+datlist <- list(simdat_slow=simdat_slow, simdat_fast=simdat_fast) # list of simulated datasets
+
+# run all models, parallelized
+
+# make a cluster, leaving 20 cores free for other folks
+no_cores <- parallel::detectCores() - 20
+cl <- parallel::makeCluster(no_cores)
+
+# export the stuff you need to run on the cluster
+parallel::clusterExport(cl, c("fit_gamma_model", "parlist", "beta_fast", "beta_slow", "datlist"))
+parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
+
+# fit the models
+gammafits <- parallel::parLapply(cl, parlist, function(x) {fit_gamma_model(simdatlist = datlist, pars=x)})
+
+parallel::stopCluster(cl) #close the cluster
+
+# extract params
+paramsgam <- lapply(gammafits,
+                    function(x) {data.frame(rstan::extract(x) ) } )
+#param summary
+sum <- lapply(paramsgam, summary)
+
+#bind true and model pars even tho it will make a giant df
+
+
+paramsgam <- map(paramsgam, label_names, label="model")
+parlist <- map(parlist, label_names, label="true")
+
+paramsgam <- map2(paramsgam, parlist, cbind)
+
+#plot params and diffs
+map(paramsgam, parplot)
+map(paramsgam, posterior_differencer) %>%
+    map2(.y=paramsgam, .f=diffplotter)
+
+# calculate whether true value is in 50% hpdi
+
+# kludge HPDI
+HPDIlow <- function(x, prob) {
+    HPDI <- rethinking::HPDI(x, prob=prob)
+    return(HPDI[1])
+}
+
+HPDIhigh <- function(x, prob) {
+    HPDI <- rethinking::HPDI(x, prob=prob)
+    return(HPDI[2])
+}
+
+
+calc_HPDI <- function(params, prob) {
+    low <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIlow, prob=0.5)
+    high <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIhigh, prob=0.5)
+
+    # awkward formatting
+    hdpis <- dplyr::full_join(low, high) %>%
+        select(-contains("lp"))
+    colnames(hdpis) <- stringr::str_replace(colnames(hdpis), "_model", "")
+
+    # true param
+    true <- params %>% dplyr::summarise_at(vars(ends_with("true")), unique)
+    colnames(true) <- stringr::str_replace(colnames(true), "_true", "")
+    true <- select(true, colnames(hdpis))
+
+    # more awkward formatting
+    compframe <- dplyr::full_join(hdpis, true) %>%
+        t(.) %>%
+        data.frame()
+    colnames(compframe) <- c("low", "high", "true")
+    compframe$params <- rownames(compframe)
+
+    # true param in interval?
+    tf <- compframe %>% mutate(inint = true > low & true < high)
+    return(tf)
+
+}
+
+in50 <- map(paramsgam, calc_HPDI, prob=0.5)
+print(in50)
+in75 <- map(paramsgam, calc_HPDI, prob=0.75)
+print(in75)
+in90 <- map(paramsgam, calc_HPDI, prob=0.90)
+print(in90)
+```
+
+Gamma prior recaptures parameters relatively well here and there are no obvious model fitting problems. However, it pretty much always overestimates beta and cutpoints (while accurately identifying the inflection points). It's not especially sensitive to the prior on $\beta$ either. An $\mathrm{exponential}$ prior with rates of 1,2,3, and 6 on $\beta$ performed similarly.
