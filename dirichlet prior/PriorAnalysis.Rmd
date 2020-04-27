@@ -89,17 +89,17 @@ fit_gamma_model <- function(simdatlist, pars) {
 
 ## append a label (string) to all columnnames in a dataframe (x)
 label_names <- function(x, label) {
-  colnames(x) <- paste0(colnames(x), label)
+  colnames(x) <- paste0(colnames(x), "_", label)
   return(x)
 }
 
 # function to plot modeled parameters with label being a string to label the graph (usually prior and whether groups were included and pardf is the modeled parameter dataframe) trueparams is a one row dataframe of true parameters. h is a global parameter have fun!
 parplot <- function(pars) {
-  cutplot <- mcmc_areas(pars, regex_pars="c.\\dmodel") +
-    geom_vline(xintercept=c(pars$c.1true, pars$c.2true)) 
+  cutplot <- mcmc_areas(pars, regex_pars="c.\\d_model") +
+    geom_vline(xintercept=c(pars$c.1_true, pars$c.2_true)) 
   
-  betaplot <- mcmc_areas(pars, pars="betamodel") +
-    geom_vline(xintercept=pars$betatrue) 
+  betaplot <- mcmc_areas(pars, pars="beta_model") +
+    geom_vline(xintercept=pars$beta_true) 
   
   h1plot <- mcmc_areas(pars, regex_pars = "h1") +
     geom_vline(xintercept=h[1])
@@ -107,19 +107,19 @@ parplot <- function(pars) {
     geom_vline(xintercept=h[2])
   allplot <- cowplot::plot_grid(cutplot, betaplot, h1plot, h2plot,
                                 nrow=1, ncol=4, 
-                                labels=paste("model", unique(pars$modelidtrue), 
-                                             "rate=", unique(pars$beta_ratetrue), 
-                                             "shape=", unique(pars$shapetrue)))
+                                labels=paste("model", unique(pars$modelid_true), 
+                                             "rate=", unique(pars$beta_rate_true), 
+                                             "shape=", unique(pars$shape_true)))
   print(allplot)
 }
 
 # function to calculate the difference between modeled parameters (in the model_params dataframe) and true parameters (h is globally declared). Where true params is a dataframe
 posterior_differencer <- function(pars) {
-  c1_diff <- pars$c.1model - pars$c.1true 
-  c2_diff <- pars$c.2model - pars$c.1true 
-  h1_diff <- pars$h1model - h[1]
-  h2_diff <- pars$h2model - h[2] 
-  beta_diff <- pars$betamodel - pars$betatrue
+  c1_diff <- pars$c.1_model - pars$c.1_true 
+  c2_diff <- pars$c.2_model - pars$c.1_true 
+  h1_diff <- pars$h1_model - h[1]
+  h2_diff <- pars$h2_model - h[2] 
+  beta_diff <- pars$beta_model - pars$beta_true
   diffframe <- data.frame(c1_diff, c2_diff, h1_diff, h2_diff, beta_diff)
   return(diffframe)
 }
@@ -129,12 +129,12 @@ diffplotter <- function(diffs, pars) {
   #diffs <- posterior_differencer(pars)
   cuts <- mcmc_areas(diffs, regex_pars = "c") +
     ggtitle("", subtitle = "differences between modeled and true params")+
-  xlim(c(-10,10))
+  xlim(c(-15,15))
   opars <- mcmc_areas(diffs, pars=c("h1_diff", "h2_diff", "beta_diff")) +
     xlim(c(-1,1))
-  cowplot::plot_grid(cuts, opars, labels=paste("model", unique(pars$modelidtrue), 
-                                             "rate=", unique(pars$beta_ratetrue), 
-                                             "shape=", unique(pars$shapetrue)))
+  cowplot::plot_grid(cuts, opars, labels=paste("model", unique(pars$modelid_true), 
+                                             "rate=", unique(pars$beta_rate_true), 
+                                             "shape=", unique(pars$shape_true)))
 }
 
 
