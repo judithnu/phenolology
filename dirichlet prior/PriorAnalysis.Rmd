@@ -229,11 +229,12 @@ shape_fast_big <- shape_fast*2
 
 fastshapes <- c(shape_fast, shape_fast_big, shape_fast_small)
 
-slowframe <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2])
-fastframe <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2])
+slowframe <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2])
+fastframe <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
 parframe <- rbind(slowframe, fastframe) %>%
-  tidyr::expand(tidyr::nesting(beta, c.1, c.2, shape), beta_rate) 
+  tidyr::expand(tidyr::nesting(beta, c.1, c.2, shape), h1, h2, beta_rate)
 parframe$modelid <- 1:nrow(parframe) #label the models
+parframe <- dplyr::select(parframe, modelid, beta, c.1, c.2, h1, h2, shape, beta_rate)
 
 knitr::kable(parframe, caption="beta parameters used to simulate data for a slow (0.5) and fast (2) transion. And shape and rate parameters to be used in the priors on beta and cutpoints to attempt to recover parameters")
 ```
