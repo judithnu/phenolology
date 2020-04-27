@@ -118,9 +118,9 @@ posterior_differencer <- function(pars) {
   return(diffframe)
 }
 
-# function to plot histograms of differences between true params and modeled params (model_params dataframe). priorgroups is a string that makes a subtitle for the plot
-diffplotter <- function(pars) {
-  diffs <- posterior_differencer(pars)
+# function to plot histograms of differences between true params and modeled params (model_params dataframe). 
+diffplotter <- function(diffs, pars) {
+  #diffs <- posterior_differencer(pars)
   cuts <- mcmc_areas(diffs, regex_pars = "c") +
     ggtitle("", subtitle = "differences between modeled and true params")+
   xlim(c(-10,10))
@@ -243,7 +243,7 @@ datlist <- list(simdat_slow=simdat_slow, simdat_fast=simdat_fast) # list of simu
 # run all models, parallelized
 
 # make a cluster, leaving 20 cores free for other folks
-no_cores <- parallel::detectCores() - 20
+no_cores <- parallel::detectCores() - 2
 cl <- parallel::makeCluster(no_cores)
 
 # export the stuff you need to run on the cluster
@@ -251,7 +251,7 @@ parallel::clusterExport(cl, c("fit_gamma_model", "parlist", "beta_fast", "beta_s
 parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
 
 # fit the models
-gammafits <- parallel::parLapply(cl, parlist, function(x) {fit_gamma_model(simdatlist = datlist, pars=x)})
+gammafits <- parallel::parLapply(cl, parlist[1:3], function(x) {fit_gamma_model(simdatlist = datlist, pars=x)})
 
 parallel::stopCluster(cl) #close the cluster
 
@@ -260,10 +260,6 @@ paramsgam <- lapply(gammafits,
                     function(x) {data.frame(rstan::extract(x) ) } ) 
 #param summary
 sum <- lapply(paramsgam, summary)
-
-# pgam <- parplot(names(paramsgam)[1], modelpars=paramsgam[[1]], truepars = parlist[[1]])
-# pgam
-
 
 #bind true and model pars even tho it will make a giant df
 
@@ -278,11 +274,12 @@ library(purrr)
 paramsgam <- map(paramsgam, label_names, label="model")
 parlist <- map(parlist, label_names, label="true")
 
-paramsgam <- map2(paramsgam, parlist, cbind)
+paramsgam <- map2(paramsgam, parlist[1:3], cbind)
 
 #plot params and diffs
 map(paramsgam, parplot)
-map(paramsgam, diffplotter)
+map(paramsgam, posterior_differencer) %>%
+  map(pars=paramsgam, diffplotter)
 
 # calculate whether true value is in 50% hpdi:NEXT UP!
 map(paramsgam, function(x) dplyr::select(x, ends_with("model"))))
