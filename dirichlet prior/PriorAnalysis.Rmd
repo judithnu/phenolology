@@ -229,22 +229,22 @@ shape_fast_big <- shape_fast*2
 
 fastshapes <- c(shape_fast, shape_fast_big, shape_fast_small)
 
-slowframe <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2])
-fastframe <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
-parframe <- rbind(slowframe, fastframe) %>%
+slowframe_gam <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2])
+fastframe_gam <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
+parframe_gam <- rbind(slowframe_gam, fastframe_gam) %>%
   tidyr::expand(tidyr::nesting(beta, c.1, c.2, shape), h1, h2, beta_rate)
-parframe$modelid <- paste0("m", 1:nrow(parframe)) #label the models
-parframe <- dplyr::select(parframe, modelid, beta, c.1, c.2, h1, h2, shape, beta_rate)
+parframe_gam$modelid <- paste0("m", 1:nrow(parframe_gam)) #label the models
+parframe_gam <- dplyr::select(parframe_gam, modelid, beta, c.1, c.2, h1, h2, shape, beta_rate)
 
-knitr::kable(parframe, caption="beta parameters used to simulate data for a slow (0.5) and fast (2) transion. And shape and rate parameters to be used in the priors on beta and cutpoints to attempt to recover parameters")
+knitr::kable(parframe_gam, caption="beta parameters used to simulate data for a slow (0.5) and fast (2) transion. And shape and rate parameters to be used in the priors on beta and cutpoints to attempt to recover parameters")
 ```
 
 So there are 2 simulated datasets (beta=0.5 or beta=2) and I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shapes for the cutpoints' gamma prior, a total of 18 model runs.
 
 ```{r GammaRecapture, fig.height="200px"}
 
-parlist <- split(parframe, seq(nrow(parframe))) # format parframe so it works with parLapply better
-names(parlist) <- parframe$modelid
+parlist_gam <- split(parframe_gam, seq(nrow(parframe_gam))) # format parframe so it works with parLapply better
+names(parlist_gam) <- parframe_gam$modelid
 datlist <- list(simdat_slow=simdat_slow, simdat_fast=simdat_fast) # list of simulated datasets
 
 # run all models, parallelized
@@ -254,11 +254,11 @@ no_cores <- parallel::detectCores() - 20
 cl <- parallel::makeCluster(no_cores)
 
 # export the stuff you need to run on the cluster
-parallel::clusterExport(cl, c("fit_gamma_model", "parlist", "beta_fast", "beta_slow", "datlist"))
+parallel::clusterExport(cl, c("fit_gamma_model", "parlist_gam", "beta_fast", "beta_slow", "datlist"))
 parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
 
 # fit the models
-gammafits <- parallel::parLapply(cl, parlist, function(x) {fit_gamma_model(simdatlist = datlist, pars=x)})
+gammafits <- parallel::parLapply(cl, parlist_gam, function(x) {fit_gamma_model(simdatlist = datlist, pars=x)})
 
 parallel::stopCluster(cl) #close the cluster
 
@@ -272,9 +272,9 @@ sum <- lapply(paramsgam, summary)
 
 
 paramsgam <- map(paramsgam, label_names, label="model")
-parlist <- map(parlist, label_names, label="true")
+parlist_gam <- map(parlist_gam, label_names, label="true")
 
-paramsgam <- map2(paramsgam, parlist, cbind)
+paramsgam <- map2(paramsgam, parlist_gam, cbind)
 
 #plot params and diffs
 map(paramsgam, parplot)
@@ -332,9 +332,9 @@ in90 <- map(paramsgam, calc_HPDI, prob=0.90)
 print(in90)
 
 perform50 <- map_df(in50, bind_rows, .id="modelid") %>%
-  full_join(parframe) 
+  full_join(parframe_gam) 
 perform90 <- map_df(in90, bind_rows, .id = "modelid") %>%
-  full_join(parframe)
+  full_join(parframe_gam)
 
 knitr::kable(perform50, caption = "Ability of the different models to recapture parameters in 50% HPDI. Each model only run only once, don't shoot me.")
 
@@ -364,7 +364,7 @@ The proportion of parameters recaptured (in the 50% HDPI) is highest when the tr
 prop_recaptured <- perform50 %>%
   group_by(modelid) %>%
   summarise(all_captured = sum(inint)/n()) %>%
-  full_join(parframe) %>%
+  full_join(parframe_gam) %>%
   arrange(beta, desc(all_captured))
 
 knitr::kable(prop_recaptured)
@@ -381,7 +381,7 @@ transition_recaptured <- perform90 %>%
   filter(params %in% c("c.1", "c.2")) %>%
   group_by(modelid) %>%
   summarise(h_captured = sum(inint)/n()) %>%
-  full_join(parframe) %>%
+  full_join(parframe_gam) %>%
   arrange(beta, desc(h_captured))
  
 knitr::kable(transition_recaptured)
@@ -401,16 +401,19 @@ How about an induced dirichlet prior?
 ```{r paramsForIDModels}
 beta_rate <- c(1:3) # rate parameters for exponential prior on beta
 
-# shape parameters for gamma prior on cutpoints, for slow and fast transitions
+# different anchor points for induced dirichlet
+
+anchors <- c(0, 5, 10)
 
 
-slowframe <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2])
-fastframe <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
-parframe <- rbind(slowframe, fastframe) %>%
-  tidyr::expand(tidyr::nesting(beta, c.1, c.2, shape), h1, h2, beta_rate)
-parframe$modelid <- paste0("m", 1:nrow(parframe)) #label the models
-parframe <- dplyr::select(parframe, modelid, beta, c.1, c.2, h1, h2, shape, beta_rate)
+slowframe_indi <- data.frame(beta = beta_slow, anchor=anchors, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2])
+fastframe_indi <- data.frame(beta = beta_fast, anchor=anchors, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
+parframe_indi <- rbind(slowframe_indi, fastframe_indi) %>%
+  tidyr::expand(tidyr::nesting(beta, c.1, c.2, anchor), h1, h2, beta_rate)
+parframe_indi$modelid <- paste0("m", 1:nrow(parframe_indi)) #label the models
+parframe_indi <- dplyr::select(parframe_indi, modelid, beta, c.1, c.2, h1, h2, anchor, beta_rate)
 
+# START HERE
 knitr::kable(parframe, caption="beta parameters used to simulate data for a slow (0.5) and fast (2) transion. And shape and rate parameters to be used in the priors on beta and cutpoints to attempt to recover parameters")
 ```{r dirichlet recapture}
 fitdir <- stan(file='dirichlet prior/dirichlet/dirichlet_covar.stan', data=input_data_for_model, chains=4)
