@@ -6,7 +6,7 @@ output: html_document
 ---
 
     ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
 ```
 
 ```{r packages}
@@ -296,8 +296,8 @@ HPDIhigh <- function(x, prob) {
 
 
 calc_HPDI <- function(params, prob) {
-    low <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIlow, prob=0.5)
-    high <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIhigh, prob=0.5)
+    low <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIlow, prob=prob)
+    high <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIhigh, prob=prob)
 
     # awkward formatting
     hdpis <- dplyr::full_join(low, high) %>%
