@@ -310,7 +310,7 @@ knitr::kable(parframe_gam, caption="model configurations used to try to recaptur
 
 So there are 3 simulated datasets - 1 for each of three transition speeds. I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shape and rate combinations for the cutpoints' gamma prior, a total of 27 model runs.
 
-```{r GammaRecapture, fig.height="200px"}
+```{r GammaRecapture, fig.height="200px", cache=TRUE}
 # Parallel code actually executes in parallel when running this chuck as a chunck with ctrl+shift+enter. It does not if you run it line by line. I don't know why. 
 
 # format parframe so it works with parLapply better
@@ -450,19 +450,19 @@ knitr::kable(prop_recaptured90, caption = "Proportion of params recaptured in 90
 ```{r plotGammaRecaptureoverall}
 ggplot(prop_recaptured50, aes(x=as.factor(shape), y=as.factor(beta_rate), fill=all_captured)) + 
   geom_tile(colour="white") +
-  geom_text(aes(label=paste(shape, beta_rate, sep=","))) +
+  geom_text(aes(label=paste(cut_rate, beta_rate, sep=","))) +
   facet_wrap("transition", scales="free") +
   ggtitle("Parameters recaptured in 50% HPDI") +
   scale_fill_gradient(low="white", high="steelblue")
 
-ggplot(prop_recaptured90, aes(x=as.factor(shape), y=as.factor(beta_rate), fill=all_captured)) + 
+ggplot(prop_recaptured90, aes(x=gammaid, y=as.factor(beta_rate), fill=all_captured)) + 
   geom_tile(colour="white") +
-  geom_text(aes(label=paste(shape, beta_rate, sep=","))) +
+  geom_text(aes(label=paste(cut_rate, beta_rate, sep=","))) +
   facet_wrap("transition", scales="free") +
   ggtitle("Parameters recaptured in 90% HPDI") +
   scale_fill_gradient(low="white", high="violetred")
 ```
-Parameters are most likely to be recaptured when transitions are slow, shape parameters are higher than cutpoints, and beta is not too constrained (low beta rate). However when transitions are fast (and cutpoints correspondingly larger, very high shape values do not work well.) Choosing shape values that center the gamma prior relatively near the second cutpoint seems to work best.
+Parameters are most likely to be recaptured when transitions are medium fast (beta=1), shape parameters are higher than cutpoints, and beta is not too constrained (low beta rate). However when transitions are fast (and cutpoints correspondingly larger, very high shape values do not work well.) Choosing shape values that center the gamma prior relatively near the second cutpoint seems to work best.
 
 This is tricky to do, however, without knowing beta - or having a lot of knowledge of your system.
 ```{r plotGammaRecapture}

@@ -1,7 +1,7 @@
 ---
 title: "Prior Analysis"
 author: "Susannah Tysor"
-date: "27/04/2020"
+date: "28/04/2020"
 output: html_document
 ---
 
@@ -51,41 +51,27 @@ simulate_data <- function(input) {
     return(input_data_for_model)
 }
 
-# plot simulated data for a sanity check.
-simplot <- function(datalist) {
-    inputdf <- data.frame(datalist)
-    p1 <- ggplot(inputdf, aes(x=x, y=y)) +
-        geom_jitter(shape=1, height=0.2) +
-        geom_vline(xintercept = h) +
-        ggtitle("Simulated data with cutpoints")
-    print(p1)
-    p2 <- ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
-        stat_ecdf() +
-        geom_vline(xintercept=h) +
-        theme(legend.position = "none") +
-        ggtitle("Cumulative x for 3 states")
-    print(p2)
-    p3 <- cowplot::plot_grid(p1,p2)
-    print(p3)
-}
-
-# append the correct shape (gamma prior on cutpoints) and rate (exponential prior on beta) parameters to the simulated data list and fit a model with a gamma prior. simdat is a list of datasets simulated from stan models and pars is a vector of additional parameters. Relies on global params beta_slow and beta_fast.
 fit_gamma_model <- function(simdatlist, pars) {
-    #choose whether to use data simulated with a rapid or slow transition
-    if (pars$beta == beta_slow) {
-        simdat <- simdatlist$simdat_slow
-    }
-    if (pars$beta == beta_fast) {
-        simdat <- simdatlist$simdat_fast
-    }
-    #extract parameters for prior distribtuions
-    simdat$shape <- pars$shape
-    simdat$rate <- pars$beta_rate
-
-    #fit the model
-    fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
-    return(fitgam)
+  #choose which dataset to use in the model
+  if (pars$transition == "slow") {
+    simdat <- simdatlist$slow
+  }
+  if (pars$transition == "medium") {
+    simdat <- simdatlist$medium
+  } 
+  if (pars$transition == "fast") {
+    simdat <- simdatlist$fast
+  }
+  # add parameters for prior distribtuions to the data to feed into stan
+  simdat$shape <- pars$shape
+  simdat$beta_rate <- pars$beta_rate
+  simdat$cut_rate <- pars$cut_rate
+  
+  #fit the model in stan
+  fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
+  return(fitgam)
 }
+
 
 ## append a label (string) to all columnnames in a dataframe (x)
 label_names <- function(x, label) {
@@ -95,16 +81,16 @@ label_names <- function(x, label) {
 
 # function to plot modeled parameters with label being a string to label the graph (usually prior and whether groups were included and pardf is the modeled parameter dataframe) trueparams is a one row dataframe of true parameters. h is a global parameter have fun!
 parplot <- function(pars) {
-    cutplot <- mcmc_areas(pars, regex_pars="c.\\d_model") +
-        geom_vline(xintercept=c(pars$c.1_true, pars$c.2_true))
+    cutplot <- mcmc_intervals(pars, regex_pars="c.\\d_model") +
+        geom_vline(xintercept=c(unique(pars$c.1_true), unique(pars$c.2_true)))
 
-    betaplot <- mcmc_areas(pars, pars="beta_model") +
-        geom_vline(xintercept=pars$beta_true)
+    betaplot <- mcmc_intervals(pars, pars="beta_model") +
+        geom_vline(xintercept=unique(pars$beta_true))
 
-    h1plot <- mcmc_areas(pars, regex_pars = "h1") +
-        geom_vline(xintercept=h[1])
-    h2plot <- mcmc_areas(pars, regex_pars = "h2") +
-        geom_vline(xintercept=h[2])
+    h1plot <- mcmc_intervals(pars, regex_pars = "h1_model") +
+        geom_vline(xintercept=unique(pars$h1_true))
+    h2plot <- mcmc_intervals(pars, regex_pars = "h2_model") +
+        geom_vline(xintercept=unique(pars$h2_true))
     allplot <- cowplot::plot_grid(cutplot, betaplot, h1plot, h2plot,
                                   nrow=1, ncol=4,
                                   labels=paste("model", unique(pars$modelid_true),
@@ -127,10 +113,10 @@ posterior_differencer <- function(pars) {
 # function to plot histograms of differences between true params and modeled params (model_params dataframe).
 diffplotter <- function(diffs, pars) {
     #diffs <- posterior_differencer(pars)
-    cuts <- mcmc_areas(diffs, regex_pars = "c") +
+    cuts <- mcmc_intervals(diffs, regex_pars = "c") +
         ggtitle("", subtitle = "differences between modeled and true params")+
         xlim(c(-15,15))
-    opars <- mcmc_areas(diffs, pars=c("h1_diff", "h2_diff", "beta_diff")) +
+    opars <- mcmc_intervals(diffs, pars=c("h1_diff", "h2_diff", "beta_diff")) +
         xlim(c(-1,1))
     cowplot::plot_grid(cuts, opars, labels=paste("model", unique(pars$modelid_true),
                                                  "rate=", unique(pars$beta_rate_true),
@@ -165,6 +151,20 @@ We have three potential states `K` and a latent effect/covariate `x`. Data is mo
 
 I'll simulate 2 datasets - one with a fast transition speed ($\beta = 2$) and one with a slow transition speed ($\beta = 0.5$). I want the transitions to occur at the same `x` for both datasets. The halfway transition points `h` will be at `x= 8` and `x=12`. So the cutpoints `c` for the slow transition will be at 4 and 6 and for the fast transition at 16 and 24.
 
+Here is what a slow (beta=0.5) and fast (beta=2) transition look like. My data is more like the fast transition - a phenological period with transitions of beta=0.5 would be occuring over a really long time period.
+```{r transitions}
+
+logistic2 <- function(x, beta, c) {
+  y <- 1/(1+exp(-beta*x + c))
+}
+
+x <- c(0:20)
+logisticexp <- data.frame(x, slow = logistic2(x, 0.5, 6), fast=logistic2(x, 2, 24), medium=logistic2(x, 1,12)) %>%
+  tidyr::pivot_longer(cols=c(slow, medium, fast))
+
+ggplot(logisticexp, aes(x=x, y=value, color=name)) +
+  geom_line()
+```
 
 ## Simulate datasets
 
@@ -172,33 +172,67 @@ I'll simulate 2 datasets - one with a fast transition speed ($\beta = 2$) and on
 N <- 500
 K <- 3
 
-beta_slow <- 0.5
-beta_fast <- 2
+beta <- data.frame(transition = c("slow", "medium", "fast"), beta=c(0.5, 1, 2))
+cutpoints <- data.frame(c.1= c(4,8,16), c.2=c(6, 12, 24), transition=c("slow", "medium", "fast"))
 
-cutpoints_slow <- c(4,6)
-cutpoints_fast <- c(16,24)
+simu_pars <- merge(beta, cutpoints)
 
-h <- cutpoints_slow/beta_slow #half transition points, engineered to be identical for slow and fast transitions
+# half transition points, engineered to be identical all transitions
+h1 <- unique(simu_pars$c.1/simu_pars$beta )
+h2 <- unique(simu_pars$c.2/simu_pars$beta )
+h <- c(h1, h2)
+
+# covariate over full range of heat accumulation (risto scale) Jan-Julyish
 x <- rtnorm(n=N, mean=mean(h), sd=2, min=0, max=20) #covariate
 
 testthat::test_that("half transition points identical", {
-  testthat::expect_equal(cutpoints_slow/beta_slow, cutpoints_fast/beta_fast)
+  testthat::expect_equal(length(h), 2)
 })
 ```
 
-```{r simulate data}
+```{r simulateData}
 
-inputs_for_sim_slow <- list("N" = N, "K" = K, "c" = cutpoints_slow, "beta"=beta_slow, "h" = h, "x" = x)
-inputs_for_sim_fast <- list("N" = N, "K" = K, "c" = cutpoints_fast, "beta"=beta_fast, "h" = h, "x" = x)
+inputs_for_sim <- split(simu_pars, simu_pars$transition) %>%
+  map(.f=function(y) {list("N" = N, "K" = K, "c" = c(y$c.1, y$c.2), "beta"=y$beta, "h" = h, "x" = x)})
 
-# simulate data, graph it, and prepare data for model fitting
+simdat <- map(inputs_for_sim, simulate_data)
 
-simdat_slow <- simulate_data(input=inputs_for_sim_slow)
-slowsimplot <- simplot(simdat_slow)
-simdat_fast <- simulate_data(input=inputs_for_sim_fast)
-fastsimplot <- simplot(simdat_fast)
+# # plot simulated data for a sanity check.
+# simplot <- function(datalist) {
+#     inputdf <- data.frame(datalist)
+#     p1 <- ggplot(inputdf, aes(x=x, y=y)) +
+#         geom_jitter(shape=1, height=0.2) +
+#         geom_vline(xintercept = h) +
+#         ggtitle("Simulated data with cutpoints")
+#     print(p1)
+#     p2 <- ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
+#         stat_ecdf() +
+#         geom_vline(xintercept=h) +
+#         theme(legend.position = "none") +
+#         ggtitle("Cumulative x for 3 states")
+#     print(p2)
+#     p3 <- cowplot::plot_grid(p1,p2)
+#     print(p3)
+# }
 
-cowplot::plot_grid(slowsimplot, fastsimplot, nrow=2, labels=c("slow", "fast"), vjust=2)
+# plot simulated data
+simdf <- purrr::map(simdat, .f = function(x) {x[c("x", "y")]}) %>%
+  purrr::map_dfr(.f = bind_rows, .id=".id") 
+
+p1 <- ggplot(simdf, aes(x=x, y=y)) +
+  geom_jitter(shape=1, height=0.1, alpha=0.5) +
+  geom_vline(xintercept = h) +
+  ggtitle("Simulated data with cutpoints") +
+  facet_grid(.id ~ .)
+
+p2 <- ggplot(simdf, aes(x=x, colour=as.factor(y))) +
+  stat_ecdf() +
+  geom_vline(xintercept=h) +
+  theme(legend.position = "none") +
+  ggtitle("Cumulative x for 3 states") +
+  facet_grid(.id ~ .)
+
+cowplot::plot_grid(p1, p2, ncol=2)
 
 ```
 
@@ -212,75 +246,121 @@ I also want to understand how the exponential prior on beta affects the ability 
 
 
 ### Gamma prior with covariate
-```{r params for gamma models}
+```{r paramsForGammaModels}
 
 beta_rate <- c(1:3) # rate parameters for exponential prior on beta
 
-# shape parameters for gamma prior on cutpoints, for slow and fast transitions
-shape_slow <- mean(cutpoints_slow)
-shape_slow_small <- shape_slow/2
-shape_slow_big <- shape_slow*2
+# shape and rate parameters for gamma prior on cutpoints, all centered on mean transition point
 
-slowshapes <- c(shape_slow, shape_slow_small, shape_slow_big)
+# make shape and rate parameters for a gamma distribution centered on the mean of h (a vector) with spread scaled by a factor (scaler). Larger factors make the distribution skinnier and smaller ones make it fatter. "h" are the half transition points, so the mean is basically the midpoint of your state 2 in a 3 state system when you have data like mine.
+make_gamma_pars <- function(factor, h) {
+  center <- mean(h)
+  shape <- mean(h) * factor
+  cut_rate <- shape/center
+  sr <- data.frame(shape, cut_rate)
+  return(sr)
+}
 
-shape_fast <- mean(cutpoints_fast)
-shape_fast_small <- shape_fast/2
-shape_fast_big <- shape_fast*2
+factors <- list(fat=0.25, normal=1, skinny=2)
 
-fastshapes <- c(shape_fast, shape_fast_big, shape_fast_small)
+gamma_pars <- purrr::map(factors, make_gamma_pars, h=h)  
+gamma_parsdf <-purrr::map_dfr(gamma_pars, .f=bind_cols, .id=".id") 
 
-slowframe <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2])
-fastframe <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
-parframe <- rbind(slowframe, fastframe) %>%
-  tidyr::expand(tidyr::nesting(beta, c.1, c.2, shape), h1, h2, beta_rate)
-parframe$modelid <- 1:nrow(parframe) #label the models
-parframe <- dplyr::select(parframe, modelid, beta, c.1, c.2, h1, h2, shape, beta_rate)
+sr <- gamma_pars %>%
+  map(function(x) {rgamma(1000, x$shape, x$cut_rate)}) %>%
+  bind_cols() %>%
+  tidyr::pivot_longer(cols=names(factors))
 
-knitr::kable(parframe, caption="beta parameters used to simulate data for a slow (0.5) and fast (2) transion. And shape and rate parameters to be used in the priors on beta and cutpoints to attempt to recover parameters")
+# plot gamma priors
+ggplot(sr, aes(x=value, fill=name)) +
+  geom_density() +
+  facet_grid(name ~ .) +
+  ggtitle("Gamma priors all centered on 10", subtitle = "with different shape and rate params")
+
+
+# make a nice dataframe with all combinations params used to simulate data and model params used to try to recover those params
+parframe_gam <- merge(gamma_parsdf, beta_rate) %>%
+  dplyr::rename(gammaid=.id, beta_rate=y) %>%
+  merge(simu_pars)
+parframe_gam$h1 <- h[1]
+parframe_gam$h2 <- h[2]
+parframe_gam$modelid <- 1:nrow(parframe_gam) #label the models
+
+
+# shape_slow <- mean(cutpoints_slow)
+# shape_slow_small <- shape_slow/2
+# shape_slow_big <- shape_slow*2
+# 
+# slowshapes <- c(shape_slow, shape_slow_small, shape_slow_big)
+# 
+# shape_fast <- mean(cutpoints_fast)
+# shape_fast_small <- shape_fast/2
+# shape_fast_big <- shape_fast*2
+# 
+# fastshapes <- c(shape_fast, shape_fast_big, shape_fast_small)
+
+# dataframes to hold parameters
+# slowframe_gam <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2]) %>%
+#   tidyr::pivot_longer(cols=)
+# fastframe_gam <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
+# parframe_gam <- rbind(slowframe_gam, fastframe_gam) %>%
+#   tidyr::expand(tidyr::nesting(beta, c.1, c.2, shape), h1, h2, beta_rate)
+
+# parframe_gam <- dplyr::select(parframe_gam, modelid, beta, c.1, c.2, h1, h2, shape, beta_rate)
+
+knitr::kable(parframe_gam, caption="model configurations used to try to recapture params")
 ```
 
-So there are 2 simulated datasets (beta=0.5 or beta=2) and I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shapes for the cutpoints' gamma prior, a total of 18 model runs.
+So there are 3 simulated datasets - 1 for each of three transition speeds. I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shape and rate combinations for the cutpoints' gamma prior, a total of 27 model runs.
 
-```{r gamma recapture attempts}
+```{r GammaRecapture}
+# Parallel code actually executes in parallel when running this chuck as a chunck with ctrl+shift+enter. It does not if you run it line by line. I don't know why. 
 
-parlist <- split(parframe, seq(nrow(parframe))) # format parframe so it works with parLapply better
-names(parlist) <- paste0("m", 1:nrow(parframe))
-datlist <- list(simdat_slow=simdat_slow, simdat_fast=simdat_fast) # list of simulated datasets
+# format parframe so it works with parLapply better
+parlist_gam <- split(parframe_gam, seq(nrow(parframe_gam))) 
+names(parlist_gam) <- parframe_gam$modelid
+
 
 # run all models, parallelized
 
-# make a cluster, leaving 20 cores free for other folks
-no_cores <- parallel::detectCores() - 20
+# make a cluster using half your cores
+no_cores <- parallel::detectCores()/2
 cl <- parallel::makeCluster(no_cores)
 
 # export the stuff you need to run on the cluster
-parallel::clusterExport(cl, c("fit_gamma_model", "parlist", "beta_fast", "beta_slow", "datlist"))
+parallel::clusterExport(cl, c("fit_gamma_model", "parlist_gam", "simdat"))
 parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
 
 # fit the models
-gammafits <- parallel::parLapply(cl, parlist, function(x) {fit_gamma_model(simdatlist = datlist, pars=x)})
+gammafits <- parallel::parLapply(cl, parlist_gam, function(x) {fit_gamma_model(simdatlist = simdat, pars=x)})
 
 parallel::stopCluster(cl) #close the cluster
 
+```
+
+```{r gammaExtract}
 # extract params
 paramsgam <- lapply(gammafits,
                     function(x) {data.frame(rstan::extract(x) ) } )
 #param summary
-sum <- lapply(paramsgam, summary)
+sum_gam <- lapply(paramsgam, summary)
 
 #bind true and model pars even tho it will make a giant df
 
-
 paramsgam <- map(paramsgam, label_names, label="model")
-parlist <- map(parlist, label_names, label="true")
+parlist_gam <- map(parlist_gam, label_names, label="true")
 
-paramsgam <- map2(paramsgam, parlist, cbind)
+paramsgam <- map2(paramsgam, parlist_gam, cbind)
+```
 
+```{r gammaParPlots}
 #plot params and diffs
-map(paramsgam, parplot)
+#map(paramsgam, parplot)
 map(paramsgam, posterior_differencer) %>%
     map2(.y=paramsgam, .f=diffplotter)
+```
 
+```{r GammaHDPI}
 # calculate whether true value is in 50% hpdi
 
 # kludge HPDI
@@ -323,11 +403,111 @@ calc_HPDI <- function(params, prob) {
 }
 
 in50 <- map(paramsgam, calc_HPDI, prob=0.5)
-print(in50)
+
 in75 <- map(paramsgam, calc_HPDI, prob=0.75)
-print(in75)
+
 in90 <- map(paramsgam, calc_HPDI, prob=0.90)
-print(in90)
+
+# recaptured parameters
+perform50 <- map_df(in50, bind_rows, .id="modelid") %>%
+  dplyr::mutate(modelid=as.integer(modelid)) %>%
+  full_join(parframe_gam) 
+perform90 <- map_df(in90, bind_rows, .id = "modelid") %>%
+  dplyr::mutate(modelid=as.integer(modelid)) %>%
+  full_join(parframe_gam)
+
+# proportion recaptured parameters
+prop_recaptured50 <- perform50 %>%
+  group_by(modelid) %>%
+  summarise(all_captured = sum(inint)/n()) %>%
+  full_join(parframe_gam) %>%
+  arrange(beta, desc(all_captured))
+
+prop_recaptured90 <- perform90 %>%
+  group_by(modelid) %>%
+  summarise(all_captured = sum(inint)/n()) %>%
+  full_join(parframe_gam) %>%
+  arrange(beta, desc(all_captured))
+
+knitr::kable(prop_recaptured50, caption = "Proportion of params recaptured in 50% HPDI")
+knitr::kable(prop_recaptured90, caption = "Proportion of params recaptured in 90% HPDI")
 ```
 
-Gamma prior recaptures parameters relatively well here and there are no obvious model fitting problems. However, it pretty much always overestimates beta and cutpoints (while accurately identifying the inflection points). It's not especially sensitive to the prior on $\beta$ either. An $\mathrm{exponential}$ prior with rates of 1,2,3, and 6 on $\beta$ performed similarly.
+```{r plotGammaRecaptureoverall}
+ggplot(prop_recaptured50, aes(x=as.factor(shape), y=as.factor(beta_rate), fill=all_captured)) + 
+  geom_tile(colour="white") +
+  geom_text(aes(label=paste(cut_rate, beta_rate, sep=","))) +
+  facet_wrap("transition", scales="free") +
+  ggtitle("Parameters recaptured in 50% HPDI") +
+  scale_fill_gradient(low="white", high="steelblue")
+
+ggplot(prop_recaptured90, aes(x=gammaid, y=as.factor(beta_rate), fill=all_captured)) + 
+  geom_tile(colour="white") +
+  geom_text(aes(label=paste(cut_rate, beta_rate, sep=","))) +
+  facet_wrap("transition", scales="free") +
+  ggtitle("Parameters recaptured in 90% HPDI") +
+  scale_fill_gradient(low="white", high="violetred")
+```
+Parameters are most likely to be recaptured when transitions are medium fast (beta=1), shape parameters are higher than cutpoints, and beta is not too constrained (low beta rate). However when transitions are fast (and cutpoints correspondingly larger, very high shape values do not work well.) Choosing shape values that center the gamma prior relatively near the second cutpoint seems to work best.
+
+This is tricky to do, however, without knowing beta - or having a lot of knowledge of your system.
+```{r plotGammaRecapture}
+knitr::kable(perform50, caption = "Ability of the different models to recapture parameters in 50% HPDI. Each model only run only once, don't shoot me.")
+
+ggplot(perform50, aes(x=params, y=as.factor(modelid), fill=inint)) + 
+  geom_tile(color="black") +
+  scale_fill_viridis_d()  +
+  geom_text(aes(label=paste(shape, beta_rate, sep=","))) +
+  facet_wrap("beta", scales="free") +
+  ggtitle("Parameters recaptured in 50% HPDI")
+    
+
+
+knitr::kable(perform90, caption = "Ability of the different models to recapture parameters in 90% HPDI. Each model only run only once, don't shoot me.")
+
+ggplot(perform90, aes(x=params, y=as.factor(modelid), fill=inint)) + 
+  geom_tile(color="black") +
+  scale_fill_viridis_d()  +
+  geom_text(aes(label=paste(shape, beta_rate, sep=","))) +
+  facet_wrap("beta", scales="free") +
+  ggtitle("Parameters recaptured in 90% HPDI")
+
+```
+
+
+
+#### Slow transition
+Estimates are better for slow parameters when shape parameters are large. When shape parameters are lower, beta and cutpoints are estimated more poorly, but the relationship between beta and cutpoints (the transitions h1 and h2) are still captured well.
+
+#### Fast transition
+Estimates are better for fast transitions when choosing a shape parameter near the cutpoints (20).
+
+The proportion of parameters recaptured (in the 50% HDPI) is highest when the transitions are slow (beta=0.5) and the shape parameter for the gamma prior is low. 
+
+```{r proportioncapture}
+
+
+```
+When transitions are slow, large shapes for gamma make it difficult to recapture parameters. When transitions are fast, constraining beta too much (eg. beta rate = 3) harms model performance. Moderate gamma shape parameters work best. 
+
+Getting the shape parameter "right" is more important than the beta rate parameter (over the ranges I've considered anyway). Unfortunately, "right" depends on the speed of transition, which we .... don't know in advance. Given the realities of phenology, I think that it's fair to say the speed is > 1 (at least with forcing units/x scaled the way they are.)
+
+Sadly, slow transition models are easier to fit. 
+
+```{r transitioncapture}
+transition_recaptured <- perform90 %>%
+  filter(params %in% c("c.1", "c.2")) %>%
+  group_by(modelid) %>%
+  summarise(h_captured = sum(inint)/n()) %>%
+  full_join(parframe_gam) %>%
+  arrange(beta, desc(h_captured))
+ 
+knitr::kable(transition_recaptured)
+```
+The parameters I'm most interested in are the transition parameters (calculated as c/beta), h1 and h2. Unfortunately, these seem relatively difficult to recapture well. In the 50% HDPI, no rapid transition model gets either of these right. The slow model can get them right with a low shape and a constrained beta. In the 90% HDPI, models with rapid transition datasets *almost* catch up to the slow transitions. 
+
+Truly unfortunately, the prior parameters (gamma shape) that make recapture possible are basically opposite for slow and fast transition data. Slow transitions require small to moderate shapes to recapture parameters, but fast transitions require moderate to high transitions to fit. Fast transitions also need a less constrained beta.
+
+Shape = 10 was large for slow transitions and small for fast transitions and made it impossible for both models to recapture true params. 
+
+So how might I go about choosing a shape parameter for a gamma prior? I think I would assume my transition speed (beta) must be >1 and is probably ~2 because of biology. So then, a good gamma shape param choice would probably be around the values your data starts transitioning from state 2 to 3. This feels yucky.
