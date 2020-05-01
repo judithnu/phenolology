@@ -51,41 +51,24 @@ simulate_data <- function(input) {
     return(input_data_for_model)
 }
 
-# plot simulated data for a sanity check.
-simplot <- function(datalist) {
-    inputdf <- data.frame(datalist)
-    p1 <- ggplot(inputdf, aes(x=x, y=y)) +
-        geom_jitter(shape=1, height=0.2) +
-        geom_vline(xintercept = h) +
-        ggtitle("Simulated data with cutpoints")
-    print(p1)
-    p2 <- ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
-        stat_ecdf() +
-        geom_vline(xintercept=h) +
-        theme(legend.position = "none") +
-        ggtitle("Cumulative x for 3 states")
-    print(p2)
-    p3 <- cowplot::plot_grid(p1,p2)
-    print(p3)
-}
 
-# append the correct shape (gamma prior on cutpoints) and rate (exponential prior on beta) parameters to the simulated data list and fit a model with a gamma prior. simdat is a list of datasets simulated from stan models and pars is a vector of additional parameters. Relies on global params beta_slow and beta_fast.
-fit_gamma_model <- function(simdatlist, pars) {
-    #choose whether to use data simulated with a rapid or slow transition
-    if (pars$beta == beta_slow) {
-        simdat <- simdatlist$simdat_slow
-    }
-    if (pars$beta == beta_fast) {
-        simdat <- simdatlist$simdat_fast
-    }
-    #extract parameters for prior distribtuions
-    simdat$shape <- pars$shape
-    simdat$rate <- pars$beta_rate
-
-    #fit the model
-    fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
-    return(fitgam)
-}
+# # append the correct shape (gamma prior on cutpoints) and rate (exponential prior on beta) parameters to the simulated data list and fit a model with a gamma prior. simdat is a list of datasets simulated from stan models and pars is a vector of additional parameters. Relies on global params beta_slow and beta_fast.
+# fit_gamma_model <- function(simdatlist, pars) {
+#     #choose whether to use data simulated with a rapid or slow transition
+#     if (pars$beta == beta_slow) {
+#         simdat <- simdatlist$simdat_slow
+#     }
+#     if (pars$beta == beta_fast) {
+#         simdat <- simdatlist$simdat_fast
+#     }
+#     #extract parameters for prior distribtuions
+#     simdat$shape <- pars$shape
+#     simdat$rate <- pars$beta_rate
+# 
+#     #fit the model
+#     fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
+#     return(fitgam)
+# }
 
 ## append a label (string) to all columnnames in a dataframe (x)
 label_names <- function(x, label) {
@@ -96,15 +79,15 @@ label_names <- function(x, label) {
 # function to plot modeled parameters with label being a string to label the graph (usually prior and whether groups were included and pardf is the modeled parameter dataframe) trueparams is a one row dataframe of true parameters. h is a global parameter have fun!
 parplot <- function(pars) {
     cutplot <- mcmc_intervals(pars, regex_pars="c.\\d_model") +
-        geom_vline(xintercept=c(pars$c.1_true, pars$c.2_true))
+        geom_vline(xintercept=c(unique(pars$c.1_true), unique(pars$c.2_true)))
 
     betaplot <- mcmc_intervals(pars, pars="beta_model") +
-        geom_vline(xintercept=pars$beta_true)
+        geom_vline(xintercept=unique(pars$beta_true))
 
-    h1plot <- mcmc_intervals(pars, regex_pars = "h1") +
-        geom_vline(xintercept=h[1])
-    h2plot <- mcmc_intervals(pars, regex_pars = "h2") +
-        geom_vline(xintercept=h[2])
+    h1plot <- mcmc_intervals(pars, regex_pars = "h1_model") +
+        geom_vline(xintercept=unique(pars$h1_true))
+    h2plot <- mcmc_intervals(pars, regex_pars = "h2_model") +
+        geom_vline(xintercept=unique(pars$h2_true))
     allplot <- cowplot::plot_grid(cutplot, betaplot, h1plot, h2plot,
                                   nrow=1, ncol=4,
                                   labels=paste("model", unique(pars$modelid_true),
