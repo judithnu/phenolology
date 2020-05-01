@@ -148,6 +148,20 @@ We have three potential states `K` and a latent effect/covariate `x`. Data is mo
 
 I'll simulate 2 datasets - one with a fast transition speed ($\beta = 2$) and one with a slow transition speed ($\beta = 0.5$). I want the transitions to occur at the same `x` for both datasets. The halfway transition points `h` will be at `x= 8` and `x=12`. So the cutpoints `c` for the slow transition will be at 4 and 6 and for the fast transition at 16 and 24.
 
+Here is what a slow (beta=0.5) and fast (beta=2) transition look like. My data is more like the fast transition - a phenological period with transitions of beta=0.5 would be occuring over a really long time period.
+```{r transitions}
+
+logistic2 <- function(x, beta, c) {
+  y <- 1/(1+exp(-beta*x + c))
+}
+
+x <- c(0:20)
+logisticexp <- data.frame(x, slow = logistic2(x, 0.5, 6), fast=logistic2(x, 2, 24), medium=logistic2(x, 1,12)) %>%
+  tidyr::pivot_longer(cols=c(slow, medium, fast))
+
+ggplot(logisticexp, aes(x=x, y=value, color=name)) +
+  geom_line()
+```
 
 ## Simulate datasets
 
