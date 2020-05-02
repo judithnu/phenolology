@@ -123,45 +123,56 @@ diffplotter <- function(diffs, pars) {
 
 ```
 
-## Prior choice
 
-In my original phenology model, I use
+When I first built an ordinal logistic model for lodgepole pine pollination phenology, I used
 
 * a gamma distribution for the prior on the cutpoints
-* an exponential distribution distribution for the transition speed/slope $\beta$
+* an exponential distribution distribution for the transition speed/slope $\beta$, and 
     * normal distributions for group effects on the slope
 
 Michael Betancourt thinks that an induced dirichlet prior may be a [good choice](https://betanalpha.github.io/assets/case_studies/ordinal_regression.html) for ordinal logistic models.
 
-Normally, priors are bottom up - you choose a distribution for each prior. This is tricky for the cutpoints in an ordinal logistic model because they're defined on an abstract latent space so you can't easily use your domain expertise, but a good prior is incredibly important in these models, because ordered logistic models with covariates are inherently non-identifiable. (Because $beta$s and cutpoints depend on one another.)
+Normally, priors are bottom up - you choose a distribution for each prior. This is tricky for the cutpoints in an ordinal logistic model because they're defined on an abstract latent space so you can't easily use your domain expertise, but a good prior is incredibly important in these models, because ordered logistic models with covariates are inherently non-identifiable. (Because transition speeds ($\beta$) and cutpoints ($c$) depend on one another.)
 
 Betancourt says that
+
 > To avoid the non-identifiability of the interior cut points from propagating to the posterior distribution we need a principled prior model that can exploit domain expertise to consistently regularize all of the internal cut points at the same time. Regularization of the cut points, however, is subtle given their ordering constraint. Moreover domain expertise is awkward to apply on the abstract latent space where the internal cut points are defined.
 
+That's what the induced dirichlet should do. Does it work for my model and how does it compare to a gamma prior on cutpoints chosen using domain specific knowledge?
+
 # Goals
+
 1) Understand the dynamics of the gamma and induced dirichlet priors and 2) compare them
 
 # Simulate data
-First let's simulate some data that's kind of like mine.
+First let's simulate some data that's more or less like mine.
 
-We have three potential states `K` and a latent effect/covariate `x`. Data is most likely to be collected around state 2. `x` is always positive.
+We have three potential states $K$ and a latent effect/covariate $x$. Data is most likely to be collected around state 2. $x$ is always positive.
 
-I'll simulate 2 datasets - one with a fast transition speed ($\beta = 2$) and one with a slow transition speed ($\beta = 0.5$). I want the transitions to occur at the same `x` for both datasets. The halfway transition points `h` will be at `x= 8` and `x=12`. So the cutpoints `c` for the slow transition will be at 4 and 6 and for the fast transition at 16 and 24.
+I'll simulate three datasets - one with a fast transition speed ($\beta = 2$), a medium transition speed ($\beta = 1$) and one with a slow transition speed ($\beta = 0.5$). I want the transitions to occur at the same $x$ for both datasets. The halfway transition points $h$ will be at $x= 8$ and $x=12$. $h=\frac{c/\beta$}
 
-Here is what a slow (beta=0.5) and fast (beta=2) transition look like. My data is more like the fast transition - a phenological period with transitions of beta=0.5 would be occuring over a really long time period.
-```{r transitions}
+Here is what a slow, medium, and fast transition look like. My data is more like the fast transition - a phenological period with transitions of $\beta=0.5$ would be occuring over a really long time period - months instead of days or weeks.
+
+```{r transitions, fig.height=4}
 
 logistic2 <- function(x, beta, c) {
   y <- 1/(1+exp(-beta*x + c))
 }
 
-x <- c(0:20)
-logisticexp <- data.frame(x, slow = logistic2(x, 0.5, 6), fast=logistic2(x, 2, 24), medium=logistic2(x, 1,12)) %>%
-  tidyr::pivot_longer(cols=c(slow, medium, fast))
+x <- seq(from=0, to=20, by=0.25)
+logisticexp <- data.frame(x, slow = logistic2(x, 0.5, 6), fast=logistic2(x, 2, 24), medium=logistic2(x, 1,12), faster=logistic2(x, 5, 60)) %>%
+  tidyr::pivot_longer(cols=c(slow, medium, fast, faster))
 
-ggplot(logisticexp, aes(x=x, y=value, color=name)) +
-  geom_line()
+l1 <- ggplot(logisticexp, aes(x=x, y=value, color=name)) +
+  geom_line() +
+  ggtitle("Logistic functions centered at x=12 with varying betas")
+l2 <- ggplot(logisticexp, aes(x=x, y=value, color=name)) +
+  geom_line() +
+  xlim(c(8,16))
+cowplot::plot_grid(l1, l2, nrow=1)
 ```
+
+Of course, $x$ can be rescaled any way you want, so you can make transitions slower or faster depending on how you smoosh or stretch $x$.
 
 ## Simulate datasets
 
@@ -235,9 +246,11 @@ cowplot::plot_grid(p1, p2, ncol=2)
 
 ## Recapture parameters: Gamma
 
-Now I want to try to recapture parameters.
+Now I want to try to recapture parameters using an ordinal logistic model with a gamma prior on the cutpoints and an exponential prior on the transition speeds.
 
-I need to know how good I have to be at choosing the shape parameter for the gamma prior on the cutpoints to recapture parameters as well. So I'll choose a prior for gamma that roughly centers it between the cutpoints, which I think is a "good" option (though given the long right tail, maybe a lower value would be better). Then halve and double it.
+I want to know how good I have to be at choosing parameters for the gamma prior on the cutpoints to recapture parameters. Ideally, I can anchor the prior **somewhere** near the cutpoints and give it enough spread to capture them. This is hard for the reasons explained by Betancourt above.
+
+I'm going to try centering the gamma distribution at $x$'s where stage 2 is most likely and giving it varying degrees of spread. The further $\beta$ is from 1, the worse this will work. 
 
 I also want to understand how the exponential prior on beta affects the ability to recapture parameters. I'll try rates of 1,2,3.
 
