@@ -133,6 +133,44 @@ diffplotter <- function(diffs, pars) {
                                                  "shape=", unique(pars$shape_true)))
 }
 
+HPDIlow <- function(x, prob) {
+    HPDI <- rethinking::HPDI(x, prob=prob)
+    return(HPDI[1])
+}
+
+HPDIhigh <- function(x, prob) {
+    HPDI <- rethinking::HPDI(x, prob=prob)
+    return(HPDI[2])
+}
+
+
+calc_HPDI <- function(params, prob) {
+    low <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIlow, prob=prob)
+    high <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIhigh, prob=prob)
+
+    # awkward formatting
+    hdpis <- dplyr::full_join(low, high) %>%
+        select(-contains("lp"))
+    colnames(hdpis) <- stringr::str_replace(colnames(hdpis), "_model", "")
+
+    # true param
+    true <- params %>% dplyr::summarise_at(vars(ends_with("true")), unique)
+    colnames(true) <- stringr::str_replace(colnames(true), "_true", "")
+    true <- select(true, colnames(hdpis))
+
+    # more awkward formatting
+    compframe <- dplyr::full_join(hdpis, true) %>%
+        t(.) %>%
+        data.frame()
+    colnames(compframe) <- c("low", "high", "true")
+    compframe$params <- rownames(compframe)
+
+    # true param in interval?
+    tf <- compframe %>% mutate(inint = true > low & true < high)
+    return(tf)
+
+}
+
 
 ```
 
@@ -207,24 +245,6 @@ inputs_for_sim <- split(simu_pars, simu_pars$transition) %>%
 
 simdat <- map(inputs_for_sim, simulate_data)
 
-# # plot simulated data for a sanity check.
-# simplot <- function(datalist) {
-#     inputdf <- data.frame(datalist)
-#     p1 <- ggplot(inputdf, aes(x=x, y=y)) +
-#         geom_jitter(shape=1, height=0.2) +
-#         geom_vline(xintercept = h) +
-#         ggtitle("Simulated data with cutpoints")
-#     print(p1)
-#     p2 <- ggplot(inputdf, aes(x=x, colour=as.factor(y))) +
-#         stat_ecdf() +
-#         geom_vline(xintercept=h) +
-#         theme(legend.position = "none") +
-#         ggtitle("Cumulative x for 3 states")
-#     print(p2)
-#     p3 <- cowplot::plot_grid(p1,p2)
-#     print(p3)
-# }
-
 # plot simulated data
 simdf <- purrr::map(simdat, .f = function(x) {x[c("x", "y")]}) %>%
   purrr::map_dfr(.f = bind_rows, .id=".id") 
@@ -276,6 +296,7 @@ factors <- list(fat=0.25, normal=1, skinny=2)
 gamma_pars <- purrr::map(factors, make_gamma_pars, h=h)  
 gamma_parsdf <-purrr::map_dfr(gamma_pars, .f=bind_cols, .id=".id") 
 
+# format for plotting
 sr <- gamma_pars %>%
   map(function(x) {rgamma(1000, x$shape, x$cut_rate)}) %>%
   bind_cols() %>%
@@ -297,31 +318,12 @@ parframe_gam$h2 <- h[2]
 parframe_gam$modelid <- 1:nrow(parframe_gam) #label the models
 
 
-# shape_slow <- mean(cutpoints_slow)
-# shape_slow_small <- shape_slow/2
-# shape_slow_big <- shape_slow*2
-# 
-# slowshapes <- c(shape_slow, shape_slow_small, shape_slow_big)
-# 
-# shape_fast <- mean(cutpoints_fast)
-# shape_fast_small <- shape_fast/2
-# shape_fast_big <- shape_fast*2
-# 
-# fastshapes <- c(shape_fast, shape_fast_big, shape_fast_small)
-
-# dataframes to hold parameters
-# slowframe_gam <- data.frame(beta = beta_slow, shape = slowshapes, beta_rate=beta_rate, c.1 = cutpoints_slow[1], c.2=cutpoints_slow[2], h1=h[1], h2=h[2]) %>%
-#   tidyr::pivot_longer(cols=)
-# fastframe_gam <- data.frame(beta=beta_fast, shape= fastshapes, beta_rate=beta_rate, c.1 = cutpoints_fast[1], c.2=cutpoints_fast[2], h1=h[1], h2=h[2])
-# parframe_gam <- rbind(slowframe_gam, fastframe_gam) %>%
-#   tidyr::expand(tidyr::nesting(beta, c.1, c.2, shape), h1, h2, beta_rate)
-
-# parframe_gam <- dplyr::select(parframe_gam, modelid, beta, c.1, c.2, h1, h2, shape, beta_rate)
-
 knitr::kable(parframe_gam, caption="model configurations used to try to recapture params")
 ```
 
-So there are 3 simulated datasets - 1 for each of three transition speeds. I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shape and rate combinations for the cutpoints' gamma prior, a total of 27 model runs.
+So there are 3 simulated datasets - 1 for each of three transition speeds. I'm going to try to fit them both with 3 rates for the beta's exponential prior and 3 shape and rate combinations for the cutpoints' gamma prior, a total of 27 model runs. 
+
+As beta gets larger, cutpoints get smaller and cutpoints priors need to be able to "reach" small values. As beta gets smaller, cutpoints need to be able to "reach" larger values. 
 
 ```{r GammaRecapture}
 # Parallel code actually executes in parallel when running this chuck as a chunck with ctrl+shift+enter. It does not if you run it line by line. I don't know why. 
@@ -363,7 +365,7 @@ parlist_gam <- map(parlist_gam, label_names, label="true")
 paramsgam <- map2(paramsgam, parlist_gam, cbind)
 ```
 
-```{r gammaParPlots}
+```{r gammaParPlots, fig.height=3}
 #plot params and diffs
 #map(paramsgam, parplot)
 map(paramsgam, posterior_differencer) %>%
@@ -371,46 +373,8 @@ map(paramsgam, posterior_differencer) %>%
 ```
 
 ```{r GammaHDPI}
-# calculate whether true value is in 50% hpdi
+# calculate whether true value is in HPDI
 
-# kludge HPDI
-HPDIlow <- function(x, prob) {
-    HPDI <- rethinking::HPDI(x, prob=prob)
-    return(HPDI[1])
-}
-
-HPDIhigh <- function(x, prob) {
-    HPDI <- rethinking::HPDI(x, prob=prob)
-    return(HPDI[2])
-}
-
-
-calc_HPDI <- function(params, prob) {
-    low <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIlow, prob=prob)
-    high <- params %>% dplyr::summarise_at(vars(ends_with("model")), HPDIhigh, prob=prob)
-
-    # awkward formatting
-    hdpis <- dplyr::full_join(low, high) %>%
-        select(-contains("lp"))
-    colnames(hdpis) <- stringr::str_replace(colnames(hdpis), "_model", "")
-
-    # true param
-    true <- params %>% dplyr::summarise_at(vars(ends_with("true")), unique)
-    colnames(true) <- stringr::str_replace(colnames(true), "_true", "")
-    true <- select(true, colnames(hdpis))
-
-    # more awkward formatting
-    compframe <- dplyr::full_join(hdpis, true) %>%
-        t(.) %>%
-        data.frame()
-    colnames(compframe) <- c("low", "high", "true")
-    compframe$params <- rownames(compframe)
-
-    # true param in interval?
-    tf <- compframe %>% mutate(inint = true > low & true < high)
-    return(tf)
-
-}
 
 in50 <- map(paramsgam, calc_HPDI, prob=0.5)
 
@@ -439,8 +403,8 @@ prop_recaptured90 <- perform90 %>%
   full_join(parframe_gam) %>%
   arrange(beta, desc(all_captured))
 
-knitr::kable(prop_recaptured50, caption = "Proportion of params recaptured in 50% HPDI")
-knitr::kable(prop_recaptured90, caption = "Proportion of params recaptured in 90% HPDI")
+#knitr::kable(prop_recaptured50, caption = "Proportion of params recaptured in 50% HPDI")
+#knitr::kable(prop_recaptured90, caption = "Proportion of params recaptured in 90% HPDI")
 ```
 
 ```{r plotGammaRecaptureoverall}
@@ -448,28 +412,28 @@ ggplot(prop_recaptured50, aes(x=as.factor(shape), y=as.factor(beta_rate), fill=a
   geom_tile(colour="white") +
   geom_text(aes(label=paste(cut_rate, beta_rate, sep=","))) +
   facet_wrap("transition", scales="free") +
-  ggtitle("Parameters recaptured in 50% HPDI") +
+  ggtitle("Proportion of parameters recaptured in 50% HPDI") +
   scale_fill_gradient(low="white", high="steelblue")
 
 ggplot(prop_recaptured90, aes(x=gammaid, y=as.factor(beta_rate), fill=all_captured)) + 
   geom_tile(colour="white") +
   geom_text(aes(label=paste(cut_rate, beta_rate, sep=","))) +
   facet_wrap("transition", scales="free") +
-  ggtitle("Parameters recaptured in 90% HPDI") +
+  ggtitle("Proportion of parameters recaptured in 90% HPDI") +
   scale_fill_gradient(low="white", high="violetred")
 ```
 Parameters are most likely to be recaptured when transitions are medium fast (beta=1), shape parameters are higher than cutpoints, and beta is not too constrained (low beta rate). However when transitions are fast (and cutpoints correspondingly larger, very high shape values do not work well.) Choosing shape values that center the gamma prior relatively near the second cutpoint seems to work best.
 
 This is tricky to do, however, without knowing beta - or having a lot of knowledge of your system.
 ```{r plotGammaRecapture}
-knitr::kable(perform50, caption = "Ability of the different models to recapture parameters in 50% HPDI. Each model only run only once, don't shoot me.")
+knitr::kable(perform50, caption = "Ability of the different models to recapture parameters in 50% HPDI. Each model only run only once, don't yell at me.")
 
 ggplot(perform50, aes(x=params, y=as.factor(modelid), fill=inint)) + 
   geom_tile(color="black") +
-  scale_fill_viridis_d()  +
+  scale_fill_viridis_d(begin=0.1, end=0.9)  +
   geom_text(aes(label=paste(shape, beta_rate, sep=","))) +
   facet_wrap("beta", scales="free") +
-  ggtitle("Parameters recaptured in 50% HPDI")
+  ggtitle("Parameters recaptured in 50% HPDI", subtitle = "faceted by beta")
     
 
 
@@ -480,7 +444,7 @@ ggplot(perform90, aes(x=params, y=as.factor(modelid), fill=inint)) +
   scale_fill_viridis_d()  +
   geom_text(aes(label=paste(shape, beta_rate, sep=","))) +
   facet_wrap("beta", scales="free") +
-  ggtitle("Parameters recaptured in 90% HPDI")
+  ggtitle("Parameters recaptured in 90% HPDI", subtitle = "faceted by beta")
 
 ```
 
@@ -494,26 +458,12 @@ Estimates are better for fast transitions when choosing a shape parameter near t
 
 The proportion of parameters recaptured (in the 50% HDPI) is highest when the transitions are slow (beta=0.5) and the shape parameter for the gamma prior is low. 
 
-```{r proportioncapture}
-
-
-```
 When transitions are slow, large shapes for gamma make it difficult to recapture parameters. When transitions are fast, constraining beta too much (eg. beta rate = 3) harms model performance. Moderate gamma shape parameters work best. 
 
 Getting the shape parameter "right" is more important than the beta rate parameter (over the ranges I've considered anyway). Unfortunately, "right" depends on the speed of transition, which we .... don't know in advance. Given the realities of phenology, I think that it's fair to say the speed is > 1 (at least with forcing units/x scaled the way they are.)
 
 Sadly, slow transition models are easier to fit. 
 
-```{r transitioncapture}
-transition_recaptured <- perform90 %>%
-  filter(params %in% c("c.1", "c.2")) %>%
-  group_by(modelid) %>%
-  summarise(h_captured = sum(inint)/n()) %>%
-  full_join(parframe_gam) %>%
-  arrange(beta, desc(h_captured))
- 
-knitr::kable(transition_recaptured)
-```
 The parameters I'm most interested in are the transition parameters (calculated as c/beta), h1 and h2. Unfortunately, these seem relatively difficult to recapture well. In the 50% HDPI, no rapid transition model gets either of these right. The slow model can get them right with a low shape and a constrained beta. In the 90% HDPI, models with rapid transition datasets *almost* catch up to the slow transitions. 
 
 Truly unfortunately, the prior parameters (gamma shape) that make recapture possible are basically opposite for slow and fast transition data. Slow transitions require small to moderate shapes to recapture parameters, but fast transitions require moderate to high transitions to fit. Fast transitions also need a less constrained beta.
