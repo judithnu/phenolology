@@ -12,7 +12,7 @@ data {
 
 parameters {
     positive_ordered[K - 1] c; // (Internal) cut points
-    real beta; // population level effect
+    real<lower=0> beta; // population level effect
 }
 
 model {
