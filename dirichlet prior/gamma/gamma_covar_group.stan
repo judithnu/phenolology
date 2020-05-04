@@ -6,8 +6,11 @@ data {
 
     int<lower=1, upper=K> y[N]; // Observed ordinals
     vector[N] x;                  // Covariate
-
     int GID[N]; //Groups
+
+    real<lower=1> shape; // shape parameter for gamma prior on cutpoints
+    real<lower=0> beta_rate; // rate parameter for exponential prior on beta
+    real<lower=0> cut_rate; //
 }
 
 parameters {
@@ -25,10 +28,7 @@ model {
     // Prior model
     beta ~ exponential(3);
     c ~ gamma(10,1);
-    //betag ~ normal(0,0.25);
-    //sigma_group ~ exponential(3);
-    betag ~ normal(0, 0.25);
-
+    betag ~ normal(0, 0.15);
 
     // Observational model
 
@@ -40,9 +40,11 @@ model {
 }
 
 generated quantities {
-  row_vector[G] fstart;
+  row_vector[G] h1;
+  row_vector[G] h2;
 
   for (g in 1:G) {
-    fstart[g] = c[1]/(beta + betag[g]);
+    h1[g] = c[1]/(beta + betag[g]);
+    h2[g] = c[2]/(beta + betag[g]);
   }
 }

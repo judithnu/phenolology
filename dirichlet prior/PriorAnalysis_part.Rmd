@@ -525,3 +525,42 @@ ggplot(simdf, aes(x=x, colour=as.factor(GID))) +
   facet_grid(y ~ .id)
 ```
 
+## Gamma recapture 
+Can a model with the gamma prior recapture the parameters used to simulate the data?
+
+The group effect prior ~ $\mathrm{normal}(0,sigma_{group})$ with $sigma_{group} ~ \mathrm{exponential}(4)$
+
+```{r gammaRecaptureGroup}
+
+#fit_gamma_model(simdat_group, parlist_gam[[1]], groups=TRUE)
+
+# run all models, parallelized
+
+# make a cluster, leaving 20 cores free for other folks
+no_cores <- parallel::detectCores() - 20
+cl <- parallel::makeCluster(no_cores)
+
+parallel::clusterExport(cl, c("fit_gamma_model", "parlist_gam", "simdat_group"))
+parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
+
+gammafits <- parallel::parLapply(cl, parlist_gam, function(x) {fit_gamma_model(simdatlist = simdat_group, pars=x, groups=TRUE)})
+
+parallel::stopCluster(cl) #close the cluster
+```
+
+```{r gammaExtract}
+# extract params
+paramsgam <- lapply(gammafits,
+                    function(x) {data.frame(rstan::extract(x) ) } )
+#param summary
+sum_gam <- lapply(paramsgam, summary)
+
+#bind true and model pars even tho it will make a giant df
+
+paramsgam <- map(paramsgam, label_names, label="model")
+parlist_gam <- map(parlist_gam, label_names, label="true")
+
+paramsgam <- map2(paramsgam, parlist_gam, cbind)
+```
+
+
