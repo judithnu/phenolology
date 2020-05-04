@@ -471,3 +471,57 @@ Truly unfortunately, the prior parameters (gamma shape) that make recapture poss
 Shape = 10 was large for slow transitions and small for fast transitions and made it impossible for both models to recapture true params. 
 
 So how might I go about choosing a shape parameter for a gamma prior? I think I would assume my transition speed (beta) must be >1 and is probably ~2 because of biology. So then, a good gamma shape param choice would probably be around the values your data starts transitioning from state 2 to 3. This feels yucky.
+
+## Group effects
+In my data I have different clusters and I want to know if and how the groups within those clusters differ. 
+
+I'm going to start with one cluster of 7 groups (like my site variable). I'm going to model group effects as deviations from the population mean transition speed, $beta$. A very large $beta$, probably unreasonably large would be +/-0.5.
+
+So I'll simulate 7 groups with `N=500` observations for each group. 
+
+I'll simulate 3 groups of group effects - big, small, and mixed. Effects for the groups are pulled from a normal distribution with `mean=0` and `sd=0.0.15`. They're deviations from the population mean. 
+
+
+```{r group simulation, fig.height=6}
+
+N = 500*7
+G = 7
+
+# simulate individual group effects
+gbeta_mu <- 0
+gbeta_sd <- 0.05
+
+gbeta_vec <- rnorm(G, mean=gbeta_mu, sd=gbeta_sd) # group effects
+gbeta <- sort(sample(gbeta_vec, size=N, replace=TRUE)) # assign a group effect to every observation for stan (like x)
+GID <- as.numeric(as.factor(gbeta)) # label the groups
+groupeffects <- data.frame(gbeta, GID) %>%
+  unique()
+
+# simu_pars_group <- merge(simu_pars, groupeffects) %>%
+#   tidyr::pivot_wider(names_from = GID, names_prefix="gbeta", values_from = gbeta)
+
+x <- rtnorm(n=N, mean=mean(h), sd=2, min=0, max=20) #covariate centered around transitions (ignoring groups)
+hist(x)
+
+inputs_for_sim_group <- split(simu_pars, simu_pars$transition) %>%
+  map(.f=function(y) {list("N" = N, "K" = K, "G"=G, "c" = c(y$c.1, y$c.2), "beta"=y$beta, "gbeta" = gbeta, "GID"= GID, "x" = x)})
+
+simdat_group <- map(inputs_for_sim_group, simulate_data, groups=TRUE)
+
+simdf <- purrr::map(simdat_group, .f=function(x) {x[c("x", "y", "GID")]}) %>%
+  purrr::map_dfr(.f = bind_rows, .id=".id") 
+
+ggplot(simdf, aes(x=x, y=y)) +
+  geom_jitter(shape=1, height=0.1, alpha=0.5) +
+  geom_vline(xintercept = h) +
+  ggtitle("Simulated data with cutpoints") +
+  facet_grid(GID ~ .id)
+
+ggplot(simdf, aes(x=x, colour=as.factor(GID))) +
+  stat_ecdf() +
+  geom_vline(xintercept=h) +
+  theme(legend.position = "none") +
+  ggtitle("Cumulative x for 3 states") +
+  facet_grid(y ~ .id)
+```
+

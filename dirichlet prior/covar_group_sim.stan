@@ -5,10 +5,12 @@ data {
   int<lower=2> K;
   int<lower=1> G;
 
-  vector[N] x; //covariate
   positive_ordered[K-1] c; //cutpoints
-  vector[N] gbeta; //group effects
   real beta; //slope
+
+  vector[N] x; //covariate
+  vector[N] gbeta; //group effects
+
 }
 
 generated quantities {
