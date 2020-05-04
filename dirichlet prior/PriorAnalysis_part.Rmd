@@ -41,34 +41,44 @@ rtnorm <- function(n, mean, sd, min, max) {
     return(x)
 }
 
-# simulate data from an ordinal logistic model and format it as input for stan. input is a list for stan, as is output.
-simulate_data <- function(input) {
+# simulate data from an ordinal logistic model and format it as input for stan. input is a list for stan, as is output. groups is TRUE or FALSE
+simulate_data <- function(input, groups) {
+  if (isTRUE(groups)) {
+    simu <- rstan::stan(file='dirichlet prior/covar_group_sim.stan', iter=1, chains=1, algorithm="Fixed_param", data=input)
+  } else {
     simu <- rstan::stan(file='dirichlet prior/covar_sim.stan', iter=1, chains=1, algorithm="Fixed_param", data=input)
-
-    simu_params <- rstan::extract(simu)
-
-    input_data_for_model <- list("N" = input$N, "K" = input$K, "x" = input$x, "y" = array(simu_params$y[1,]))
-    return(input_data_for_model)
+  }
+  
+  simu_params <- rstan::extract(simu)
+  
+  input_data_for_model <- list("N" = input$N, "K" = input$K, "G"=input$G, "GID" = input$GID, "x" = input$x, "y" = array(simu_params$y[1,]))
+  return(input_data_for_model)
 }
 
-fit_gamma_model <- function(simdatlist, pars) {
-  #choose which dataset to use in the model
+# fit a model with a gamma prior in stan. simdatlist is a list of simulated data (1 simulated dataset per list entry), pars is a list of parameter values (1 set of parameter values per list entry) and groups is TRUE or FALSE indicating whether you're trying to fit groups.
+fit_gamma_model <- function(simdatlist, pars, groups) {
+  #choose whether to use data simulated with a rapid or slow transition
   if (pars$transition == "slow") {
     simdat <- simdatlist$slow
   }
   if (pars$transition == "medium") {
     simdat <- simdatlist$medium
-  } 
+  }
   if (pars$transition == "fast") {
     simdat <- simdatlist$fast
   }
-  # add parameters for prior distribtuions to the data to feed into stan
+  #extract parameters for prior distribtuions
   simdat$shape <- pars$shape
   simdat$beta_rate <- pars$beta_rate
   simdat$cut_rate <- pars$cut_rate
   
-  #fit the model in stan
-  fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
+  #fit the model
+  if (isTRUE(groups)) {
+    fitgam <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=simdat, chains=4)
+  } else {
+    fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
+  }
+  print(paste("model", pars$modelid_true))
   return(fitgam)
 }
 
@@ -332,7 +342,7 @@ parallel::clusterExport(cl, c("fit_gamma_model", "parlist_gam", "simdat"))
 parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
 
 # fit the models
-gammafits <- parallel::parLapply(cl, parlist_gam, function(x) {fit_gamma_model(simdatlist = simdat, pars=x)})
+gammafits <- parallel::parLapply(cl, parlist_gam, function(x) {fit_gamma_model(simdatlist = simdat, pars=x, groups=FALSE)})
 
 parallel::stopCluster(cl) #close the cluster
 

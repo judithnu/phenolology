@@ -41,14 +41,18 @@ rtnorm <- function(n, mean, sd, min, max) {
     return(x)
 }
 
-# simulate data from an ordinal logistic model and format it as input for stan. input is a list for stan, as is output.
-simulate_data <- function(input) {
+# simulate data from an ordinal logistic model and format it as input for stan. input is a list for stan, as is output. groups is TRUE or FALSE
+simulate_data <- function(input, groups) {
+  if (isTRUE(groups)) {
+    simu <- rstan::stan(file='dirichlet prior/covar_group_sim.stan', iter=1, chains=1, algorithm="Fixed_param", data=input)
+  } else {
     simu <- rstan::stan(file='dirichlet prior/covar_sim.stan', iter=1, chains=1, algorithm="Fixed_param", data=input)
-
-    simu_params <- rstan::extract(simu)
-
-    input_data_for_model <- list("N" = input$N, "K" = input$K, "x" = input$x, "y" = array(simu_params$y[1,]))
-    return(input_data_for_model)
+  }
+  
+  simu_params <- rstan::extract(simu)
+  
+  input_data_for_model <- list("N" = input$N, "K" = input$K, "G"=input$G, "gid" = input$gid, "x" = input$x, "y" = array(simu_params$y[1,]))
+  return(input_data_for_model)
 }
 
 
@@ -203,7 +207,7 @@ testthat::test_that("half transition points identical", {
 inputs_for_sim <- split(simu_pars, simu_pars$transition) %>%
   map(.f=function(y) {list("N" = N, "K" = K, "c" = c(y$c.1, y$c.2), "beta"=y$beta, "h" = h, "x" = x)})
 
-simdat <- map(inputs_for_sim, simulate_data)
+simdat <- map(inputs_for_sim, simulate_data, groups=FALSE)
 
 # plot simulated data for a sanity check.
 simplot <- function(datalist) {
@@ -330,14 +334,14 @@ So there are 3 simulated datasets - 1 for each of three transition speeds. I'm g
 parlist_gam <- split(parframe_gam, seq(nrow(parframe_gam))) 
 names(parlist_gam) <- parframe_gam$modelid
 
-fit_gamma_model <- function(simdatlist, pars) {
+fit_gamma_model <- function(simdatlist, pars, groups) {
   #choose whether to use data simulated with a rapid or slow transition
   if (pars$transition == "slow") {
     simdat <- simdatlist$slow
   }
   if (pars$transition == "medium") {
     simdat <- simdatlist$medium
-  } 
+  }
   if (pars$transition == "fast") {
     simdat <- simdatlist$fast
   }
@@ -347,7 +351,11 @@ fit_gamma_model <- function(simdatlist, pars) {
   simdat$cut_rate <- pars$cut_rate
   
   #fit the model
-  fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4)
+  if (isTRUE(groups)) {
+    fitgam <- stan(file='dirichlet prior/gamma/gamma_covar_group.stan', data=simdat, chains=4, cores=4)
+  } else {
+    fitgam <- stan(file='dirichlet prior/gamma/gamma_covar.stan', data=simdat, chains=4, cores=4)
+  }
   return(fitgam)
 }
 
@@ -362,7 +370,7 @@ parallel::clusterExport(cl, c("fit_gamma_model", "parlist_gam", "simdat"))
 parallel::clusterEvalQ(cl, c(library(rstan), library(StanHeaders)))
 
 # fit the models
-gammafits <- parallel::parLapply(cl, parlist_gam, function(x) {fit_gamma_model(simdatlist = simdat, pars=x)})
+gammafits <- parallel::parLapply(cl, parlist_gam, function(x) {fit_gamma_model(simdatlist = simdat, pars=x, groups=FALSE)})
 
 parallel::stopCluster(cl) #close the cluster
 
