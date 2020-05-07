@@ -429,7 +429,7 @@ gammafits <- parallel::parLapply(cl, parlist_gam, function(x) {fit_gamma_model(s
 parallel::stopCluster(cl) #close the cluster
 ```
 
-Running models with 1000 warmup, 2000 total gives no divergence warnings or anything, but does have ESS issues.
+Running models with 1000 warmup, 2000 total gives no divergence warnings or anything, but does have ESS issues. Increasing the length of the model run resolves all warnings.
 ```{r modelChecking, warning=TRUE}
 
 for (i in 1:length(gammafits)) {
@@ -555,3 +555,5 @@ The only parameters *ever* recaptured are cutpoints. And those only rarely.
 - add more clusters
 - add more data
 - pick larger effects
+
+This is a very serious kind of failure because it looks like the model fits, but none of the parameters are recaptured.
