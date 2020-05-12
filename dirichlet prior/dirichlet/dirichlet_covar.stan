@@ -32,7 +32,7 @@ data {
     int<lower=1> K;             // Number of ordinal categories
     int<lower=1, upper=K> y[N]; // Observed ordinals
     vector[N] x;                  // Covariate
-    real<lower=0> rate;           // beta rate parameter
+    real<lower=0> beta_rate;           // beta rate parameter
     real<lower=0> anchor;         // anchor parameter for induced dirichlet
 }
 
@@ -46,7 +46,7 @@ model {
     vector[N] gamma;
 
     // Prior model
-    beta ~ exponential(2);
+    beta ~ exponential(beta_rate);
     c ~ induced_dirichlet(rep_vector(1, K), anchor);
 
     // Observational model

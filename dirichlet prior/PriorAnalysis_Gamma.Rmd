@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
-    ```{r setup, include=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message=FALSE)
 ```
 
@@ -86,7 +86,8 @@ h2 <- unique(simu_pars$c.2/simu_pars$beta )
 h <- c(h1, h2)
 
 # covariate over full range of heat accumulation (risto scale) Jan-Julyish
-x <- rtnorm(n=N, mean=mean(h), sd=2, min=0, max=20) #covariate
+#x <- rtnorm(n=N, mean=mean(h), sd=2, min=0, max=20) #covariate
+x <- runif(n=N, min=0, max=20)
 
 testthat::test_that("half transition points identical", {
   testthat::expect_equal(length(h), 2)
@@ -280,6 +281,8 @@ ggplot(prop_recaptured90, aes(x=gammaid, y=as.factor(beta_rate), fill=all_captur
 Parameters are most likely to be recaptured when transitions are medium fast (beta=1), shape parameters are higher than cutpoints, and beta is not too constrained (low beta rate). However when transitions are fast (and cutpoints correspondingly larger, very high shape values do not work well.) Choosing shape values that center the gamma prior relatively near the second cutpoint seems to work best.
 
 This is tricky to do, however, without knowing beta - or having a lot of knowledge of your system.
+
+# COMPARE NORMALLY DISTRIBUTED VS UNIFORM COVAR
 ```{r plotGammaRecapture}
 knitr::kable(perform50, caption = "Ability of the different models to recapture parameters in 50% HPDI. Each model only run only once, don't yell at me.")
 
@@ -352,10 +355,11 @@ GID <- as.numeric(as.factor(gbeta)) # label the groups
 groupeffects <- data.frame(gbeta, GID) %>%
   unique()
 
-# simu_pars_group <- merge(simu_pars, groupeffects) %>%
-#   tidyr::pivot_wider(names_from = GID, names_prefix="gbeta", values_from = gbeta)
+ # simu_pars_group <- merge(simu_pars, groupeffects) %>%
+ #   tidyr::pivot_wider(names_from = GID, names_prefix="gbeta", values_from = gbeta)
 
-x <- rtnorm(n=N, mean=mean(h), sd=2, min=0, max=20) #covariate centered around transitions (ignoring groups)
+#x <- rtnorm(n=N, mean=mean(h), sd=2, min=0, max=20) #covariate centered around transitions (ignoring groups)
+x <- runif(n=N, min=0, max=20)
 hist(x)
 
 inputs_for_sim_group <- split(simu_pars_group, simu_pars$transition) %>%
