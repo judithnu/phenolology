@@ -1,6 +1,6 @@
 # Combine phenology and climate data
 
-# combine phenology and weather station data
+# combine phenology and PCIC data
 library(tidyverse)
 library(lubridate)
 library(viridis)
