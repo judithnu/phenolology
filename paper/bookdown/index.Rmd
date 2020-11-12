@@ -102,26 +102,28 @@ Conifers are a big part of the enormous northern hemisphere forests and many hav
 
 Coniferous forest trees are wind pollinated with pollination possible over very large distances. Pine and spruce pollen have been recorded travelling 3000km [@Campbell1999]. While most trees are pollinated by local pollen donors, long distance pollen dispersal makes up a significant amount of effective pollen flow. Seed orchards typically struggle to reproductively isolate their stands, despite placing them at a distance from natural stands (*e.g.* @Slavov2005, @SkLai2010, @stoehrEvaluationMatingDynamics2002). @robledo-arnuncioWindPollinationMesoscale2011 found that at least 4.4% of effective pollen flow into an isolated *Pinus sylvestris* stand was from a population 100km away. At the expanding range edge of both *Pinus ponderosa* [@lesser2013] and *Picea sitchensis* [@elleouet2019], long distance pollen-mediated gene flow was critical for persistence of colonizing populations
 
-Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination. Gymnosperm strobili are not flowers, but this paper will follow the common practice of referring to the processes of pollen shed and cone receptivity as "flowering." 
+Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination.
+(Gymnosperm strobili are not flowers, but this paper will follow the common practice of referring to the processes of pollen shed and cone receptivity as "flowering.") 
+Differences in flowering timing lead to assortative mating within populations and differential gene flow among populations, with important consequences for genetic diversity, fitness, and rate of evolution [@fox2003]. 
+Understanding flowering timing could lead to a better understanding of adaptive capacity and maintenance of local adaptation in lodgepole pine. 
+Shifts in flowering timing in conifers could lead to gene flow changes that hinder or promote adaptation under climate change [@rousi2019, @Whittet2017b], decrease fitness[@gleiser2018]], reduce additive genetic variance in flowering time [@Franks2015], affect forest regeneration through seed production declines, and even damage reforestation and conservation efforts [@Wadgymar2015a].
 
-Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed production declines. 
-[Also affects gene flow now and is important for understanding current spatial genetic structure and local adaptation] 
+Lodgepole pine is a good representative of these issues as an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
+Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Fig. \@ref(fig:rangemap)). 
 
-Lodgepole pine is a good representative of these issues - an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
-Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Fig. \@ref(fig:rangemap) with widespread and significant local adaptation in many traits. 
-For example, populations from both northern interior British Columbia and northern Idaho can survive in areas with mean annual temperatures between -4 and 6 $^\circ\mathrm{C}$, but the northern British Columbia population survives best where mean annual temperatures are ~ 1 $^\circ\mathrm{C}$ and the Idaho population best at ~ 4 $^\circ\mathrm{C}$ [@Rehfeldt1999a]. 
-Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@rehfeldt1983]. [Summarize/cite adaptree work]
+Synchronicity of flowering in conifers may be an important control on gene flow in lodgepole and have effects on local adaptation and genetic diversity. While gene flow is high, there is evidence for spatially varying levels of gene flow and local adaptation is extensive. 
+Populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006].
+Genetic clines especially related to cold injury [@Liepe2015, [@mahonya]. 
+Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@rehfeldt1983]. 
+ 
 
-
-Pollen is an important vector for identifying gene flow in lodgepole pine because outcrossing is common, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. 
-There is evidence for spatially varying levels of gene flow in the species as populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006]. 
-Pollination phenology could control this. 
-
-Pollination phenology determines which populations can exchange genes, but work on predicting the timing of pollen shed and cone receptivity is scarce and coarse.
+Flowering phenology determines which populations can exchange genes, but work on predicting the timing of pollen shed and cone receptivity is scarce and coarse.
 Determining the amount of forcing required for a phenological event to occur is rarely done for species that lack economic importance because collecting the data is too much work. 
 When it is done, estimates are often location and population specific. Pollination phenology examples are uncommon for conifers. Simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts. Risto Sarvas's work in Scots pine is a rare exception. [Talk about Sarvas investigations for mechanistic background, why using temperature, etc.] 
 
 @owensReproductiveBiologyLodgepole2006 reports that lodgepole pine pollen shed and cone receptivity occur when degree days reach about 500 at a threshold of 5 $^\circ\mathrm{C}$, but this is the only report of pollination phenology prediction we could find for lodgepole pine and limited details are provided. Models of lodgepole pine vegetative phenology, on the other hand, are better represented in the literature (*e.g.* @Chuine2001), and pollen shed and cone receptivity are not expected to have additional or more complex triggers or model forms than budburst [@Chuine2013a]. Plus we can rely on Sarvas's mechanistic work, which Chuine uses in her work.
+
+PARAGRAPH ON POPULATION VARIATION
 
 Predicting pollination phenology will also have practical benefits. SMP
 
