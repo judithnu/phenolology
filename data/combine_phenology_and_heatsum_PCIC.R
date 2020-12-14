@@ -1,19 +1,26 @@
 # Combine phenology and climate data
 
+# Calculate forcing unit data and combine with phenology data. This reads in flowering data from flowers package and `PCIC_all_seed_orchard_sites_adjusted.csv` from lodgepole_climate project. Writes combined phenology and heatsum to `phenology_heatsum_all.csv` and only the weather and forcing unit data to `all_clim_PCIC.csv`
+
+# This file could be broken up into different tasks and visualizations
+
 # combine phenology and PCIC data
 library(tidyverse)
 library(lubridate)
 library(viridis)
+library(flowers)
 
-forcingtype = "scaled_ristos" # choose forcing type for use in phendf output for modeling with stan
+forcingtype = "ristos" # choose forcing type for use in phendf output for modeling with stan
 
 
 # Data --------------------------------------------------------------------
 
-phendat <- read.csv("../phd/data/PhenologyAndPollenCounts/data_formatted_and_derived/inferred_derived_phenology.csv", stringsAsFactors = FALSE)
-phendat$TreeUnique <- group_indices(phendat, Site, Orchard, Clone, Tree, X, Y)
+phendat <- flowers::phenology
+phendat$TreeUnique <- phendat %>%
+    group_by(Site, Orchard, Clone, Tree, X, Y) %>%
+    group_indices()
 
-climdat <- read.csv("../phd/data/Climate/formatted/PCIC_all_seed_orchard_sites_adjusted.csv", header = TRUE, stringsAsFactors=FALSE) %>%
+climdat <- read.csv("../lodgepole_climate/processed/PCIC_all_seed_orchard_sites_adjusted.csv", header = TRUE, stringsAsFactors=FALSE) %>%
     mutate(DoY = yday(Date)) %>%
     rename(mean_temp = mean_temp_corrected) # use mean temps that PCIC raw with a ClimateNA correction
 
@@ -166,7 +173,7 @@ climdat$Month <- lubridate::month(climdat$Date)
 #
 #overall
 ggplot(climdat, aes(x=DoY, y=mean_temp)) +
-    geom_point(pch=1, alpha=0.3)+
+    geom_point(pch=1, alpha=0.1)+
     theme_bw(base_size=20) +
     ylab("Temperature (°C)") +
     ggtitle("Mean Temperatures 1997-2011")
