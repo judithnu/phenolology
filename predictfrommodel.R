@@ -1,5 +1,5 @@
 # Predict from the model
-# Simulate from the model using mean effects and sigma.
+# Simulate from the model using mean effects and sigma. (Superpopulation predictions)
 
 # Need parameter values (distributions?)
 # Need accumulated forcing time series - use existing for now.
