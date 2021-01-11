@@ -110,13 +110,13 @@ Shifts in flowering timing in conifers could lead to gene flow changes that hind
 Lodgepole pine is a good representative of these issues as an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
 Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Fig. \@ref(fig:rangemap)). 
 Understanding flowering timing could lead to a better understanding of adaptive capacity and maintenance of local adaptation in lodgepole pine 
-While gene flow is high, local adaptation is extensive in lodgepole pine [@Liepe2015, @mahonya] and there is evidence for spatially varying levels of gene flow tied to climate [@Yeaman2006].
-Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@rehfeldt1983]. 
-
-Flowering phenology determines which populations can exchange genes, but work on predicting the timing of pollen shed and cone receptivity is scarce and coarse.
-Determining the amount of forcing required for a phenological event to occur is rarely done for species that lack economic importance because collecting the data is time and labour intensive. 
-When it is done, estimates are often location and population specific. 
-Flowering phenology examples are uncommon for conifers. Simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts. Risto Sarvas's work in Scots pine (*Pinus sylvestris*) is a rare exception. Through extensive field and laboratory experiments
+While gene flow is high, local adaptation is extensive in lodgepole pine [@Liepe2015, @mahonya] with strong differences in performance between different provenances [@Wang2010]. Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@rehfeldt1983] and there is evidence for spatially varying levels of gene flow tied to climate [@Yeaman2006].
+ 
+Synchronization in flowering phenology will play a strong role in determining which populations can exchange genes in lodgepole pine because outcrossing is nearly obligate, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. 
+However, work on predicting the timing of pollen shed and cone receptivity is scarce and coarse.
+Estimates are often location and population specific, considering only the day of year an event occurred and not the amount of forcing required to trigger an event. 
+Collecting flowering phenology data in mature forest trees is challenging because of their height and the long period of observation required.
+However, simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts. Risto Sarvas's work in Scots pine (*Pinus sylvestris*) is a rare exception. Through extensive field and laboratory experiments, they determined the rate of forcing at temperatures between x and y etc.
 
 SARVAS FLOWERING PHENOLOGY
 
@@ -303,6 +303,7 @@ Cooler sites, like Prince George, accumulate forcing slower than warmer sites li
 [ACCUMULATED FORCING UNITS FIGURE]
 
 ## Phenology Modeling 
+
 
 We modeled phenological states as a function of accumulated forcing units with separate Bayesian multilevel ordinal logistic models for male and female strobili. A logistic cumulative link function accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states. The model parameters describe a probability function for each state. Cutpoints $\kappa$ separate each state while the slope parameter of the linear model influences the steepness of the curves. Transitions between phenological states happen rapidly when the slope is large and slowly when it is small. 
 
