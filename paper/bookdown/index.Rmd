@@ -623,6 +623,19 @@ Use HPDI in this paper (easy). I'll publish the fstart and fend distributions in
 ## Future directions
 THE WHOLE RANGE
 
+# Supplemental
+
+## ESS 
+
+for 2020-12-17 model run. Calculated with `diagnostics.R`
+
+|id     |  bulk_ess| tail_ess|
+|:------|---------:|--------:|
+|fbsims |  696.4815| 1417.250|
+|fesims |  741.2277| 1383.805|
+|mbsims |  940.9436| 1601.639|
+|mesims | 1095.3261| 2089.605|
+
 # Acknowledgements
 
 Thanks to R. Johnstone for help with transcription. Workers with BC Seed Orchards for collecting such an extraordinary dataset and J. Woods, C. Walsh, R. Wagner, and J.Webber for assistance obtaining and interpreting the historical data. A. Elbakyan for background and resources. G. Hoare for technical support. T. Kerr for troubleshooting.
