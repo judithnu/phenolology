@@ -1,0 +1,58 @@
+---
+title: "Outtakes"
+author: "Susannah Tysor"
+date: "07/11/2020"
+output: html_document
+---
+
+# Outline intro
+Pollination phenology is important because
+
+
+gene flow, dispersal: spatial and temporal variation
+
+reproduction, demography
+
+assisted migration, conservation
+
+seed orchard operations, commercial/agricultural/breeding
+
+
+While vegetative phenology has been the focus of much research, pollination phenology is relatively unexplored in conifers. The focus is usually on day of year and comparing provenances, looking for local adaptation. They aren't predictive. 
+
+
+examples
+
+
+Benefits of predictive/mechanistic models
+
+
+climate change
+
+predict out of dataset
+
+
+Predictive models are scarce because they rely on excellent phenological records with high quality temperature datasets.
+
+
+counterexamples with strengths and weaknesses
+
+
+Such a record does exist for lodgepole pine in British Columbia.
+
+
+BC seed orchards, collection rationale, existing dataset
+
+
+Understanding the precise relationship between temperature and pollination phenology is valuable in lodgepole because
+
+
+it's an economically important species with lots of replanting and we need to understand how populations we're planting on the landscape will interact with local populations
+
+lots of phenotypic and genomic data available in lodgepole pine. Local adaptation, population structure. Understanding temporal and spatial variation in pollination phenology could help disentangle effects on population differentation (local adaptation, gene flow, etc) and explain population structure.
+
+
+In this paper, we build a predictive model of pollination phenology in lodgepole pine that estimates the amount of forcing required to cause lodgepole pine to begin and end flowering. Using these estimates, any record of mean daily temperature can be used to predict the timing and duration of flowering in lodgepole pine.
+
+We confirm that pollination phenology in lodgepole pine is not strongly influenced by provenance, then used the model results to calculate variation in the timing and length of phenological period at 7 sites in British Columbia between 1997 and 2011. Last, we considered how climate change may affect pollination phenology.
+

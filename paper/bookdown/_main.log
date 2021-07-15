@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2020.2.4)  13 FEB 2020 07:18
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2020.2.4)  3 JUL 2020 07:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -628,7 +628,58 @@ LaTeX Info: Redefining \lslig on input line 913.
 Package microtype Info: Loading configuration file microtype.cfg.
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/microtype.cfg
 File: microtype.cfg 2018/01/14 v2.7a microtype main configuration file (RS)
-)) (/usr/share/texlive/texmf-dist/tex/latex/hyperref/hyperref.sty
+)) (/usr/share/texlive/texmf-dist/tex/latex/tools/longtable.sty
+Package: longtable 2014/10/28 v4.11 Multi-page Table package (DPC)
+\LTleft=\skip47
+\LTright=\skip48
+\LTpre=\skip49
+\LTpost=\skip50
+\LTchunksize=\count101
+\LTcapwidth=\dimen113
+\LT@head=\box28
+\LT@firsthead=\box29
+\LT@foot=\box30
+\LT@lastfoot=\box31
+\LT@cols=\count102
+\LT@rows=\count103
+\c@LT@tables=\count104
+\c@LT@chunks=\count105
+\LT@p@ftn=\toks24
+) (/usr/share/texlive/texmf-dist/tex/latex/booktabs/booktabs.sty
+Package: booktabs 2016/04/27 v1.618033 publication quality tables
+\heavyrulewidth=\dimen114
+\lightrulewidth=\dimen115
+\cmidrulewidth=\dimen116
+\belowrulesep=\dimen117
+\belowbottomsep=\dimen118
+\aboverulesep=\dimen119
+\abovetopsep=\dimen120
+\cmidrulesep=\dimen121
+\cmidrulekern=\dimen122
+\defaultaddspace=\dimen123
+\@cmidla=\count106
+\@cmidlb=\count107
+\@aboverulesep=\dimen124
+\@belowrulesep=\dimen125
+\@thisruleclass=\count108
+\@lastruleclass=\count109
+\@thisrulewidth=\dimen126
+) (/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2017/06/01 v1.1a Enhanced LaTeX Graphics (DPC,SPQR)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2017/06/25 v1.2c Standard LaTeX Graphics (DPC,SPQR)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+) (/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 99.
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen127
+\Gin@req@width=\dimen128
+) (/usr/share/texlive/texmf-dist/tex/latex/hyperref/hyperref.sty
 Package: hyperref 2018/02/06 v6.86b Hypertext links for LaTeX
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
 Package: hobsub-hyperref 2016/05/16 v1.14 Bundle oberdiek, subset hyperref (HO)
@@ -676,17 +727,23 @@ Package: auxhook 2016/05/16 v1.4 Hooks for auxiliary files (HO)
 ) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/kvoptions.sty
 Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
 )
-\@linkdim=\dimen113
-\Hy@linkcounter=\count101
-\Hy@pagecounter=\count102
+\@linkdim=\dimen129
+\Hy@linkcounter=\count110
+\Hy@pagecounter=\count111
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/pd1enc.def
 File: pd1enc.def 2018/02/06 v6.86b Hyperref: PDFDocEncoding definition (HO)
 Now handling font encoding PD1 ...
 ... no UTF-8 mapping file for font encoding PD1
 )
-\Hy@SavedSpaceFactor=\count103
+\Hy@SavedSpaceFactor=\count112
 (/usr/share/texlive/texmf-dist/tex/latex/latexconfig/hyperref.cfg
 File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
+)
+Package hyperref Info: Option `unicode' set `true' on input line 4383.
+(/usr/share/texlive/texmf-dist/tex/latex/hyperref/puenc.def
+File: puenc.def 2018/02/06 v6.86b Hyperref: PDF Unicode definition (HO)
+Now handling font encoding PU ...
+... no UTF-8 mapping file for font encoding PU
 )
 Package hyperref Info: Hyper figures OFF on input line 4509.
 Package hyperref Info: Link nesting OFF on input line 4514.
@@ -695,16 +752,16 @@ Package hyperref Info: Plain pages OFF on input line 4524.
 Package hyperref Info: Backreferencing OFF on input line 4529.
 Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
 Package hyperref Info: Bookmarks ON on input line 4762.
-\c@Hy@tempcnt=\count104
+\c@Hy@tempcnt=\count113
 (/usr/share/texlive/texmf-dist/tex/latex/url/url.sty
 \Urlmuskip=\muskip11
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
 )
 LaTeX Info: Redefining \url on input line 5115.
-\XeTeXLinkMargin=\dimen114
-\Fld@menulength=\count105
-\Field@Width=\dimen115
-\Fld@charsize=\dimen116
+\XeTeXLinkMargin=\dimen130
+\Fld@menulength=\count114
+\Field@Width=\dimen131
+\Fld@charsize=\dimen132
 Package hyperref Info: Hyper figures OFF on input line 6369.
 Package hyperref Info: Link nesting OFF on input line 6374.
 Package hyperref Info: Hyper index ON on input line 6377.
@@ -714,123 +771,58 @@ Package hyperref Info: Link coloring with OCG OFF on input line 6394.
 Package hyperref Info: PDF/A mode OFF on input line 6399.
 LaTeX Info: Redefining \ref on input line 6439.
 LaTeX Info: Redefining \pageref on input line 6443.
-\Hy@abspage=\count106
-\c@Item=\count107
-\c@Hfootnote=\count108
+\Hy@abspage=\count115
+\c@Item=\count116
+\c@Hfootnote=\count117
 )
 Package hyperref Info: Driver (autodetected): hpdftex.
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/hpdftex.def
 File: hpdftex.def 2018/02/06 v6.86b Hyperref driver for pdfTeX
-\Fld@listcount=\count109
-\c@bookmark@seq@number=\count110
+\Fld@listcount=\count118
+\c@bookmark@seq@number=\count119
 (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/rerunfilecheck.sty
 Package: rerunfilecheck 2016/05/16 v1.8 Rerun checks for auxiliary files (HO)
 Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 82.
 )
-\Hy@SectionHShift=\skip47
+\Hy@SectionHShift=\skip51
 )
-Package hyperref Info: Option `unicode' set `true' on input line 29.
-(/usr/share/texlive/texmf-dist/tex/latex/hyperref/puenc.def
-File: puenc.def 2018/02/06 v6.86b Hyperref: PDF Unicode definition (HO)
-Now handling font encoding PU ...
-... no UTF-8 mapping file for font encoding PU
-)
-Package hyperref Info: Option `breaklinks' set `true' on input line 29.
-(/usr/share/texlive/texmf-dist/tex/latex/tools/longtable.sty
-Package: longtable 2014/10/28 v4.11 Multi-page Table package (DPC)
-\LTleft=\skip48
-\LTright=\skip49
-\LTpre=\skip50
-\LTpost=\skip51
-\LTchunksize=\count111
-\LTcapwidth=\dimen117
-\LT@head=\box28
-\LT@firsthead=\box29
-\LT@foot=\box30
-\LT@lastfoot=\box31
-\LT@cols=\count112
-\LT@rows=\count113
-\c@LT@tables=\count114
-\c@LT@chunks=\count115
-\LT@p@ftn=\toks24
-) (/usr/share/texlive/texmf-dist/tex/latex/booktabs/booktabs.sty
-Package: booktabs 2016/04/27 v1.618033 publication quality tables
-\heavyrulewidth=\dimen118
-\lightrulewidth=\dimen119
-\cmidrulewidth=\dimen120
-\belowrulesep=\dimen121
-\belowbottomsep=\dimen122
-\aboverulesep=\dimen123
-\abovetopsep=\dimen124
-\cmidrulesep=\dimen125
-\cmidrulekern=\dimen126
-\defaultaddspace=\dimen127
-\@cmidla=\count116
-\@cmidlb=\count117
-\@aboverulesep=\dimen128
-\@belowrulesep=\dimen129
-\@thisruleclass=\count118
-\@lastruleclass=\count119
-\@thisrulewidth=\dimen130
-) (/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
-Package: graphicx 2017/06/01 v1.1a Enhanced LaTeX Graphics (DPC,SPQR)
-(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
-Package: graphics 2017/06/25 v1.2c Standard LaTeX Graphics (DPC,SPQR)
-(/usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty
-Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
-) (/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
-File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
-)
-Package graphics Info: Driver file: pdftex.def on input line 99.
-(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def
-File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
-))
-\Gin@req@height=\dimen131
-\Gin@req@width=\dimen132
-) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/grffile.sty
-Package: grffile 2017/06/30 v1.18 Extended file name support for graphics (HO)
-Package grffile Info: Option `multidot' is set to `true'.
-Package grffile Info: Option `extendedchars' is set to `false'.
-Package grffile Info: Option `space' is set to `true'.
-Package grffile Info: \Gin@ii of package `graphicx' fixed on input line 494.
-) (/usr/share/texlive/texmf-dist/tex/latex/parskip/parskip.sty
-Package: parskip 2001/04/09 non-zero parskip adjustments
-) (/usr/share/texlive/texmf-dist/tex/latex/titling/titling.sty
-Package: titling 2009/09/04 v2.1d maketitle typesetting
-\thanksmarkwidth=\skip52
-\thanksmargin=\skip53
-\droptitle=\skip54
-) (./_main.aux)
+Package hyperref Info: Option `breaklinks' set `true' on input line 51.
+
+Package hyperref Warning: Option `bookmarks' has already been used,
+(hyperref)                setting the option has no effect on input line 51.
+
+Package hyperref Info: Option `colorlinks' set `true' on input line 51.
+(./_main.aux)
 \openout1 = `_main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 92.
-LaTeX Font Info:    Try loading font information for TS1+cmr on input line 92.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 62.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 62.
 (/usr/share/texlive/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Try loading font information for T1+lmr on input line 92.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Try loading font information for T1+lmr on input line 62.
 (/usr/share/texmf/tex/latex/lm/t1lmr.fd
 File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Info: Redefining \microtypecontext on input line 92.
+LaTeX Info: Redefining \microtypecontext on input line 62.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using protrusion set `basicmath'.
@@ -843,35 +835,18 @@ Package microtype Info: No adjustment of character kerning.
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-cmr.cfg
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
-)
-\AtBeginShipoutBox=\box32
-Package hyperref Info: Link coloring OFF on input line 92.
-(/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
-Package: nameref 2016/05/21 v2.44 Cross-referencing by name of section
-(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
-Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
-)
-\c@section@level=\count120
-)
-LaTeX Info: Redefining \ref on input line 92.
-LaTeX Info: Redefining \pageref on input line 92.
-LaTeX Info: Redefining \nameref on input line 92.
-(./_main.out) (./_main.out)
-\@outlinefile=\write3
-\openout3 = `_main.out'.
-
-(/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+) (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count121
+\scratchcounter=\count120
 \scratchdimen=\dimen133
-\scratchbox=\box33
-\nofMPsegments=\count122
-\nofMParguments=\count123
+\scratchbox=\box32
+\nofMPsegments=\count121
+\nofMParguments=\count122
 \everyMPshowfont=\toks25
-\MPscratchCnt=\count124
+\MPscratchCnt=\count123
 \MPscratchDim=\dimen134
-\MPnumerator=\count125
-\makeMPintoPDFobject=\count126
+\MPnumerator=\count124
+\makeMPintoPDFobject=\count125
 \everyMPtoPDFconversion=\toks26
 ) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
@@ -887,248 +862,310 @@ G,.JBIG2,.JB2,.eps]
 (/usr/share/texlive/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
-)) (./_main.toc
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 6.
+))
+\AtBeginShipoutBox=\box33
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/color.sty
+Package: color 2016/07/10 v1.1e Standard LaTeX Color (DPC)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package color Info: Driver file: pdftex.def on input line 147.
+)
+Package hyperref Info: Link coloring ON on input line 62.
+(/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
+Package: nameref 2016/05/21 v2.44 Cross-referencing by name of section
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
+Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
+)
+\c@section@level=\count126
+)
+LaTeX Info: Redefining \ref on input line 62.
+LaTeX Info: Redefining \pageref on input line 62.
+LaTeX Info: Redefining \nameref on input line 62.
+(./_main.out) (./_main.out)
+\@outlinefile=\write3
+\openout3 = `_main.out'.
+
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 64.
 (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 6.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 64.
 (/usr/share/texmf/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 6.
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 64.
+
 (/usr/share/texmf/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 6.
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 64.
+
 (/usr/share/texmf/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <14.4> on input line 64.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10> on input line 64.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <7> on input line 64.
+LaTeX Font Info:    Try loading font information for U+msa on input line 64.
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
+File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 64.
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msb.cfg
+File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
+) (./_main.toc
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <12> on input line 6.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <8> on input line 6.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <6> on input line 6.
-LaTeX Font Info:    Try loading font information for U+msa on input line 6.
-(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
-File: umsa.fd 2013/01/14 v3.01 AMS symbols A
-) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
-File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
-)
-LaTeX Font Info:    Try loading font information for U+msb on input line 6.
-(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
-File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msb.cfg
-File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
-) [1
+[1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}])
 \tf@toc=\write4
 \openout4 = `_main.toc'.
 
-LaTeX Font Info:    Try loading font information for T1+lmtt on input line 137.
+LaTeX Font Info:    Try loading font information for T1+lmtt on input line 108.
 
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-)
-LaTeX Font Info:    Try loading font information for TS1+lmr on input line 149.
-
-(/usr/share/texmf/tex/latex/lm/ts1lmr.fd
-File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 ) [2] [3] [4] [5] [6]
-<../../../phd/maps/SpeciesDistribution/distmap_pincon.png, id=201, 949.3869pt x
+<../../../phd/maps/SpeciesDistribution/distmap_pincon.png, id=193, 949.3869pt x
  508.7808pt>
 File: ../../../phd/maps/SpeciesDistribution/distmap_pincon.png Graphic file (ty
 pe png)
 <use ../../../phd/maps/SpeciesDistribution/distmap_pincon.png>
 Package pdftex.def Info: ../../../phd/maps/SpeciesDistribution/distmap_pincon.p
-ng  used on input line 260.
+ng  used on input line 207.
 (pdftex.def)             Requested size: 389.98996pt x 208.9974pt.
 [7 <../../../phd/maps/SpeciesDistribution/distmap_pincon.png (PNG copy)>]
-<../../../phd/maps/SiteMaps/sitemapwithPCIC.png, id=214, 1003.75pt x 803.0pt>
+<../../../phd/maps/SiteMaps/sitemapwithPCIC.png, id=204, 1003.75pt x 803.0pt>
 File: ../../../phd/maps/SiteMaps/sitemapwithPCIC.png Graphic file (type png)
 <use ../../../phd/maps/SiteMaps/sitemapwithPCIC.png>
 Package pdftex.def Info: ../../../phd/maps/SiteMaps/sitemapwithPCIC.png  used o
-n input line 277.
+n input line 224.
 (pdftex.def)             Requested size: 390.0059pt x 312.00473pt.
-<../../../phd/phd_proposal/figure/contingencytable.png, id=218, 803.0pt x 351.3
+[8] [9 <../../../phd/maps/SiteMaps/sitemapwithPCIC.png>]
+<../../../phd/phd_proposal/figure/contingencytable.png, id=228, 803.0pt x 351.3
 125pt>
 File: ../../../phd/phd_proposal/figure/contingencytable.png Graphic file (type 
 png)
 <use ../../../phd/phd_proposal/figure/contingencytable.png>
 Package pdftex.def Info: ../../../phd/phd_proposal/figure/contingencytable.png 
- used on input line 291.
+ used on input line 238.
 (pdftex.def)             Requested size: 390.0059pt x 170.62758pt.
-<../../../phd/maps/SPUmaps/SPUmap_subset.png, id=219, 803.0pt x 602.25pt>
+<../../../phd/maps/SPUmaps/SPUmap_subset.png, id=229, 803.0pt x 602.25pt>
 File: ../../../phd/maps/SPUmaps/SPUmap_subset.png Graphic file (type png)
 <use ../../../phd/maps/SPUmaps/SPUmap_subset.png>
 Package pdftex.def Info: ../../../phd/maps/SPUmaps/SPUmap_subset.png  used on i
-nput line 296.
+nput line 243.
 (pdftex.def)             Requested size: 390.0059pt x 292.50443pt.
-[8] [9 <../../../phd/maps/SiteMaps/sitemapwithPCIC.png>] [10 <../../../phd/phd_
-proposal/figure/contingencytable.png>] [11 <../../../phd/maps/SPUmaps/SPUmap_su
-bset.png (PNG copy)>]
-<_main_files/figure-latex/surveys-1.pdf, id=254, 469.755pt x 867.24pt>
+[10 <../../../phd/phd_proposal/figure/contingencytable.png>] [11 <../../../phd/
+maps/SPUmaps/SPUmap_subset.png (PNG copy)>]
+LaTeX Font Info:    Try loading font information for TS1+lmtt on input line 265
+.
+(/usr/share/texmf/tex/latex/lm/ts1lmtt.fd
+File: ts1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+Overfull \hbox (110.17525pt too wide) in paragraph at lines 265--265
+[]\T1/lmtt/m/n/12 ## Warning: The \TS1/lmtt/m/n/12 `\T1/lmtt/m/n/12 ...\TS1/lmt
+t/m/n/12 ` \T1/lmtt/m/n/12 argument of \TS1/lmtt/m/n/12 `\T1/lmtt/m/n/12 group_
+keys()\TS1/lmtt/m/n/12 ` \T1/lmtt/m/n/12 is deprecated as of dplyr 1.0.0.[] 
+ []
+
+
+Overfull \hbox (85.47523pt too wide) in paragraph at lines 265--265
+[]\T1/lmtt/m/n/12 ## Call \TS1/lmtt/m/n/12 `\T1/lmtt/m/n/12 lifecycle::last_war
+nings()\TS1/lmtt/m/n/12 ` \T1/lmtt/m/n/12 to see where this warning was generat
+ed.[] 
+ []
+
+<_main_files/figure-latex/surveys-1.pdf, id=247, 469.755pt x 867.24pt>
 File: _main_files/figure-latex/surveys-1.pdf Graphic file (type pdf)
 <use _main_files/figure-latex/surveys-1.pdf>
 Package pdftex.def Info: _main_files/figure-latex/surveys-1.pdf  used on input 
-line 314.
+line 268.
 (pdftex.def)             Requested size: 297.11559pt x 548.52109pt.
 
-LaTeX Warning: Float too large for page by 26.8544pt on input line 315.
+LaTeX Warning: Float too large for page by 26.8544pt on input line 269.
 
-
-Overfull \hbox (118.30511pt too wide) in paragraph at lines 334--347
+[12] [13 <./_main_files/figure-latex/surveys-1.pdf>]
+Overfull \hbox (118.30511pt too wide) in paragraph at lines 288--301
  [][] 
  []
 
-[12] [13 <./_main_files/figure-latex/surveys-1.pdf>] [14] [15]
-Overfull \hbox (53.65726pt too wide) detected at line 431
+[14] [15]
+Overfull \hbox (53.65726pt too wide) detected at line 385
 [][]\OT1/lmr/m/n/12 (\OML/lmm/m/it/12 S \OT1/lmr/m/n/12 = \OML/lmm/m/it/12 s\OT
 1/lmr/m/n/12 ) = [](\OML/lmm/m/it/12 s []\OMS/lmsy/m/n/12 j []\OML/lmm/m/it/12 
 ^^Q; ^^T\OT1/lmr/m/n/12 ) = []
  []
 
 [16] [17] [18]
-<../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png, id=348, 731.73375pt
+<../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png, id=342, 731.73375pt
  x 490.83376pt>
 File: ../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png Graphic file (t
 ype png)
 <use ../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.
-png  used on input line 514.
+png  used on input line 468.
 (pdftex.def)             Requested size: 390.00545pt x 261.60858pt.
-<../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png, id=349, 692.587
+<../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png, id=343, 692.587
 5pt x 386.94562pt>
 File: ../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png Graphic fil
 e (type png)
 <use ../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-10-28ppcstatesexp
-rop.png  used on input line 518.
+rop.png  used on input line 472.
 (pdftex.def)             Requested size: 390.01279pt x 217.89845pt.
 [19 <../../../phd/LabNotebook/images/2019-10-27ppc_cumprop.png (PNG copy)>]
-<../../../phd/LabNotebook/images/2019-10-28ppcsite.png, id=359, 692.5875pt x 38
+<../../../phd/LabNotebook/images/2019-10-28ppcsite.png, id=353, 692.5875pt x 38
 6.94562pt>
 File: ../../../phd/LabNotebook/images/2019-10-28ppcsite.png Graphic file (type 
 png)
 <use ../../../phd/LabNotebook/images/2019-10-28ppcsite.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-10-28ppcsite.png 
- used on input line 528.
+ used on input line 482.
 (pdftex.def)             Requested size: 390.01279pt x 217.89845pt.
-<../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png, id=360, 692.58
+<../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png, id=354, 692.58
 75pt x 386.94562pt>
 File: ../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png Graphic fi
 le (type png)
 <use ../../../phd/LabNotebook/images/2019-10-28ppcstatesexcount.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-10-28ppcstatesexc
-ount.png  used on input line 534.
+ount.png  used on input line 488.
 (pdftex.def)             Requested size: 390.01279pt x 217.89845pt.
 [20 <../../../phd/LabNotebook/images/2019-10-28ppcstatesexprop.png (PNG copy)>]
 [21 <../../../phd/LabNotebook/images/2019-10-28ppcsite.png (PNG copy)> <../../.
 ./phd/LabNotebook/images/2019-10-28ppcstatesexcount.png (PNG copy)>] [22]
-<../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png, id=390, 721.19
+Underfull \hbox (badness 10000) in paragraph at lines 528--529
+ \T1/lmr/bx/n/12 5.2.0.8.1 Over-lap with cli-mate change[] \T1/lmr/m/n/12 (+20)
+ Sim-u-lated cli-mate
+ []
+
+
+Underfull \hbox (badness 1173) in paragraph at lines 528--529
+\T1/lmr/m/n/12 (+20) change/warming by adding 2 de-grees to the mean temp ev-er
+y day
+ []
+
+<../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png, id=384, 721.19
 438pt x 602.25pt>
 File: ../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png Graphic fi
 le (type png)
 <use ../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-25_forcingstar
-tend.png  used on input line 591.
+tend.png  used on input line 545.
 (pdftex.def)             Requested size: 390.0004pt x 325.67882pt.
-[23] [24 <../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png (PNG c
-opy)>]
-<../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png, id=416
+<../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png, id=386
 , 618.81187pt x 435.12563pt>
 File: ../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png Gr
 aphic file (type png)
 <use ../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-13_apc_forcing
-_spacedyears.png  used on input line 602.
+_spacedyears.png  used on input line 556.
 (pdftex.def)             Requested size: 390.01407pt x 274.24345pt.
+[23] [24 <../../../phd/LabNotebook/images/2019-11-25_forcingstartend.png (PNG c
+opy)>] [25 <../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.
+png (PNG copy)>]
 <../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png, id=418, 7
 15.17188pt x 526.96875pt>
 File: ../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png Graph
 ic file (type png)
 <use ../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-13_apc_days_sp
-acedyears.png  used on input line 608.
+acedyears.png  used on input line 562.
 (pdftex.def)             Requested size: 390.00647pt x 287.37318pt.
-[25 <../../../phd/LabNotebook/images/2019-11-13_apc_forcing_spacedyears.png (PN
-G copy)>] [26 <../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.
-png (PNG copy)>]
-<../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png, id=431, 602.25pt x
+[26 <../../../phd/LabNotebook/images/2019-11-13_apc_days_spacedyears.png (PNG c
+opy)>]
+<../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png, id=426, 602.25pt x
  451.6875pt>
 File: ../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png Graphic file (
 type png)
 <use ../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi
-.png  used on input line 626.
+.png  used on input line 573.
 (pdftex.def)             Requested size: 390.01509pt x 292.5113pt.
-<../../../phd/LabNotebook/images/2019-11-28_lengthindays.png, id=433, 677.53125
+[27 <../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png (PNG copy)>]
+<../../../phd/LabNotebook/images/2019-11-28_lengthindays.png, id=434, 677.53125
 pt x 451.6875pt>
 File: ../../../phd/LabNotebook/images/2019-11-28_lengthindays.png Graphic file 
 (type png)
 <use ../../../phd/LabNotebook/images/2019-11-28_lengthindays.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-28_lengthinday
-s.png  used on input line 635.
+s.png  used on input line 582.
 (pdftex.def)             Requested size: 390.01164pt x 260.00775pt.
-[27] [28 <../../../phd/LabNotebook/images/2019-11-28_5090doyhdpi.png (PNG copy)
->] [29 <../../../phd/LabNotebook/images/2019-11-28_lengthindays.png (PNG copy)>
-]
-<../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png, id=455
+[28 <../../../phd/LabNotebook/images/2019-11-28_lengthindays.png (PNG copy)>]
+<../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png, id=444
 , 602.25pt x 451.6875pt>
 File: ../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png Gr
 aphic file (type png)
 <use ../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png>
 Package pdftex.def Info: ../../../phd/LabNotebook/images/2019-11-28_receptivity
-overlap_warm.png  used on input line 646.
+overlap_warm.png  used on input line 593.
 (pdftex.def)             Requested size: 390.01509pt x 292.5113pt.
-[30 <../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png (PN
+[29 <../../../phd/LabNotebook/images/2019-11-28_receptivityoverlap_warm.png (PN
 G copy)>]
 
-LaTeX Warning: Reference `siteprovclimate' on page 31 undefined on input line 6
-71.
+LaTeX Warning: Reference `siteprovclimate' on page 30 undefined on input line 6
+13.
 
 
-LaTeX Warning: Reference `Liepe_Pheno_Corr' on page 31 undefined on input line 
-671.
+LaTeX Warning: Reference `Liepe_Pheno_Corr' on page 30 undefined on input line 
+613.
 
-[31] [32] [33] [34]
-<../../../phd/phd_proposal/figure/climate.png, id=500, 803.0pt x 412.54124pt>
+[30] [31]
+Overfull \hbox (36.07521pt too wide) in paragraph at lines 672--672
+[]\T1/lmtt/m/n/12 ## \TS1/lmtt/m/n/12 `\T1/lmtt/m/n/12 summarise()\TS1/lmtt/m/n
+/12 ` \T1/lmtt/m/n/12 ungrouping output (override with \TS1/lmtt/m/n/12 `\T1/lm
+tt/m/n/12 .groups\TS1/lmtt/m/n/12 ` \T1/lmtt/m/n/12 argument)[] 
+ []
+
+[32] [33]
+<../../../phd/phd_proposal/figure/climate.png, id=491, 803.0pt x 412.54124pt>
 File: ../../../phd/phd_proposal/figure/climate.png Graphic file (type png)
 <use ../../../phd/phd_proposal/figure/climate.png>
 Package pdftex.def Info: ../../../phd/phd_proposal/figure/climate.png  used on 
-input line 788.
+input line 731.
 (pdftex.def)             Requested size: 390.0059pt x 200.36552pt.
 
-LaTeX Warning: Reference `forcing' on page 35 undefined on input line 797.
+LaTeX Warning: Reference `forcing' on page 34 undefined on input line 740.
 
 
-LaTeX Warning: Reference `simp_force_amt' on page 35 undefined on input line 79
-7.
+LaTeX Warning: Reference `simp_force_amt' on page 34 undefined on input line 74
+0.
 
-[35 <../../../phd/phd_proposal/figure/climate.png>] [36] [37] [38] [39]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 941.
-[40]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 941.
+[34 <../../../phd/phd_proposal/figure/climate.png>] [35] [36] [37] [38]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 886.
+[39]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 886.
 (./_main.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 941.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 941.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 886.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 886.
 Package rerunfilecheck Info: File `_main.out' has not changed.
-(rerunfilecheck)             Checksum: 68ABD1AD4943496EBFF0D2B409C05663;3922.
+(rerunfilecheck)             Checksum: 667F40AD60C04C6017490DD589FF5B29;3533.
 
 LaTeX Warning: There were undefined references.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 941.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 886.
  ) 
 Here is how much of TeX's memory you used:
- 12482 strings out of 494923
- 183463 string characters out of 6180743
- 270634 words of memory out of 5000000
- 15297 multiletter control sequences out of 15000+600000
- 59202 words of font info for 106 fonts, out of 8000000 for 9000
+ 12452 strings out of 494923
+ 182531 string characters out of 6180743
+ 270778 words of memory out of 5000000
+ 15245 multiletter control sequences out of 15000+600000
+ 67002 words of font info for 122 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 32i,9n,38p,1250b,441s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 32i,9n,38p,1250b,462s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/en
 c/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/s
 hare/texmf/fonts/enc/dvips/lm/lm-mathex.enc}{/usr/share/texmf/fonts/enc/dvips/l
@@ -1142,10 +1179,10 @@ texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lm
 ri12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/f
 onts/type1/public/lm/lmsy8.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.p
 fb>
-Output written on _main.pdf (40 pages, 5055439 bytes).
+Output written on _main.pdf (39 pages, 5059758 bytes).
 PDF statistics:
- 670 PDF objects out of 1000 (max. 8388607)
- 589 compressed objects within 6 object streams
- 213 named destinations out of 1000 (max. 500000)
- 10505 words of extra memory for PDF output out of 12000 (max. 10000000)
+ 659 PDF objects out of 1000 (max. 8388607)
+ 579 compressed objects within 6 object streams
+ 209 named destinations out of 1000 (max. 500000)
+ 12545 words of extra memory for PDF output out of 14400 (max. 10000000)
 

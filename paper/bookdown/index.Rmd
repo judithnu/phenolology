@@ -64,6 +64,7 @@ library(tidyverse)
 # Abstract
 
 The timing and duration of pollen shed and cone receptivity in lodgepole pine affects fecundity, gene flow, and adaptation in the species. Being able to predict the timing of pollen shed and cone receptivity ("flowering") will help us understand patterns of local adaptation, gene flow, and population structure as well as the effects of climate change on forests. Using 15 years of data from 7 lodgepole pine provenances grown at 7 sites, we built a multilevel Bayesian models of lodgepole pine pollen shed and cone receptivity phenology and used it to determine the amount of forcing required to begin and end the flowering period for both male and female strobili. With this method, any record of mean daily temperature can be used to estimate lodgepole pine flowering phenology. Cones become receptive slightly after pollen starts shedding and receptivity ends slightly before pollen shed ends. Provenance did not have a strong effect on flowering time. In simple climate change scenarios with increases of 2 and 5 degrees, the amount of phenological overlap between sites did not significantly increase or decrease with increasing temperatures because earlier flowering dates keep the rate of temperature accumulation within the flowering period relatively consistent.
+The timing and duration of pollen shed and cone receptivity in lodgepole pine affects its fecundity, gene flow, and adaptation. Being able to predict flowering phenology will help us understand patterns of local adaptation, gene flow, and population structure as well as the effects of climate change on forests. With 15 years of data from 7 lodgepole pine provenances grown at 7 sites, we built a multilevel Bayesian model of lodgepole pine flowering phenology and used it to determine the amount of forcing required to begin and end the period of pollen shed and cone receptivity. With this method, any record of mean daily temperature can be used to estimate lodgepole pine flowering phenology. Cones become receptive slightly after pollen starts shedding and receptivity ends slightly before shed ends. Provenance did not have a strong effect on flowering time. In simple climate change scenarios with increases of 2 and 5 degrees, the amount of phenological overlap between sites did not significantly increase or decrease with increasing temperatures because earlier flowering dates keeps the rate of temperature accumulation within the flowering period relatively consistent.
 
 ```{r global, echo=FALSE}
 forcingtype = "scaled_ristos"
@@ -93,68 +94,36 @@ dat <- phenology_data %>%
 
 
 
-# Outline intro
-Pollination phenology is important because
-
-- gene flow, dispersal - spatial and temporal variation
-- reproduction, demography
-- assisted migration, conservation
-- seed orchard operations, commercial/agricultural/breeding
-
-While vegetative phenology has been the focus of much research, pollination phenology is relatively unexplored in conifers. The focus is usually on day of year and comparing provenances, looking for local adaptation. They aren't predictive. 
-
-- examples
-
-Benefits of predictive/mechanistic models
-
-- climate change
-- predict out of dataset
-
-Predictive models are scarce because they rely on excellent phenological records with high quality temperature datasets.
-
-- counterexamples with strengths and weaknesses
-
-Such a record does exist for lodgepole pine in British Columbia.
-
-- BC seed orchards, collection rationale, existing dataset
-
-Understanding the precise relationship between temperature and pollination phenology is valuable in lodgepole because
-
-- it's an economically important species with lots of replanting and we need to understand how populations we're planting on the landscape will interact with local populations
-- lots of phenotypic and genomic data available in lodgepole pine. Local adaptation, population structure. Understanding temporal and spatial variation in pollination phenology could help disentangle effects on population differentation (local adaptation, gene flow, etc) and explain population structure.
-
-In this paper, we build a predictive model of pollination phenology in lodgepole pine that estimates the amount of forcing required to cause lodgepole pine to begin and end flowering. Using these estimates, any record of mean daily temperature can be used to predict the timing and duration of flowering in lodgepole pine.
-
-We confirm that pollination phenology in lodgepole pine is not strongly influenced by provenance, then used the model results to calculate variation in the timing and length of phenological period at 7 sites in British Columbia between 1997 and 2011. Last, we considered how climate change may affect pollination phenology.
-
 # Introduction
 As the climate changes, spring phenological events like budburst and flowering will advance, especially for plants active in rapid seasonal transitions and short growing seasons [@Pau2011], like many high elevation and latitude conifers. 
 This effect is already obvious in many species [@Parmesan2006; @Franks2014]. 
-Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have effects [VAGUE] on dependent species [@Inouye2008; @Chuine2001b].
+Changes in pollination phenology can affect fecundity, gene flow, and even range size in a species and have knock-on effects on dependent species [@Inouye2008; @Chuine2001b].
 
+Conifers are a big part of the enormous northern hemisphere forests and many have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @aitken2008). 
 
-Conifers are a big part of the enormous northern hemisphere forests and they have wide ranges with lots of local adaptation. Common garden experiments and genetic work reveal extensive local adaptation in many forest tree species, especially boreal and temperate conifers (reviewed in @Alberto2013). A locally adapted population only grows optimally in a subset of the range and may tolerate a more limited climatic range than the species as a whole. In northern hemisphere conifers, local adaptation often reflects strong trade-offs between avoidance of cold damage and competitive height growth (summarized in @aitken2008). 
+Coniferous forest trees are wind pollinated with pollination possible over very large distances. Pine and spruce pollen have been recorded travelling 3000km [@Campbell1999]. While most trees are pollinated by local pollen donors, long distance pollen dispersal makes up a significant amount of effective pollen flow. Seed orchards typically struggle to reproductively isolate their stands, despite placing them at a distance from natural stands (*e.g.* @Slavov2005, @SkLai2010, @stoehrEvaluationMatingDynamics2002). @robledo-arnuncioWindPollinationMesoscale2011 found that at least 4.4% of effective pollen flow into an isolated *Pinus sylvestris* stand was from a population 100km away. At the expanding range edge of both *Pinus ponderosa* [@lesser2013] and *Picea sitchensis* [@elleouet2019], long distance pollen-mediated gene flow was critical for persistence of colonizing populations
 
-Coniferous forest trees are wind pollinated wtih pollination possible over large distances. [EXAMPLES]
-Pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination .rpe
-Shifts in the timing of pollen shed and cone receptivity (pollination phenology) in conifers could lead to gene flow changes that hinder or promote adaptation under climate change, decrease fitness, and even affect reforestation via seed production declines. 
-[Also affects gene flow now and is important for understanding current spatial genetic structure and local adaptation] 
+In conifers, pollen is shed from male strobili and must arrive at receptive female strobili for successful pollination.
+(Gymnosperm strobili are not flowers, but this paper will follow the common practice of referring to the processes of pollen shed and cone receptivity as "flowering.") 
+Differences in flowering timing lead to assortative mating within populations and differential gene flow among populations, with important consequences for genetic diversity, fitness, and rate of evolution [@fox2003, @Ellstrand2014]. 
+Shifts in flowering timing in conifers could lead to gene flow changes that hinder or promote adaptation under climate change [@rousi2019, @Whittet2017b], decrease fitness[@gleiser2018]], reduce additive genetic variance in flowering time [@Franks2015], affect forest regeneration through seed production declines, and even damage reforestation and conservation efforts [@Wadgymar2015a].
 
-Lodgepole pine is a good representative of these issues - an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
-Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Fig. \@ref(fig:rangemap) with widespread and significant local adaptation in many traits. 
-For example, populations from both northern interior British Columbia and northern Idaho can survive in areas with mean annual temperatures between -4 and 6 $^\circ\mathrm{C}$, but the northern British Columbia population survives best where mean annual temperatures are ~ 1 $^\circ\mathrm{C}$ and the Idaho population best at ~ 4 $^\circ\mathrm{C}$ [@Rehfeldt1999a]. 
-Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@rehfeldt1983]. [Summarize/cite adaptree work]
+Lodgepole pine is a good representative of these issues as an economically and ecologically important tree species facing multiple threats from climate change [@Schneider2010; @Sambaraju2012; @Hamann2006]. 
+Lodgepole pine has a very large geographical distribution (across 33$^\circ$ latitude and 31$^\circ$ longitude) encompassing a wide range of climates and soils (Fig. \@ref(fig:rangemap)). 
+Understanding flowering timing could lead to a better understanding of adaptive capacity and maintenance of local adaptation in lodgepole pine 
+While gene flow is high, local adaptation is extensive in lodgepole pine [@Liepe2015, @mahonya] with strong differences in performance between different provenances [@Wang2010]. Local adaptation in lodgepole pine can be observed even at relatively small spatial scales when topographic variability is high: in a reciprocal transplant experiment, growth declines were observed when moving high elevation populations just 100m in elevation [@rehfeldt1983] and there is evidence for spatially varying levels of gene flow tied to climate [@Yeaman2006].
+ 
+Synchronization in flowering phenology will play a strong role in determining which populations can exchange genes in lodgepole pine because outcrossing is nearly obligate, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. 
+However, work on predicting the timing of pollen shed and cone receptivity is scarce and coarse.
+Estimates are often location and population specific, considering only the day of year an event occurred and not the amount of forcing required to trigger an event. 
+Collecting flowering phenology data in mature forest trees is challenging because of their height and the long period of observation required.
+However, simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts. Risto Sarvas's work in Scots pine (*Pinus sylvestris*) is a rare exception. Through extensive field and laboratory experiments, they determined the rate of forcing at temperatures between x and y etc.
 
-
-Pollen is an important vector for identifying gene flow in lodgepole pine because outcrossing is common, pollen dispersal is extensive, and seed dispersal is relatively limited [@Ennos1994]. 
-There is evidence for spatially varying levels of gene flow in the species as populations from areas with higher regional climate heterogeneity have higher genetic variance [@Yeaman2006]. 
-Pollination phenology could control this. 
-
-Pollination phenology determines which populations can exchange genes, but work on predicting the timing of pollen shed and cone receptivity is scarce and coarse.
-Determining the amount of forcing required for a phenological event to occur is rarely done for species that lack economic importance because collecting the data is too much work. 
-When it is done, estimates are often location and population specific. Pollination phenology examples are uncommon for conifers. Simple heat accumulation thresholds (*Pinus taeda*) [@Boyer1978] or elevation (*Pinus flexilis*) [@Schuster1989] were used previously to explain or predict pollen shed in limited spacial and temporal contexts. Risto Sarvas's work in Scots pine is a rare exception. [Talk about Sarvas investigations for mechanistic background, why using temperature, etc.] 
+SARVAS FLOWERING PHENOLOGY
 
 @owensReproductiveBiologyLodgepole2006 reports that lodgepole pine pollen shed and cone receptivity occur when degree days reach about 500 at a threshold of 5 $^\circ\mathrm{C}$, but this is the only report of pollination phenology prediction we could find for lodgepole pine and limited details are provided. Models of lodgepole pine vegetative phenology, on the other hand, are better represented in the literature (*e.g.* @Chuine2001), and pollen shed and cone receptivity are not expected to have additional or more complex triggers or model forms than budburst [@Chuine2013a]. Plus we can rely on Sarvas's mechanistic work, which Chuine uses in her work.
+
+PARAGRAPH ON POPULATION VARIATION
 
 Predicting pollination phenology will also have practical benefits. SMP
 
@@ -336,6 +305,7 @@ Cooler sites, like Prince George, accumulate forcing slower than warmer sites li
 
 ## Phenology Modeling 
 
+
 We modeled phenological states as a function of accumulated forcing units with separate Bayesian multilevel ordinal logistic models for male and female strobili. A logistic cumulative link function accounts for the ordering of phenological states and relates phenological states to a linear model. This type of model makes no assumption about the distance between phenological states. The model parameters describe a probability function for each state. Cutpoints $\kappa$ separate each state while the slope parameter of the linear model influences the steepness of the curves. Transitions between phenological states happen rapidly when the slope is large and slowly when it is small. 
 
 The likelihood of being in state $s \in \{1,2,3\}$ is
@@ -370,7 +340,7 @@ S_i & \sim \mathrm{OrderedLogistic}(\eta,\kappa) & \text{probability of data}\\
 
 The linear model $\eta$ includes a population mean slope $\beta$ with deviations from that for site, provenance, clone and year. Priors were designed to force the correct sign (positive) and order of magnitude [@lemoineMovingNoninformativePriors2019]. Priors on the site, provenance, clone, and year effects are adaptive and effects are estimated from the data with partial pooling. 
 
-The model was fit in the probabilistic programming language Stan (vers. 2.19.2 via RStan [@standevelopmentteam2019]), which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior. We ran 4 independent chains for 4500 iterations, discarding 1000 warm-up iterations for a total of 14,000 posterior samples for each parameter. Model convergence and performance were considered good; $\hat R$ was $< 1.01$ and bulk effective sample size was more than 100x the number of chains for all parameter values (Female model: Tail ESS 2,231-11,286, median 9,326; Bulk ESS 1,434-31,750, median 11,059. Male model: Tail ESS 2,843-11,332, median 9,371; Bulk ESS 1,617-30,793, median 11,633) [@vehtari2019]. There were no divergences. Visual inspection of energy plots and rank plots showed acceptable sampling behavior.
+The model was fit in the probabilistic programming language Stan (vers. 2.19.2 via RStan [@standevelopmentteam2019]), which uses the No-U-Turn Sampler, an efficient Markov Chain Monte Carlo method that extends the Hamiltonian Monte Carlo algorithm [@carpenter2017], to sample the joint posterior. We ran 6 independent chains for 3000 iterations, discarding 1500 warm-up iterations for a total of 9,000 posterior samples for each parameter. Model convergence and performance were considered good; $\hat R$ was $< 1.01$ and bulk and tail effective sample size was more than 100x the number of chains for all parameter values in all models [@vehtari2019]. There were no divergences. Visual inspection of energy plots and rank plots showed acceptable sampling behavior.
 
 #### Model Assumptions 
 We assume that chilling requirements are always met and that chilling and forcing periods do not overlap. Forcing is a function of temperature only and does not incorporate photoperiod or chilling. Transitions between each state occur at the same rate, *i.e.* $\beta$ parameters cannot vary by phenological state. This model does not account for damage and abnormal development from very cold and very warm temperatures. [Cite Sarvas's weird hot stuff and some late spring phenology] We assume that forcing does not begin to accumulate until January 1.
@@ -518,134 +488,6 @@ knitr::include_graphics('../../../phd/LabNotebook/images/2019-11-13_apc_days_spa
 
 We examined the variability of the start date across the range ($t_1$) to see if it shrinks in warmer years and as the climate changes. We calculated overlap between within population cone receptivity and pollen shed under current conditions and with climate warming and see if the heat sum requirements for cone receptivity and pollen shed are different.
 
-
-## Model summary and parameter estimates [SUPPLEMENTAL PROBABLY ]
-
-```{r model data, eval=FALSE, echo=FALSE}
-ffit.stan <- readRDS("../2019-10-28phenologyFEMALE.rds")
-mfit.stan <- readRDS("../2019-10-28phenologyMALE.rds")
-
-#need to drop noncentered parameters. model_examination.R is more uptodate
-
-fsum <- rstan::summary(ffit.stan)$summary
-fsum <- as.data.frame(fsum)
-farray <- as.array(ffit.stan)
-
-fsum <- rstan::summary(ffit.stan)$summary
-fsum <- as.data.frame(fsum)
-fsum$par <- rownames(fsum)
-fpost <- as.data.frame(ffit.stan) %>%
-  select(-contains("z"))
-fparam_names <- colnames(fpost)
-
-
-msum <- rstan::summary(mfit.stan)$summary
-msum <- as.data.frame(msum)
-msum$par <- rownames(msum)
-mpost <- as.data.frame(mfit.stan) %>%
-  select(-contains("z"))
-mparam_names <- colnames(mpost)
-
-#mf
-fpost$sex <- 0
-mpost$sex <- 1
-
-post <- full_join(mpost, fpost) 
-```
-
-<!--Clones not included-->
-
-*Female*
-```{r paramfemaletable, eval=FALSE, echo=FALSE}
-knitr::kable(
-fsum[str_detect(fsum$par, "b_clone", negate=TRUE) , ], digits=3, 
-caption = "Female model parameters")
-```
-
-*Male*
-```{r parammaletable, eval=FALSE, echo=FALSE}
-knitr::kable(
-msum[str_detect(msum$par, "b_clone", negate=TRUE) , ], digits=3,
-caption = "Male model parameters")
-```
-
-```{r compare plot function, echo=FALSE, eval=FALSE}
-
-compare_fm <- function(femplot, mplot, nrow = 2, ...) {
-    bayesplot_grid(
-        femplot, mplot,
-        grid_args = list(nrow = nrow),
-        subtitles = c("Female",
-                      "Male"),
-        ...
-    )
-}
-
-compare_fm_wide <- function(femplot, mplot, ncol = 2, ...) {
-    bayesplot_grid(
-        femplot, mplot,
-        grid_args = list(ncol = ncol),
-        subtitles = c("Female",
-                      "Male"),
-        ...
-    )
-}
-```
-
-
-```{r compare site and prov intervals, echo=FALSE}
-# ggplot(post, aes(x=beta, fill=as.factor(sex))) +
-#     geom_density(alpha=0.5) + 
-#     ggtitle("male and female speed of transition estimates")
-# 
-# fint_beta <- mcmc_areas(fpost, regex_pars = "beta") + ggtitle("beta")
-# mint_beta <- mcmc_areas(mpost, regex_pars = "beta")
-# 
-# compare_fm(fint_beta, mint_beta, xlim=c(0.05, 0.10))
-# 
-# fkap <- mcmc_areas(fpost, regex_pars = "kappa")
-# mkap <- mcmc_areas(mpost, regex_pars = "kappa")
-# 
-# compare_fm_wide(fkap, mkap, xlim=c(18, 29))
-# 
-# color_scheme_set("blue")
-# fint_site <- mcmc_intervals(fpost, regex_pars = c("site", "prov"))
-# mint_site <- mcmc_intervals(mpost, regex_pars = c("site", "prov"))
-# 
-# compare_fm_wide(fint_site, mint_site) 
-# 
-# fa_sigma <- mcmc_areas(fpost, regex_pars= "sigma") + ggtitle("variance")
-# ma_sigma <- mcmc_areas(mpost, regex_pars= "sigma")
-# 
-# compare_fm_wide(fa_sigma, ma_sigma)
-# 
-# fa_y <- mcmc_areas(fpost, regex_pars = "year") + ggtitle("year")
-# ma_y <- mcmc_areas(mpost, regex_pars = "year")
-# 
-# compare_fm_wide(fa_y, ma_y)
-
-```
-
-```{r compare clones, echo=FALSE}
-# fint_c <- mcmc_intervals(fpost, regex_pars = c("clone"), point_est="none") + ggtitle("Clone effects")
-# mint_c <- mcmc_intervals(mpost, regex_pars = c("clone"), point_est="none")
-# 
-# compare_fm_wide(fint_c, mint_c)
-# ```
-# 
-# ### Sex diff
-# 
-# ```{r half transitions - no effects}
-# fpost$f1 <- fpost$`kappa[1]`/fpost$beta
-# fpost$f2 <- fpost$`kappa[2]`/fpost$beta
-# mpost$f1 <- mpost$`kappa[1]`/mpost$beta
-# mpost$f2 <- mpost$`kappa[2]`/mpost$beta
-# 
-# ff <- mcmc_areas(fpost, pars = c("f1", "f2")) + ggtitle("half transitions")
-# mf <- mcmc_areas(mpost, pars = c("f1", "f2")) + ggtitle("half transitions")
-# 
-# compare_fm(ff, mf)
-```
 ## Flowering period
 
 Receptivity and pollen shed overlap for most of the flowering period within a year and site (Fig. \@ref(fig:floweringperiod). Pollen shed typically encompasses the entire receptivity period. Prince George, the most northern site, generally flowers later in the year than Kalamalka and has shorter flowering periods. Kettle River, the most southern site, but rather cool compared to Kalamalka, is in between.
@@ -680,7 +522,7 @@ knitr::include_graphics('../../../phd/LabNotebook/images/2019-11-28_receptivityo
 ### Provenance differences
 
 
-1) How strong are the genetic vs. environmental effects on pollination phenology? NOT, talk about APCs.
+No. 1) How strong are the genetic vs. environmental effects on pollination phenology? NOT, talk about APCs.
 
 This means: we can use the same models across the entire range when predicting phenological events.
 
@@ -694,7 +536,7 @@ in lodgepole pine, the threshold for shoot elongation was 5.1 $^\circ\mathrm{C}$
 
 <!--![Variance in budbreak and budset for lodgepole pine explained by provenance climate. Seedlings from 281 locations across lodgepole's BC range were grown in growth chambers under four treatments: approximated seasonal and daily variation in temperature for geographic locations with a MAT of 1, 6, and 11 $^\circ\mathrm{C}$, with the warmest treatment having a dry and wet version. Pearson's correlation coefficient between phenotypic traits in lodgepole pine and provenance climates are presented. The vertical line represents the critical $r^2$ value after an adjustment for multiple inferences. From @Liepe2014 (submitted). \label{Liepe_Pheno_Corr}](../../../phd/phd_proposal/figure/Liepe_phen_corr.png)-->
 
-2) How does faster spring warm-up like we expect under climate change affect within population mating success and frequency of outcrossing? 
+No. 2) How does faster spring warm-up like we expect under climate change affect within population mating success and frequency of outcrossing? 
 
 [WOO EXCITING RESULTS I WAS WRONG! ORIGINAL EXPECTATIONS] We expect that faster spring warm-up will condense as well as advance growth initiation dates and also shorten pollination phenological periods by speeding development prior to and during the phenological period. This should further synchronize populations in similar climates and act as a barrier to breeding with populations in more different climates. On the other hand, it could favor outcrossing over selfing by causing protandry - pollen shed in advance of cone receptivity. Based on anecdotal reports from seed orchards managers, we expect protandry (and thus outcrossing) to increase under climate change.
 
@@ -706,15 +548,17 @@ This means that under climate change, assuming even heat up throughout the winte
 
 [MAKE SURE TO COVER]
 
-- Reflective analysis of scholarly work and conclusions in light of current knowledge in the field
+Reflective analysis of scholarly work and conclusions in light of current knowledge in the field
 
 ### Compare heatsum to risto predictions
 The limited reports of forcing required for lodgepole pine pollination use heatsum, typically with a threshold of 5 degrees C. They are difficult to directly compare because threshold not always reported nor is the start date for accumuluation.
 @owensReproductiveBiologyLodgepole2006 reported heatsum of 500 with considerable variation, Wagner and Walsh x to y (Inc.2008). They are in the right ballpark for Walsh and Webber’s numbers (once divided by 24 for right units). However, W&W only start adding up heatsum in the month or so before pollination. We think the numbers are still roughly comparable because the 5 degree threshold in GDD5 calculations means that very little accumulates before then.
 
 When converting observations/model 
-- Comments on significance and contribution
-- Comments on strengths and limitations
+
+Comments on significance and contribution
+
+Comments on strengths and limitations
 
 @Owens2001 on Western White Pine
 > Degree-days are a useful way to predict seed cone receptivity and to a lesser extent pollen shed at one site in successive years but not between sites
@@ -780,6 +624,19 @@ Use HPDI in this paper (easy). I'll publish the fstart and fend distributions in
 
 ## Future directions
 THE WHOLE RANGE
+
+# Supplemental
+
+## ESS 
+
+for 2020-12-17 model run. Calculated with `diagnostics.R`
+
+|id     |  bulk_ess| tail_ess|
+|:------|---------:|--------:|
+|fbsims |  696.4815| 1417.250|
+|fesims |  741.2277| 1383.805|
+|mbsims |  940.9436| 1601.639|
+|mesims | 1095.3261| 2089.605|
 
 # Acknowledgements
 
